@@ -127,20 +127,20 @@ class BookNotesExportFormatterTest {
 
     @Test
     fun markdownExportKeepsLiteralNumberedAndBulletLines() {
-        val note = note("原文", "- 这不是列表\\n1. 也不是列表\\n+ 加号条目", 0)
+        val note = note("原文", "- 这不是列表\n1. 也不是列表\n+ 加号条目", 0)
         val output = BookNotesExportFormatter.formatMarkdown(
             "书", listOf(note), emptyList(), emptyMap(), labels
         )
-        assertTrue(output.contains("\\- 这不是列表\\n1\\. 也不是列表\\n\\+ 加号条目"))
+        assertTrue(output.contains("\\- 这不是列表\n1\\. 也不是列表\n\\+ 加号条目"))
     }
 
     @Test
     fun markdownBlockquoteDoesNotCreateAccidentalNestedList() {
-        val highlight = note("首句\\n- 这是引用中的普通原文\\n10) 普通行", "", 0)
+        val highlight = note("首句\n- 这是引用中的普通原文\n10) 普通行", "", 0)
         val output = BookNotesExportFormatter.formatMarkdown(
             "书", listOf(highlight), emptyList(), emptyMap(), labels
         )
-        assertTrue(output.contains("> 首句\\n> \\- 这是引用中的普通原文\\n> 10\\) 普通行"))
+        assertTrue(output.contains("> 首句\n> \\- 这是引用中的普通原文\n> 10\\) 普通行"))
     }
 
     private fun note(
