@@ -70,7 +70,6 @@ import com.huangder.lumibooks.ui.components.LiquidGlassDialogHost
 import com.huangder.lumibooks.ui.components.rememberLocalNetworkPermissionGate
 import com.huangder.lumibooks.ui.components.PolicyUpdateDialog
 import com.huangder.lumibooks.ui.components.RemoteNoticeDialog
-import com.huangder.lumibooks.domain.model.EARLY_DONOR_NOTICE_ID
 import com.huangder.lumibooks.domain.model.ReceivedNotice
 import com.huangder.lumibooks.ui.components.WebdavSyncUpgradeDialog
 import com.huangder.lumibooks.ui.settings.DetailActivity
@@ -253,7 +252,6 @@ class MainActivity : ComponentActivity() {
 
     /** Pending remote notice dialog; non-null means show it after startup. */
     private var pendingRemoteNotice by mutableStateOf<UpdateChecker.NoticeConfig?>(null)
-    private var pendingEarlyDonorNotice by mutableStateOf(false)
 
     /** Pending terms/privacy policy update dialog; non-null means show it after startup. */
     private var pendingPolicyUpdate by mutableStateOf<PendingPolicyUpdate?>(null)
@@ -951,7 +949,7 @@ class MainActivity : ComponentActivity() {
                         }
                         val globalGlassDialogVisible = !onReaderRoute && (
                             pendingAppUpdate != null ||
-                                pendingEarlyDonorNotice || pendingRemoteNotice != null ||
+                                pendingRemoteNotice != null ||
                                 policyDialog != null ||
                                 pendingWebdavSyncUpgrade ||
                                 // 外部导入询问弹窗也是玻璃容器，同样需要在它显示期间捕获主内容，
@@ -1020,7 +1018,6 @@ class MainActivity : ComponentActivity() {
                     // Startup dialog priority: app update > notice > policy > sync upgrade.
                     // 阅读页不渲染启动弹窗，避免 layerBackdrop 切换导致内容闪烁。
                     val appUpdate = pendingAppUpdate
-                    val earlyDonorNotice = pendingEarlyDonorNotice
                     val remoteNotice = pendingRemoteNotice
                     when {
                         !onReaderRoute && appUpdate != null -> {
@@ -1045,14 +1042,6 @@ class MainActivity : ComponentActivity() {
                                         pendingAppUpdate = null
                                     }
                                 }
-                            )
-                        }
-                        !onReaderRoute && earlyDonorNotice -> {
-                            RemoteNoticeDialog(
-                                title = stringResource(R.string.early_donor_notice_title),
-                                message = stringResource(R.string.early_donor_notice_message),
-                                imageResId = R.drawable.early_donor_claim_code,
-                                onConfirm = { acknowledgeStartupNotice(EARLY_DONOR_NOTICE_ID) }
                             )
                         }
                         !onReaderRoute && remoteNotice != null -> {
@@ -1153,11 +1142,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun acknowledgeStartupNotice(id: String) {
-        if (id == EARLY_DONOR_NOTICE_ID) {
-            pendingEarlyDonorNotice = false
-        } else {
-            pendingRemoteNotice = null
-        }
+        pendingRemoteNotice = null
         lifecycleScope.launch { dataStoreManager.acknowledgeNotice(id) }
     }
 

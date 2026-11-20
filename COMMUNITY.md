@@ -64,3 +64,6 @@ APK 位于 `app/build/oss/outputs/apk/debug/`。如更新版本，修改根目�
 ### Fork 管理提示
 
 截至 2026-11-20，GitHub API 显示此 Fork 的 Issues 与 Discussions 均处于关闭状态。需在仓库 Settings → General → Features 中手动开启它们，社区 Discussions 链接才会有内容可访问。需要允许自动提出 PR 时，还应在 Settings → Actions → General 开启「Allow GitHub Actions to create and approve pull requests」。定时工作流只在代码合并到默认 `main` 后执行，不会在 Draft PR 中定时触发。
+
+### 代码清理说明
+独立的官方「问题反馈」Activity 与其 QR/QQ 页面已从源码移除，原本共用文件里的本地诊断界面保留（仅在用户主动调用时导出诊断信息）。启动阶段的早期捐赠者兑换公告不会出现。上游版权声明、第三方许可证和原项目贡献者署名仍应保留。

@@ -102,14 +102,12 @@ Lumi 是一款 Android 本地电子书阅读器。书籍和阅读数据默认保
 
 备用下载：[百度网盘](https://pan.baidu.com/s/1vDdFsoqQuuZlntUTUjssZw?pwd=lumi)（密码 lumi） · [蓝奏云](https://wwaug.lanzoub.com/b0xxfmxvi)（密码 lumi）
 
-## 版本说明
+## 社区 Beta 版说明
 
-Lumi 分为开源版和官方版：
-
-- **开源版**（本仓库构建）：提供全部阅读功能和基础摘录样式，不含会员入口、阅读报告和标签管理。
-- **官方版**：在开源版之上提供可选的 Premium 功能，包括阅读报告、高级摘录模板和标签管理。阅读报告和高级摘录可以预览，导出需要解锁；官方版提供 5 天试用。
-
-更新记录见 [更新日志页](https://huangder.top/changelog.html)，应用内也可以查看。
+- 独立包名 `io.github.wxyu71.lumibooks`，当前 `2.3.12-beta.1`。
+- 仅使用公开许可源码；无会员激活、私有 Premium 源码、强制引导或启动联网公告。
+- 保留 WebDAV/OPDS、本地标签和笔记 TXT 导出；不注册桌面小组件，也不提供付费报告或高级摘录模板。
+- [查看构建与功能路线图](COMMUNITY.md)；APK 来自本 Fork 的 GitHub Actions，正式可升级签名尚未配置。
 
 ## 支持 Lumi
 
