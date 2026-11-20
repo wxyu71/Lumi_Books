@@ -51,7 +51,7 @@ jobs:
             sdkmanager="$(command -v sdkmanager)"
           fi
           "$sdkmanager" --install \
-            "platforms;android-37" \
+            "platforms;android-37.0" \
             "build-tools;37.0.0" \
             "ndk;28.0.13004108" \
             "cmake;3.22.1"
