@@ -18,4 +18,26 @@
     <string name="community_move_hint">Choose a destination. Existing book and note assignments are preserved.</string>
     <string name="community_delete_group_hint">Tags will move to Ungrouped. Book and note assignments will be preserved.</string>
     <string name="community_delete_tag_hint">This removes the tag from all linked books, notes and bookmarks. This cannot be undone. Continue?</string>
+    <string name="community_journal_title">Reading journal</string>
+    <string name="community_journal_entry_hint">Local only; pause or erase at any time</string>
+    <string name="community_journal_recording">Record reading activity</string>
+    <string name="community_journal_privacy">Off by default; no community telemetry</string>
+    <string name="community_retention_title">Keep entries for</string>
+    <string name="community_retention_three_months">Three months</string>
+    <string name="community_retention_year">One year</string>
+    <string name="community_retention_forever">Until I delete them</string>
+    <string name="community_erase_history">Stop and erase journal</string>
+    <string name="community_journal_recent">Recent events (up to 300)</string>
+    <string name="community_journal_empty">No events yet. Start reading to create entries.</string>
+    <string name="community_journal_disabled_hint">Recording is off; new events appear only after you opt in.</string>
+    <string name="community_journal_reading">Reading</string>
+    <string name="community_journal_listening">Listening</string>
+    <string name="community_journal_finished">Finished book</string>
+    <string name="community_journal_want">Want to read</string>
+    <string name="community_journal_poster">Create poster</string>
+    <string name="community_action_failed">Could not save. Please retry.</string>
+    <string name="community_journal_consent_title">Enable local reading journal</string>
+    <string name="community_journal_consent_body">Records reading and listening sessions with the associated book on this device. Backups or syncs you initiate may include these records. Pause, change retention or erase them at any time.</string>
+    <string name="community_journal_enable">Agree and enable</string>
+    <string name="community_journal_erase_warning">This stops recording and permanently deletes all journal events. Reading positions, notes and bookmarks are preserved. Continue?</string>
 </resources>

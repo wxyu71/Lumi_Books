@@ -18,4 +18,26 @@
     <string name="community_move_hint">选择目标分组，标签的已有使用记录不会丢失。</string>
     <string name="community_delete_group_hint">删除分组后，组内标签会移到「未分组」，不会删除关联的书籍和笔记。</string>
     <string name="community_delete_tag_hint">删除标签会移除它在关联书籍、笔记或书签中的标记，此操作不可撤销。确定继续？</string>
+    <string name="community_journal_title">阅读日志</string>
+    <string name="community_journal_entry_hint">本地记录，可随时关闭和清除</string>
+    <string name="community_journal_recording">记录阅读日志</string>
+    <string name="community_journal_privacy">默认关闭；不向社区发送使用记录</string>
+    <string name="community_retention_title">记录保留时间</string>
+    <string name="community_retention_three_months">三个月</string>
+    <string name="community_retention_year">一年</string>
+    <string name="community_retention_forever">一直保留</string>
+    <string name="community_erase_history">停止并清除日志</string>
+    <string name="community_journal_recent">最近阅读事件（最多 300 条）</string>
+    <string name="community_journal_empty">暂无事件；阅读后会出现记录</string>
+    <string name="community_journal_disabled_hint">记录尚未开启；仅在开启后记录新事件</string>
+    <string name="community_journal_reading">阅读</string>
+    <string name="community_journal_listening">听书</string>
+    <string name="community_journal_finished">完成阅读</string>
+    <string name="community_journal_want">想读</string>
+    <string name="community_journal_poster">生成海报</string>
+    <string name="community_action_failed">保存失败，请重试</string>
+    <string name="community_journal_consent_title">开启本地阅读日志</string>
+    <string name="community_journal_consent_body">将阅读和听书时间、对应书籍记录在本机；你主动发起的备份或同步可能包含这些数据。可随时关闭记录、调整保留期限或彻底清除。</string>
+    <string name="community_journal_enable">同意并开启</string>
+    <string name="community_journal_erase_warning">这将停止记录并永久清除已保存的日志，阅读进度、笔记与书签不会删除。确定继续？</string>
 </resources>

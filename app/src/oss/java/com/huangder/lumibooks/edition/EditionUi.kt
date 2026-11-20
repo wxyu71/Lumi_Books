@@ -32,14 +32,14 @@ internal fun EditionTagManagementSettingsEntry() {
 @Composable
 internal fun EditionReadingReviewEntry(period: ReadingReportPeriod, compact: Boolean = false) = Unit
 
-/** The base edition records nothing and shows no reading journal. */
-internal const val editionHasReadingJournal: Boolean = false
+/** Recording is strictly opt-in and stores events only in the existing local Room table. */
+internal const val editionHasReadingJournal: Boolean = true
 
 @Composable
-internal fun EditionReadingJournalCard() = Unit
+internal fun EditionReadingJournalCard() = CommunityReadingJournalEntry()
 
 @Composable
-internal fun EditionBookJournalEntry(bookId: String) = Unit
+internal fun EditionBookJournalEntry(bookId: String) = CommunityReadingJournalEntry(bookId)
 
 /** Opens the to-read list from the home header; the base edition has no such page. */
 @Composable

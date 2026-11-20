@@ -11,11 +11,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 @Singleton
-class OssAccess @Inject constructor() : PremiumAccess {
+class OssAccess @Inject constructor(private val journalRecorder: com.huangder.lumibooks.reading.journal.ReadingJournalRecorder) : PremiumAccess {
     override val unlocked: StateFlow<Boolean> = MutableStateFlow(true).asStateFlow()
     override fun isUnlocked() = true
     override fun canAddRemoteSource(count: Int) = true
-    override fun start() = Unit
+    override fun start() = journalRecorder.start()
 }
 
 @Singleton
