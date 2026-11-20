@@ -10,16 +10,16 @@ import org.junit.Test
 class UpdateCheckerTest {
     @Test
     fun `prefers the GitHub APK for the configured release`() {
-        val release = "https://github.com/huangder/Lumi_Books/releases/tag/Dream"
-        val apk = "https://github.com/huangder/Lumi_Books/releases/download/Dream/app-universal-release.apk"
+        val release = "https://github.com/wxyu71/Lumi_Books/releases/tag/Dream"
+        val apk = "https://github.com/wxyu71/Lumi_Books/releases/download/Dream/app-universal-release.apk"
         val update = JSONObject().put("download_url", release).put("github_apk_url", apk)
         assertEquals(apk, UpdateChecker.resolveUpdateDownloadUrl(update, ""))
     }
 
     @Test
     fun `preserves old update links when direct download is unavailable or invalid`() {
-        val release = "https://github.com/huangder/Lumi_Books/releases/tag/Dream"
-        val artifact = "/huangder/Lumi_Books/releases/download/Dream/app-universal-release.apk"
+        val release = "https://github.com/wxyu71/Lumi_Books/releases/tag/Dream"
+        val artifact = "/wxyu71/Lumi_Books/releases/download/Dream/app-universal-release.apk"
         val update = JSONObject().put("download_url", release)
         assertEquals(release, UpdateChecker.resolveUpdateDownloadUrl(update, ""))
         assertEquals(release, UpdateChecker.resolveUpdateDownloadUrl(null, release))

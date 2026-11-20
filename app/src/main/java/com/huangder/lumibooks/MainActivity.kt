@@ -1176,92 +1176,17 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    /** Load the bundled notice before starting the remote configuration request. */
+    /** Check only the bundled policy versions; do not contact the upstream server at startup. */
     private fun performStartupUpdateCheck() {
         lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val terms = BundledPolicy.TERMS.version
-                val privacy = BundledPolicy.PRIVACY.version
-                val needsTerms = dataStoreManager.acceptedTermsVersion.first() < terms
-                val needsPrivacy = dataStoreManager.acceptedPrivacyVersion.first() < privacy
-                if (needsTerms || needsPrivacy) {
-                    withContext(Dispatchers.Main) {
-                        pendingPolicyUpdate = PendingPolicyUpdate(needsTerms, terms, needsPrivacy, privacy)
-                    }
-                    dataStoreManager.hasAcceptedBundledPolicies.first { it }
-                }
-                val acknowledgedNoticeIds = dataStoreManager.acknowledgedNoticeIds.first()
-                // The bundled announcement can be recovered even if it was confirmed before history existed.
-                archiveStartupNotice(
-                    EARLY_DONOR_NOTICE_ID,
-                    getString(R.string.early_donor_notice_title),
-                    getString(R.string.early_donor_notice_message)
-                )
+            val terms = BundledPolicy.TERMS.version
+            val privacy = BundledPolicy.PRIVACY.version
+            val needsTerms = dataStoreManager.acceptedTermsVersion.first() < terms
+            val needsPrivacy = dataStoreManager.acceptedPrivacyVersion.first() < privacy
+            if (needsTerms || needsPrivacy) {
                 withContext(Dispatchers.Main) {
-                    pendingEarlyDonorNotice = EARLY_DONOR_NOTICE_ID !in acknowledgedNoticeIds
+                    pendingPolicyUpdate = PendingPolicyUpdate(needsTerms, terms, needsPrivacy, privacy)
                 }
-
-                val config = UpdateChecker.fetchUpdateConfig() ?: return@launch
-                val packageInfo = try {
-                    packageManager.getPackageInfo(packageName, 0)
-                } catch (_: Exception) { null }
-                val currentVersion = packageInfo?.versionName ?: "1.0"
-                val currentVersionCode = packageInfo?.let { PackageInfoCompat.getLongVersionCode(it) } ?: 0L
-
-                val acceptedTerms = dataStoreManager.acceptedTermsVersion.first()
-                val acceptedPrivacy = dataStoreManager.acceptedPrivacyVersion.first()
-                val ignoredAppUpdateVersionCode = dataStoreManager.ignoredAppUpdateVersionCode.first()
-
-                val result = UpdateChecker.evaluate(
-                    config = config,
-                    currentVersion = currentVersion,
-                    currentVersionCode = currentVersionCode,
-                    acceptedTerms = acceptedTerms,
-                    acceptedPrivacy = acceptedPrivacy
-                )
-
-                val remoteNotice = result.notice
-                remoteNotice?.let { archiveStartupNotice(it.id, it.title, it.message, it.imageUrl) }
-
-                val nextAppUpdate = result
-                    .takeIf {
-                        it.hasAppUpdate && !(
-                                !it.isForceUpdate &&
-                                        it.latestVersionCode > 0L &&
-                                        it.latestVersionCode == ignoredAppUpdateVersionCode
-                                )
-                    }
-                    ?.let {
-                        PendingAppUpdate(
-                            appVersion = it.appVersion,
-                            latestVersionCode = it.latestVersionCode,
-                            title = it.updateTitle,
-                            message = it.updateMessage,
-                            changelog = it.changelog,
-                            releaseUrl = it.releaseUrl,
-                            force = it.isForceUpdate
-                        )
-                    }
-                val nextNotice = remoteNotice
-                    ?.takeIf { it.id != EARLY_DONOR_NOTICE_ID && it.id !in acknowledgedNoticeIds }
-                val nextPolicy = if (result.hasTermsUpdate || result.hasPrivacyUpdate) {
-                    PendingPolicyUpdate(
-                        hasTermsUpdate = result.hasTermsUpdate,
-                        termsVersion = result.termsVersion,
-                        hasPrivacyUpdate = result.hasPrivacyUpdate,
-                        privacyVersion = result.privacyVersion
-                    )
-                } else {
-                    null
-                }
-
-                withContext(Dispatchers.Main) {
-                    pendingAppUpdate = nextAppUpdate
-                    pendingRemoteNotice = nextNotice
-                    pendingPolicyUpdate = nextPolicy
-                }
-            } catch (_: Exception) {
-                // Fail silently so startup is not blocked.
             }
         }
     }

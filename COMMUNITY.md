@@ -50,3 +50,13 @@ APK 位于 `app/build/oss/outputs/apk/debug/`。如更新版本，修改根目�
 - [GitHub Actions security hardening](https://docs.github.com/en/actions/reference/security/secure-use)
 - [Android SDK 37](https://developer.android.com/about/versions/17/setup-sdk)
 - [F-Droid nightly builds](https://f-droid.org/en/docs/Publishing_Nightly_Builds/)
+
+## 社区版产品原则（2026-11-20）
+
+- 移除 QQ、设置中的问题反馈与首页会员营销入口；「关于应用」保留社区 GitHub 仓库、Discussions 和可选择的原作者赞助入口。
+- 首次使用无需倒计时和宣传翻页；语言设置（如有）之后，阅读本地条款与隐私政策并点击同意即可进入。
+- 取消启动联网检查原作者的更新公告、捐赠公告和远程配置；用户手动检查更新时仅访问本社区 Fork 的 GitHub Raw 地址。没有新增遥测或私有远程服务。
+- 保留由用户自己启用/配置的 WebDAV、OPDS、翻译、TTS 和 MinerU；不提供会员服务。
+- 不暴露阅读报告、官方高级摘录模板与两个桌面小组件；现有笔记 TXT 导出保留。
+- 书籍/标注标签的 CRUD 使用现有开放的 Repository 和 Compose 标签管理组件。**标签分组、批量操作、阅读日志/海报的社区重建为后续独立 PR**。
+- 上游同步采用定时自动提出 Draft PR、人工合并的策略，防止上游恢复已经删除的会员 UI 或远程请求。

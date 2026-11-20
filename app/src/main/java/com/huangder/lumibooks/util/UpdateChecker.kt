@@ -17,14 +17,14 @@ import java.net.URL
  * normal update, and forced update dialogs without a separate server.
  *
  * Config URL:
- * https://raw.githubusercontent.com/huangder/Lumi_Books/main/docs/app-config.json
+ * https://raw.githubusercontent.com/wxyu71/Lumi_Books/main/docs/app-config.json
  */
 object UpdateChecker {
 
     private const val TAG = "UpdateChecker"
 
     /** GitHub repository Raw config URL. Do not use a custom domain for mobile reliability. */
-    private const val CONFIG_URL = "https://raw.githubusercontent.com/huangder/Lumi_Books/main/docs/app-config.json"
+    private const val CONFIG_URL = "https://raw.githubusercontent.com/wxyu71/Lumi_Books/main/docs/app-config.json"
 
     /** Network request timeout. */
     private const val TIMEOUT_MS = 10_000
@@ -172,7 +172,7 @@ object UpdateChecker {
         val candidate = (update?.opt("github_apk_url") as? String)?.trim().orEmpty()
         val uri = runCatching { URI(candidate) }.getOrNull() ?: return fallback
         val path = uri.path ?: return fallback
-        val prefix = "/huangder/Lumi_Books/releases/download/"
+        val prefix = "/wxyu71/Lumi_Books/releases/download/"
         val asset = path.removePrefix(prefix).split('/')
         if (!"https".equals(uri.scheme, ignoreCase = true) ||
             !"github.com".equals(uri.rawAuthority, ignoreCase = true) ||
@@ -182,7 +182,7 @@ object UpdateChecker {
             uri.rawQuery != null || uri.rawFragment != null
         ) return fallback
 
-        val releasePrefix = "/huangder/Lumi_Books/releases/tag/"
+        val releasePrefix = "/wxyu71/Lumi_Books/releases/tag/"
         val release = runCatching { URI(fallback) }.getOrNull()
         val releasePath = release?.path
         if ("github.com".equals(release?.host, ignoreCase = true) &&
