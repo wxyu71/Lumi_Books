@@ -63,6 +63,7 @@ jobs:
           test ! -d app/src/premium/java
           grep -q 'val premiumEdition = false' app/build.gradle.kts
           grep -q 'applicationId = "io.github.wxyu71.lumibooks"' app/build.gradle.kts
+          python3 tools/check_community_policy.py
           chmod +x ./gradlew
 
       - name: Assemble debug-signed community beta APKs

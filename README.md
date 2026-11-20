@@ -4,13 +4,13 @@
 
 <img src="docs/media/lumi2.webp" alt="Lumi" width="120">
 
-# Lumi
+# Lumi Community
 
 <h3 align="center">一款 Android 本地电子书阅读器</h3>
 
-[下载最新版](https://github.com/huangder/Lumi_Books/releases) | [功能介绍](https://huangder.top/features.html) | [更新日志](https://huangder.top/changelog.html) | [隐私政策](https://huangder.top/privacy.html) | [赞助](https://huangder.top/sponsor.html)
+[社区 Beta 构建](https://github.com/wxyu71/Lumi_Books/actions/workflows/android-beta.yml) | [社区仓库](https://github.com/wxyu71/Lumi_Books) | [开发规划](COMMUNITY.md) | [上游项目](https://github.com/huangder/Lumi_Books)
 
-[![Version](https://img.shields.io/badge/version-2.3.11-coral)](https://github.com/huangder/Lumi_Books/releases)
+[![Version](https://img.shields.io/badge/version-2.3.12--beta.1-coral)](https://github.com/huangder/Lumi_Books/releases)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
 [![Android](https://img.shields.io/badge/Android-8.0%2B-blue)](https://developer.android.com)
 

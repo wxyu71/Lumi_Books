@@ -60,3 +60,7 @@ APK 位于 `app/build/oss/outputs/apk/debug/`。如更新版本，修改根目�
 - 不暴露阅读报告、官方高级摘录模板与两个桌面小组件；现有笔记 TXT 导出保留。
 - 书籍/标注标签的 CRUD 使用现有开放的 Repository 和 Compose 标签管理组件。**标签分组、批量操作、阅读日志/海报的社区重建为后续独立 PR**。
 - 上游同步采用定时自动提出 Draft PR、人工合并的策略，防止上游恢复已经删除的会员 UI 或远程请求。
+
+### Fork 管理提示
+
+截至 2026-11-20，GitHub API 显示此 Fork 的 Issues 与 Discussions 均处于关闭状态。需在仓库 Settings → General → Features 中手动开启它们，社区 Discussions 链接才会有内容可访问。需要允许自动提出 PR 时，还应在 Settings → Actions → General 开启「Allow GitHub Actions to create and approve pull requests」。定时工作流只在代码合并到默认 `main` 后执行，不会在 Draft PR 中定时触发。

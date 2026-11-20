@@ -2601,7 +2601,7 @@ fun AboutDetail(viewModel: SettingsViewModel) {
 
     LumiAboutHeader(
         unlocked = uiState.lumiEasterEggUnlocked,
-        currentVersion = "Filmy",
+        currentVersion = com.huangder.lumibooks.BuildConfig.VERSION_NAME,
         isCheckingUpdate = update.isChecking,
         onCheckUpdate = { viewModel.checkUpdate(isAutoCheck = false) },
         onUnlock = viewModel::unlockLumiEasterEgg
@@ -2648,11 +2648,11 @@ fun AboutDetail(viewModel: SettingsViewModel) {
     // ── 法律条款 Card ──
     DetailCard(horizontalPadding = sectionHorizontalPadding) {
         ActionRow(label = stringResource(R.string.privacy_policy)) {
-            openDoc(context.getString(R.string.privacy_policy), "privacy.html")
+            openDoc(context.getString(R.string.privacy_policy), "community-privacy.html")
         }
         SettingsDivider()
         ActionRow(label = stringResource(R.string.terms_of_service)) {
-            openDoc(context.getString(R.string.terms_of_service), "terms.html")
+            openDoc(context.getString(R.string.terms_of_service), "community-terms.html")
         }
         SettingsDivider()
         ActionRow(label = stringResource(R.string.open_source_licenses)) {

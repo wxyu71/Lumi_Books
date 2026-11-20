@@ -28,7 +28,7 @@ class UpdateCheckerTest {
             "http://github.com$artifact",
             "https://github.com.example.com$artifact",
             "https://elsewhere@github.com$artifact",
-            "https://github.com/${artifact.removePrefix("/").replace("huangder", "another-owner")}",
+            "https://github.com/${artifact.removePrefix("/").replace("wxyu71", "another-owner")}",
             "https://github.com${artifact.replace("/Dream/", "/Other/")}",
             "https://github.com${artifact.replace(".apk", ".zip")}"
         )) {
