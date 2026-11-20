@@ -21,6 +21,10 @@ main = file("app/src/main/java/com/huangder/lumibooks/MainActivity.kt")
 config = json.loads(file("docs/app-config.json"))
 gradle = file("app/build.gradle.kts")
 community_changelog = file("app/src/main/assets/changelog.md")
+tag_repository = file("app/src/main/java/com/huangder/lumibooks/data/repository/TagManagementRepository.kt")
+journal_ui = file("app/src/oss/java/com/huangder/lumibooks/edition/CommunityReadingJournal.kt")
+tags_ui = file("app/src/oss/java/com/huangder/lumibooks/edition/CommunityTagManagement.kt")
+export_ui = file("app/src/oss/java/com/huangder/lumibooks/edition/CommunityAnnotationFeedExport.kt")
 
 ensure("val premiumEdition = false" in gradle, "Fork must always use the public OSS source set")
 ensure("io.github.wxyu71.lumibooks" in gradle, "Fork package ID was overwritten")
@@ -42,6 +46,14 @@ startup = main.split("private fun performStartupUpdateCheck()", 1)[1]
 ensure("UpdateChecker.fetchUpdateConfig()" not in startup, "Startup network update request reintroduced")
 ensure('name="community_app_name"' in file("app/src/main/res/values/community_strings.xml"), "Community launcher label missing")
 ensure("premium_pricing" not in config, "Official Premium pricing reintroduced in community config")
+ensure("PremiumAccess" not in tag_repository and "premium_required" not in tag_repository,
+       "Tag management must not use membership entitlements")
+ensure("journal.enable" in journal_ui and "community_journal_consent" in journal_ui,
+       "Opt-in reading journal consent flow missing")
+ensure("deleteGroup" in tags_ui and "moveTags" in tags_ui and "deleteTags" in tags_ui,
+       "Community group and bulk tag operations missing")
+ensure("notesExportBooks" in export_ui and "CreateDocument" in export_ui,
+       "Filtered local annotation export path missing")
 ensure("Premium" not in community_changelog and "会员" not in community_changelog,
        "Official subscription marketing reintroduced into the visible changelog")
 ensure(config["release_url"].startswith("https://github.com/wxyu71/Lumi_Books/"),

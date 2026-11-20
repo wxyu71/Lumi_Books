@@ -7,7 +7,7 @@
 - **目标版本**：`2.3.12-beta.1`（公开上游源码为 `2.3.11`），Android `versionCode=19`。
 - **独立包名**：`io.github.wxyu71.lumibooks`，独立于上游 `com.huangder.lumibooks` 安装；两个应用的数据目录也不同，不能自动共享书籍和阅读记录。
 - **构建**：始终选择 `app/src/oss/`。公开版的 `OssAccess.isUnlocked()` 本来就返回 true、远程书源无限制；本 Fork 不包含官方私有会员许可校验和服务器。
-- **重要限制**：公开仓库不存在完整的官方阅读报告、高级摘录样式、标签管理等 Premium UI 实现。此 Beta **不宣称已经实现这些功能**。未来功能应基于公开代码自主开发或依许可证整合第三方代码。
+- **社区功能边界**：不复制私有 Premium UI；公开版的标签数据库、Room 迁移、日志事件记录、摘录与签到海报、笔记导出基础模块可复用。社区独立构建并完善标签管理、可选择开启的阅读日志、基础海报与本地 TXT/Markdown 导出；**不提供年度/周月阅读报告和高级付费摘录模板**。
 
 ## CI 流程
 
@@ -36,13 +36,16 @@
 
 APK 位于 `app/build/oss/outputs/apk/debug/`。如更新版本，修改根目录 `gradle.properties` 中的 `lumi.communityVersionName`、`lumi.communityVersionCode`，并确认 `versionCode` 严格递增。官方上游版本若变化，应先对比上游源代码、保留本 Fork 的 `applicationId`、source-set 和 CI 配置，再决定新的 Beta 版本号。
 
-## 后续功能路线
+## 社区功能现状与后续验收
 
-1. 自主实现标签管理 UI：复用公开版 `TagManagementRepository` 的数据层，添加 Compose 管理界面与测试。
-2. 自主实现阅读报告：基于公开版 `ReadingInsights`/时间范围模型生成周/月/年度报告和可导出图片。
-3. 自主设计新的摘录模板及导出流程，保留现有公开的六种基础样式。
-4. 加入稳定签名、版本化 Release、校验和、发布变更日志；签名密钥仅在受保护发布事件中可用。
-5. 添加版本检查与自动化同步策略，避免误将官方版本更新提示视为本 Fork 的更新。
+本 PR 已提交源码但仍需通过最新 CI 与真机验收：
+
+1. **标签管理**：书籍标签和标注标签创建、重命名、删除；分组的创建、重命名、删除；标签分组移动及批量移动/删除。复用原有 Room/DAO、备份同步协议与 `AppSheetHeader`、`GroupedCard`、`LiquidGlassAlertDialog`。删除组只解除分组；删除标签需要确认。全局标签操作不依赖会员资格。
+2. **阅读日志与海报**：复用 `ReadingJournalRepository`、`ReadingJournalRecorder` 和保留期限策略；默认关闭、开启前同意、随时停止、用户明确确认后清除。本地事件可进入现有 `BookShareActivity` 签到海报生成及保存/系统分享流程，不增加社区服务。
+3. **笔记导出增强**：单书 TXT/Markdown 和「全部标注」当前筛选结果的跨书批量 TXT/Markdown 导出；使用 `BookNotesExportBuilder` 与 Android Storage Access Framework，由用户明确选择保存位置，隐藏书籍与墨迹绘制不导出。
+4. **保留边界**：仍然**不引入阅读报告图、年度报告、额外摘录付费模板、桌面小组件、独立社区云书库、遥测或会员购买功能**。
+
+仍待完善：多语言完全本地化、超大书库/低内存压力验证、所有第三方网络端点与 Manifest 组件审计、完整无障碍/RTL/电子墨水/低动效回归测试、稳定签名与正式发布。阅读记忆作为独立候选功能，尚未在此 PR 默认开启或新增数据收集。详见 [社区 UI 与交互实现规范](devdocs/community-ui-ux-implementation.md)。
 
 ## 参考
 
@@ -58,7 +61,7 @@ APK 位于 `app/build/oss/outputs/apk/debug/`。如更新版本，修改根目�
 - 取消启动联网检查原作者的更新公告、捐赠公告和远程配置；用户手动检查更新时仅访问本社区 Fork 的 GitHub Raw 地址。没有新增遥测或私有远程服务。
 - 保留由用户自己启用/配置的 WebDAV、OPDS、翻译、TTS 和 MinerU；不提供会员服务。
 - 不暴露阅读报告、官方高级摘录模板与两个桌面小组件；现有笔记 TXT 导出保留。
-- 书籍/标注标签的 CRUD 使用现有开放的 Repository 和 Compose 标签管理组件。**标签分组、批量操作、阅读日志/海报的社区重建为后续独立 PR**。
+- 书籍/标注标签、分组、批量操作、可选阅读日志和基础海报 UI 已在此 PR 编写；均须通过 CI 与真机验收，完成后方可标记正式可用。
 - 上游同步采用定时自动提出 Draft PR、人工合并的策略，防止上游恢复已经删除的会员 UI 或远程请求。
 
 ### Fork 管理提示
