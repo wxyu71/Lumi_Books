@@ -173,13 +173,26 @@ class BookReaderLayerTest {
                     canvas.drawPath(path.asAndroidPath(), Paint(Paint.ANTI_ALIAS_FLAG).apply {
                         color = android.graphics.Color.WHITE
                     })
-                    var difference = 0L
+                    // Software Skia and Compose's clip anti-alias the same
+                    // geometric outline differently. Compare silhouettes
+                    // instead of summing fractional edge-alpha differences:
+                    // every mismatched pixel must lie within ONE pixel of the
+                    // reference outline. A shifted/mis-sized window still fails.
+                    fun isPaper(bitmap: Bitmap, x: Int, y: Int): Boolean =
+                        android.graphics.Color.green(bitmap.getPixel(x, y)) >= 128
+                    var outsideOutline = 0
                     for (y in 0 until actual.height) for (x in 0 until actual.width) {
-                        difference += kotlin.math.abs(android.graphics.Color.green(actual.getPixel(x, y)) -
-                            android.graphics.Color.green(expected.getPixel(x, y)))
+                        val paper = isPaper(actual, x, y)
+                        if (paper == isPaper(expected, x, y)) continue
+                        val nearBoundary = ((y - 1).coerceAtLeast(0)..(y + 1).coerceAtMost(actual.height - 1))
+                            .any { yy ->
+                                ((x - 1).coerceAtLeast(0)..(x + 1).coerceAtMost(actual.width - 1))
+                                    .any { xx -> isPaper(expected, xx, yy) == paper }
+                            }
+                        if (!nearBoundary) outsideOutline++
                     }
-                    assertTrue("$name moving clip differs from cover by ${difference / 255f} pixels",
-                        difference / 255f < 8f + (bounds.width + bounds.height) * 0.04f)
+                    assertTrue("$name has $outsideOutline pixels beyond the 1px reference edge",
+                        outsideOutline <= 6)
                     actual.recycle(); expected.recycle()
                 }
             }
