@@ -58,6 +58,8 @@ internal class CommunityJournalViewModel @Inject constructor(
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CommunityJournalState())
 
+    fun bookEvents(bookId: String) = journal.observeRecentForBook(bookId, 300)
+
     fun enable(done: (Boolean) -> Unit) = act(done) {
         journal.enable(journal.settings.current().retention)
     }
@@ -95,12 +97,19 @@ private fun CommunityReadingJournalSheet(
     model: CommunityJournalViewModel = hiltViewModel()
 ) {
     val data by model.state.collectAsState()
+    // The per-book sheet uses its own bounded query, not the latest 300 across all books.
+    val bookFlow = remember(model, bookId) {
+        if (bookId == null) kotlinx.coroutines.flow.flowOf(emptyList<ReadingJournalEventEntity>())
+        else model.bookEvents(bookId)
+    }
+    val bookEvents by bookFlow.collectAsState(initial = emptyList())
     val context = LocalContext.current
     val zone = remember { ZoneId.systemDefault() }
     val dayFormatter = remember { DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM) }
     val timeFormatter = remember { DateTimeFormatter.ofPattern("HH:mm") }
-    val events = remember(data.events, bookId, data.titles) {
-        data.events.filter { (bookId == null || it.bookId == bookId) && it.bookId in data.titles }
+    val events = remember(data.events, bookEvents, bookId, data.titles) {
+        (if (bookId == null) data.events else bookEvents)
+            .filter { it.bookId in data.titles }
     }
     val days = remember(events) {
         events.groupBy { Instant.ofEpochMilli(it.startedAt).atZone(zone).toLocalDate() }

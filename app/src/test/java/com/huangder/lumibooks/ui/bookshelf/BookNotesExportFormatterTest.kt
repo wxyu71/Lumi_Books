@@ -108,6 +108,23 @@ class BookNotesExportFormatterTest {
         assertEquals("书_名-书签与笔记.md", BookNotesExportFormatter.suggestedFileName("书/名", labels.fileSuffix, "md"))
     }
 
+    @Test
+    fun markdownEscapesUntrustedAnnotationsWithoutDroppingUnicode() {
+        val highlight = note("Emoji 😀 <tag>\nsecond line", "", 0)
+            .copy(tags = listOf("Tag|One"))
+        val output = BookNotesExportFormatter.formatMarkdown(
+            "Title#One",
+            listOf(highlight),
+            emptyList(),
+            emptyMap(),
+            labels
+        )
+        assertTrue(output.contains("# Title\\#One"))
+        assertTrue(output.contains("> Emoji 😀 \\<tag\\>"))
+        assertTrue(output.contains("> second line"))
+        assertTrue(output.contains("Tag\\|One"))
+    }
+
     private fun note(
         selectedText: String,
         noteText: String,

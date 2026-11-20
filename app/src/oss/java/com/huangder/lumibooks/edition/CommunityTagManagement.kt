@@ -47,6 +47,33 @@ private sealed interface TagTask {
 }
 
 @Composable
+private fun TagManagerAction(
+    label: String,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    color: androidx.compose.ui.graphics.Color = AppColors.TextPrimary
+) {
+    // Unlike the one-line capsule convenience API, these are full task labels.
+    // Allow line wrapping and height growth in narrow / large-font layouts.
+    LiquidGlassButton(
+        onClick = onClick,
+        modifier = modifier,
+        enabled = enabled,
+        contentColor = color
+    ) {
+        Text(
+            text = label,
+            fontSize = AppType.BodySmall,
+            fontWeight = FontWeight.SemiBold,
+            color = color,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+}
+
+@Composable
 internal fun CommunityTagManagementSheet(type: String, onDismiss: () -> Unit) {
     val repository = rememberTagPickerRepository()
     val groups by remember(repository, type) {
@@ -135,14 +162,14 @@ internal fun CommunityTagManagementSheet(type: String, onDismiss: () -> Unit) {
                 horizontalArrangement = Arrangement.spacedBy(AppSpace.sm),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                LiquidGlassTextButton(
-                    text = stringResource(R.string.community_create_tag),
+                TagManagerAction(
+                    label = stringResource(R.string.community_create_tag),
                     onClick = { start(TagTask.CreateTag) },
                     enabled = repository != null && !busy,
                     modifier = Modifier.weight(1f)
                 )
-                LiquidGlassTextButton(
-                    text = stringResource(R.string.community_create_group),
+                TagManagerAction(
+                    label = stringResource(R.string.community_create_group),
                     onClick = { start(TagTask.CreateGroup) },
                     enabled = repository != null && !busy,
                     modifier = Modifier.weight(1f)
@@ -152,26 +179,26 @@ internal fun CommunityTagManagementSheet(type: String, onDismiss: () -> Unit) {
                 Text(stringResource(R.string.community_tag_count, tags.size),
                     fontSize = AppType.Caption, color = AppColors.TextSecondary,
                     modifier = Modifier.weight(1f))
-                LiquidGlassTextButton(
-                    text = stringResource(if (selecting) R.string.cancel else R.string.community_select_tags),
+                TagManagerAction(
+                    label = stringResource(if (selecting) R.string.cancel else R.string.community_select_tags),
                     onClick = { selecting = !selecting; selected = emptySet() },
                     enabled = tags.isNotEmpty() && !busy
                 )
             }
             if (selecting) {
                 Row(horizontalArrangement = Arrangement.spacedBy(AppSpace.sm)) {
-                    LiquidGlassTextButton(
-                        text = stringResource(R.string.community_move_selected),
+                    TagManagerAction(
+                        label = stringResource(R.string.community_move_selected),
                         enabled = selected.isNotEmpty() && !busy,
                         onClick = { start(TagTask.Move(selected.toList())) },
                         modifier = Modifier.weight(1f)
                     )
-                    LiquidGlassTextButton(
-                        text = stringResource(R.string.community_delete_selected),
+                    TagManagerAction(
+                        label = stringResource(R.string.community_delete_selected),
                         enabled = selected.isNotEmpty() && !busy,
                         onClick = { start(TagTask.DeleteMany(selected.toList())) },
                         modifier = Modifier.weight(1f),
-                        contentColor = AppColors.Destructive
+                        color = AppColors.Destructive
                     )
                 }
             }

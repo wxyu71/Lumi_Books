@@ -22,6 +22,10 @@ interface ReadingJournalDao {
     @Query("SELECT * FROM reading_journal_events WHERE $VISIBLE_BOOK ORDER BY startedAt DESC, id DESC LIMIT :limit")
     fun observeRecent(limit: Int): Flow<List<ReadingJournalEventEntity>>
 
+    /** Book details must not silently omit sessions older than the global top-N. */
+    @Query("SELECT * FROM reading_journal_events WHERE bookId = :bookId AND $VISIBLE_BOOK ORDER BY startedAt DESC, id DESC LIMIT :limit")
+    fun observeRecentForBook(bookId: String, limit: Int): Flow<List<ReadingJournalEventEntity>>
+
     @Query("SELECT * FROM reading_journal_events WHERE bookId = :bookId ORDER BY startedAt, id")
     fun observeForBook(bookId: String): Flow<List<ReadingJournalEventEntity>>
 

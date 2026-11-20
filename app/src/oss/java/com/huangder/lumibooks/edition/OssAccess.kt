@@ -11,11 +11,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 @Singleton
-class OssAccess @Inject constructor(private val journalRecorder: com.huangder.lumibooks.reading.journal.ReadingJournalRecorder) : PremiumAccess {
+class OssAccess @Inject constructor() : PremiumAccess {
     override val unlocked: StateFlow<Boolean> = MutableStateFlow(true).asStateFlow()
     override fun isUnlocked() = true
     override fun canAddRemoteSource(count: Int) = true
-    override fun start() = journalRecorder.start()
+    // The app already starts ReadingJournalRecorder after first frame in EBookReaderApp.
+    override fun start() = Unit
 }
 
 @Singleton
