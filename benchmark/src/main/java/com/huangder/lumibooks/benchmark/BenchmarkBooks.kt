@@ -11,7 +11,7 @@ import androidx.test.uiautomator.UiObject2
 import androidx.test.uiautomator.Until
 
 internal object BenchmarkBooks {
-    const val PACKAGE_NAME = "com.huangder.lumibooks"
+    const val PACKAGE_NAME = "io.github.wxyu71.lumibooks"
 
     data class Fixture(val asset: String, val title: String, val mimeType: String)
 

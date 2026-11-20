@@ -88,3 +88,25 @@ assertions accordingly.
 
 Sources: https://robolectric.org/compatibility_table/ ,
 https://robolectric.org/configuring/
+
+## Weekly/manual Android device checks
+
+The existing `benchmark/` module exercises startup, opening TXT/EPUB and turning
+pages on actual Android instrumentation, but its target package originally pointed to
+the upstream app. The community fork fixes this to
+`io.github.wxyu71.lumibooks` without changing the manifest's stable custom
+benchmark broadcast action names.
+
+`.github/workflows/android-device-smoke.yml` runs **weekly or manually**, using
+a pinned Android emulator runner at API 35 with hardware acceleration when available.
+It executes a bounded instrumented test selection that checks Room DAO behavior and
+the project-specific Liquid Glass button interaction, uploading device test reports
+even after failure. A manual input explicitly opts in to running the existing
+`ReaderMacrobenchmark` suite. This stage does **not** gate every PR, to avoid
+repeated AVD startup and unstable emulator performance. Promote a device test to a
+required merge gate only after tracking its failure rate and environment sensitivity.
+
+Emulator Macrobenchmark metrics are comparable only within controlled emulator
+hardware/build configurations. Do not publish speedup percentages from different
+runner hardware or infer real-device battery and thermals from these values. Test
+on a representative physical device before release.
