@@ -38,7 +38,8 @@ def render(shard: str, results: Path, log: Path) -> str:
             slow.append((duration, name))
             for tag in ("failure", "error"):
                 for child in case.findall(tag):
-                    message = safe_text(child.get("message") or (child.text or "").splitlines()[0] if child.text else "")
+                    detail = (child.text or "").strip()
+                    message = safe_text(child.get("message") or (detail.splitlines()[0] if detail else ""))
                     failures.append((name, message))
     lines = [
         f"### JVM {safe_text(shard)} — results",
@@ -61,7 +62,7 @@ def render(shard: str, results: Path, log: Path) -> str:
     if log.is_file():
         text = log.read_text("utf-8", errors="replace")
         markers = [safe_text(line, 320) for line in text.splitlines()
-                   if re.search(r"(?i)(^|\\s)(e: |error: |FAILURE:|> Task .*FAILED|Execution failed|Unresolved reference)", line)]
+                   if re.search(r"(?i)(^|\s)(e: |error: |FAILURE:|> Task .*FAILED|Execution failed|Unresolved reference)", line)]
         if markers:
             lines += ["", "**Last build/compiler diagnostics:**"]
             lines += [f"- `{line}`" for line in markers[-8:]]
