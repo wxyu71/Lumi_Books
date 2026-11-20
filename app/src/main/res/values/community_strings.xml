@@ -50,4 +50,8 @@
     <string name="community_export_preparing">正在整理笔记…</string>
     <string name="community_export_failed">导出准备失败，请检查书籍文件后重试</string>
     <string name="community_export_no_hilt">当前无法加载笔记导出组件</string>
+    <string name="community_retention_shorten_title">缩短日志保留时间</string>
+    <string name="community_retention_shorten_warning">更短的保留时间会立刻清除超出期限的历史日志，且无法恢复。是否继续？</string>
+    <string name="community_retention_month_count">保留 %1$d 个月</string>
+    <string name="community_retention_year_count">保留 %1$d 年</string>
 </resources>

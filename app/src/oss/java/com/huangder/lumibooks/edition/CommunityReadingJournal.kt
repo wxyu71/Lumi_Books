@@ -58,7 +58,9 @@ internal class CommunityJournalViewModel @Inject constructor(
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CommunityJournalState())
 
-    fun enable(done: (Boolean) -> Unit) = act(done) { journal.enable(JournalRetention(1, JournalRetentionUnit.YEAR)) }
+    fun enable(done: (Boolean) -> Unit) = act(done) {
+        journal.enable(journal.settings.current().retention)
+    }
     fun stop(done: (Boolean) -> Unit) = act(done) { journal.disable(deleteHistory = false) }
     fun erase(done: (Boolean) -> Unit) = act(done) { journal.disable(deleteHistory = true) }
     fun retain(value: JournalRetention, done: (Boolean) -> Unit) = act(done) { journal.setRetention(value) }
@@ -107,16 +109,21 @@ private fun CommunityReadingJournalSheet(
     var confirmEnable by remember { mutableStateOf(false) }
     var confirmErase by remember { mutableStateOf(false) }
     var chooseRetention by remember { mutableStateOf(false) }
+    var shorterRetention by remember { mutableStateOf<JournalRetention?>(null) }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf(false) }
     fun complete(ok: Boolean, close: () -> Unit) {
         busy = false
         if (ok) { error = false; close() } else error = true
     }
-    val retentionLabel = when (data.preferences.retention.unit) {
-        JournalRetentionUnit.NEVER -> stringResource(R.string.community_retention_forever)
-        JournalRetentionUnit.YEAR -> stringResource(R.string.community_retention_year)
-        JournalRetentionUnit.MONTH -> stringResource(R.string.community_retention_three_months)
+    val retentionLabel = when (val current = data.preferences.retention) {
+        JournalRetention(3, JournalRetentionUnit.MONTH) -> stringResource(R.string.community_retention_three_months)
+        JournalRetention(1, JournalRetentionUnit.YEAR) -> stringResource(R.string.community_retention_year)
+        else -> when (current.unit) {
+            JournalRetentionUnit.NEVER -> stringResource(R.string.community_retention_forever)
+            JournalRetentionUnit.MONTH -> stringResource(R.string.community_retention_month_count, current.amount)
+            JournalRetentionUnit.YEAR -> stringResource(R.string.community_retention_year_count, current.amount)
+        }
     }
 
     AppBottomSheet(onDismissRequest = { if (!busy) onDismiss() }) {
@@ -224,6 +231,31 @@ private fun CommunityReadingJournalSheet(
             AppDialogAction(stringResource(R.string.cancel), { confirmErase = false }, role = AppDialogActionRole.Cancel)
         )
     )
+    shorterRetention?.let { chosen ->
+        LiquidGlassAlertDialog(
+            onDismissRequest = { if (!busy) shorterRetention = null },
+            titleText = stringResource(R.string.community_retention_shorten_title),
+            text = { Text(stringResource(R.string.community_retention_shorten_warning)) },
+            actions = listOf(
+                AppDialogAction(
+                    text = stringResource(R.string.confirm),
+                    enabled = !busy,
+                    onClick = {
+                        if (!busy) {
+                            busy = true
+                            model.retain(chosen) { complete(it) { shorterRetention = null } }
+                        }
+                    },
+                    role = AppDialogActionRole.Destructive
+                ),
+                AppDialogAction(
+                    text = stringResource(R.string.cancel),
+                    onClick = { shorterRetention = null },
+                    role = AppDialogActionRole.Cancel
+                )
+            )
+        )
+    }
     if (chooseRetention) LiquidGlassAlertDialog(
         onDismissRequest = { if (!busy) chooseRetention = false },
         titleText = stringResource(R.string.community_retention_title),
@@ -238,8 +270,17 @@ private fun CommunityReadingJournalSheet(
                         title = label, selected = data.preferences.retention == value,
                         onClick = {
                             if (!busy) {
-                                busy = true
-                                model.retain(value) { complete(it) { chooseRetention = false } }
+                                if (value == data.preferences.retention) {
+                                    chooseRetention = false
+                                } else if (ReadingJournalRetentionPolicy.isShorter(
+                                    value, data.preferences.retention, System.currentTimeMillis()
+                                )) {
+                                    chooseRetention = false
+                                    shorterRetention = value
+                                } else {
+                                    busy = true
+                                    model.retain(value) { complete(it) { chooseRetention = false } }
+                                }
                             }
                         }, enabled = !busy
                     )
