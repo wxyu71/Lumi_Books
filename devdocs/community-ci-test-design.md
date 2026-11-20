@@ -70,3 +70,21 @@ References:
 - https://docs.gradle.org/current/userguide/github-actions.html
 - https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax
 - https://robolectric.org/configuring/
+
+## Robolectric / JDK compatibility
+
+The previous full-suite log (run 44744611437, attempt 2) records a
+`NativeTtsMediaRoutingTest` failure at `DefaultSdkProvider.java:170`.
+Robolectric 4.16.1 supports Android SDK 23–36; Android SDK 36 requires Java 21,
+and API 37 is not yet a supported runtime in 4.16.x. The app still compiles on
+Java 17, with compileSdk/targetSdk 37, but the **JVM unit-test jobs use Java 21**.
+An inherited `robolectric.properties` sets the default runtime to Android API 35.
+Explicit `@Config(sdk = [36])` tests still execute under Java 21; **no test
+SDKs are silently excluded**.
+
+The community onboarding tests must check immediate consent without promotional
+stories, not assert the old official's forced welcome tour. We updated the render
+assertions accordingly.
+
+Sources: https://robolectric.org/compatibility_table/ ,
+https://robolectric.org/configuring/

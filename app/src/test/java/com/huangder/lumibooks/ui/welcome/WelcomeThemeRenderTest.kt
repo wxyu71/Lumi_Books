@@ -8,6 +8,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertDoesNotExist
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -39,6 +40,7 @@ class WelcomeThemeRenderTest {
     private fun verify(theme: String, dark: Boolean = false, ink: Boolean = false, fontScale: Float = 1f) {
         // The official build replaces the last page with the Hilt-backed trial invitation.
         assumeFalse(BuildConfig.PREMIUM_EDITION)
+        var finished = false
         compose.setContent {
             view = LocalView.current
             CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) {
@@ -57,7 +59,7 @@ class WelcomeThemeRenderTest {
                         isEInkMode = ink,
                         isDark = dark,
                         isLiquidGlass = theme == "liquid_glass" && !ink,
-                        onFinished = {},
+                        onFinished = { finished = true },
                         onOpenSponsor = {},
                         onLanguageSetupComplete = { _, _ -> },
                         appThemeOptions = listOf("liquid_glass", "lumi", "material3")
@@ -65,17 +67,15 @@ class WelcomeThemeRenderTest {
                 }
             }
         }
-        compose.onNodeWithText(context.getString(R.string.welcome_start_using)).performClick()
-        compose.onNodeWithTag("welcome-story-next").performClick()
-        compose.onNodeWithTag("welcome-story-next").performClick()
-        compose.onNodeWithText(context.getString(R.string.welcome_story_stats_title)).assertIsDisplayed()
-        compose.onNodeWithText(context.getString(R.string.welcome_continue)).assertIsDisplayed()
-        compose.onNodeWithTag("welcome-story-next").performClick()
-        compose.onNodeWithText(context.getString(R.string.welcome_support_title)).assertIsDisplayed()
-        val finish = compose.onNodeWithText(context.getString(R.string.welcome_start_using)).assertIsDisplayed()
-        val bounds = finish.fetchSemanticsNode().boundsInRoot
-        assertTrue("Navigation must stay on screen", bounds.bottom <= view.height)
-        save("$theme-${if (ink) "ink" else if (dark) "dark" else "light"}-$fontScale-support")
+        val agree = compose.onNodeWithText(context.getString(R.string.community_agree_continue)).assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.welcome_story_stats_title)).assertDoesNotExist()
+        compose.onNodeWithText(context.getString(R.string.welcome_support_title)).assertDoesNotExist()
+        compose.onNodeWithTag("welcome-story-next").assertDoesNotExist()
+        val bounds = agree.fetchSemanticsNode().boundsInRoot
+        assertTrue("Consent must stay reachable", bounds.bottom <= view.height)
+        save("$theme-${if (ink) "ink" else if (dark) "dark" else "light"}-$fontScale-consent")
+        agree.performClick()
+        compose.runOnIdle { assertTrue("Agreement must complete without a countdown", finished) }
     }
 
     private fun save(name: String) {
