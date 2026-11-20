@@ -95,6 +95,10 @@ internal fun CommunityTagManagementSheet(type: String, onDismiss: () -> Unit) {
     val invalid = stringResource(R.string.tag_management_invalid_name)
     val saveFailed = stringResource(R.string.tag_picker_save_failed)
 
+    // Prefer a single full-width action per row on compact screens or large fonts.
+    val layoutConfig = androidx.compose.ui.platform.LocalConfiguration.current
+    val verticalActions = layoutConfig.screenWidthDp < 420 || layoutConfig.fontScale >= 1.25f
+
     var selecting by rememberSaveable(type) { mutableStateOf(false) }
     var selected by rememberSaveable(type) { mutableStateOf(emptySet<String>()) }
     var task by remember { mutableStateOf<TagTask?>(null) }
@@ -157,23 +161,40 @@ internal fun CommunityTagManagementSheet(type: String, onDismiss: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(AppSpace.sm)
         ) {
             AppSheetHeader(title = title, onClose = { if (!busy) onDismiss() })
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(AppSpace.sm),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                TagManagerAction(
-                    label = stringResource(R.string.community_create_tag),
-                    onClick = { start(TagTask.CreateTag) },
-                    enabled = repository != null && !busy,
-                    modifier = Modifier.weight(1f)
-                )
-                TagManagerAction(
-                    label = stringResource(R.string.community_create_group),
-                    onClick = { start(TagTask.CreateGroup) },
-                    enabled = repository != null && !busy,
-                    modifier = Modifier.weight(1f)
-                )
+            if (verticalActions) {
+                Column(verticalArrangement = Arrangement.spacedBy(AppSpace.sm)) {
+                    TagManagerAction(
+                        label = stringResource(R.string.community_create_tag),
+                        onClick = { start(TagTask.CreateTag) },
+                        enabled = repository != null && !busy,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    TagManagerAction(
+                        label = stringResource(R.string.community_create_group),
+                        onClick = { start(TagTask.CreateGroup) },
+                        enabled = repository != null && !busy,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(AppSpace.sm),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TagManagerAction(
+                        label = stringResource(R.string.community_create_tag),
+                        onClick = { start(TagTask.CreateTag) },
+                        enabled = repository != null && !busy,
+                        modifier = Modifier.weight(1f)
+                    )
+                    TagManagerAction(
+                        label = stringResource(R.string.community_create_group),
+                        onClick = { start(TagTask.CreateGroup) },
+                        enabled = repository != null && !busy,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(stringResource(R.string.community_tag_count, tags.size),
@@ -186,20 +207,43 @@ internal fun CommunityTagManagementSheet(type: String, onDismiss: () -> Unit) {
                 )
             }
             if (selecting) {
-                Row(horizontalArrangement = Arrangement.spacedBy(AppSpace.sm)) {
-                    TagManagerAction(
-                        label = stringResource(R.string.community_move_selected),
-                        enabled = selected.isNotEmpty() && !busy,
-                        onClick = { start(TagTask.Move(selected.toList())) },
-                        modifier = Modifier.weight(1f)
-                    )
-                    TagManagerAction(
-                        label = stringResource(R.string.community_delete_selected),
-                        enabled = selected.isNotEmpty() && !busy,
-                        onClick = { start(TagTask.DeleteMany(selected.toList())) },
-                        modifier = Modifier.weight(1f),
-                        color = AppColors.Destructive
-                    )
+                Text(
+                    stringResource(R.string.community_selected_count, selected.size),
+                    fontSize = AppType.Caption,
+                    color = AppColors.TextSecondary
+                )
+                if (verticalActions) {
+                    Column(verticalArrangement = Arrangement.spacedBy(AppSpace.sm)) {
+                        TagManagerAction(
+                            label = stringResource(R.string.community_move_selected),
+                            enabled = selected.isNotEmpty() && !busy,
+                            onClick = { start(TagTask.Move(selected.toList())) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        TagManagerAction(
+                            label = stringResource(R.string.community_delete_selected),
+                            enabled = selected.isNotEmpty() && !busy,
+                            onClick = { start(TagTask.DeleteMany(selected.toList())) },
+                            modifier = Modifier.fillMaxWidth(),
+                            color = AppColors.Destructive
+                        )
+                    }
+                } else {
+                    Row(horizontalArrangement = Arrangement.spacedBy(AppSpace.sm)) {
+                        TagManagerAction(
+                            label = stringResource(R.string.community_move_selected),
+                            enabled = selected.isNotEmpty() && !busy,
+                            onClick = { start(TagTask.Move(selected.toList())) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        TagManagerAction(
+                            label = stringResource(R.string.community_delete_selected),
+                            enabled = selected.isNotEmpty() && !busy,
+                            onClick = { start(TagTask.DeleteMany(selected.toList())) },
+                            modifier = Modifier.weight(1f),
+                            color = AppColors.Destructive
+                        )
+                    }
                 }
             }
             Column(
@@ -326,7 +370,12 @@ internal fun CommunityTagManagementSheet(type: String, onDismiss: () -> Unit) {
                             )
                         }
                         is TagTask.DeleteGroup -> Text(groupDeleteHint)
-                        is TagTask.DeleteTag, is TagTask.DeleteMany -> Text(tagDeleteHint)
+                        is TagTask.DeleteMany -> {
+                            Text(stringResource(R.string.community_selected_count, current.keys.size),
+                                color = AppColors.TextSecondary, fontSize = AppType.BodySmall)
+                            Text(tagDeleteHint)
+                        }
+                        is TagTask.DeleteTag -> Text(tagDeleteHint)
                         is TagTask.Move -> {
                             Text(stringResource(R.string.community_move_hint))
                             val keys = current.keys

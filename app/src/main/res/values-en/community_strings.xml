@@ -54,4 +54,5 @@
     <string name="community_retention_shorten_warning">Old journal events beyond the new limit will be erased immediately. This cannot be undone. Continue?</string>
     <string name="community_retention_month_count">%1$d months</string>
     <string name="community_retention_year_count">%1$d years</string>
+    <string name="community_selected_count">%1$d tags selected</string>
 </resources>

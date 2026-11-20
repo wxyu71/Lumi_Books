@@ -54,4 +54,5 @@
     <string name="community_retention_shorten_warning">縮短保留期限會立即清除超出期限的舊日誌，而且無法復原。確定繼續嗎？</string>
     <string name="community_retention_month_count">保留 %1$d 個月</string>
     <string name="community_retention_year_count">保留 %1$d 年</string>
+    <string name="community_selected_count">已選取 %1$d 個標籤</string>
 </resources>

@@ -54,4 +54,5 @@
     <string name="community_retention_shorten_warning">新しい期間より古いログはすぐに削除され、元に戻せません。続行しますか？</string>
     <string name="community_retention_month_count">%1$d か月保存</string>
     <string name="community_retention_year_count">%1$d 年保存</string>
+    <string name="community_selected_count">%1$d 件のタグを選択中</string>
 </resources>

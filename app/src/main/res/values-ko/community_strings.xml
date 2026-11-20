@@ -54,4 +54,5 @@
     <string name="community_retention_shorten_warning">새 보관 기간보다 오래된 기록은 즉시 삭제되며 복구할 수 없습니다. 계속하시겠습니까?</string>
     <string name="community_retention_month_count">%1$d개월 보관</string>
     <string name="community_retention_year_count">%1$d년 보관</string>
+    <string name="community_selected_count">태그 %1$d개 선택됨</string>
 </resources>
