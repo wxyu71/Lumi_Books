@@ -60,7 +60,9 @@ private fun TagManagerAction(
     // Allow line wrapping and height growth in narrow / large-font layouts.
     LiquidGlassButton(
         onClick = onClick,
-        modifier = modifier,
+        // Accessibility guidance recommends at least 48dp targets, even when
+        // the local visual system accepts 44dp for legacy controls.
+        modifier = modifier.heightIn(min = 48.dp),
         enabled = enabled,
         contentColor = color
     ) {

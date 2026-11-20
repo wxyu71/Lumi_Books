@@ -67,3 +67,31 @@ Fork 的 Issues/Discussions 当前关闭，不能把上游工单称为 Fork 社�
 新功能先保持在 Draft PR 中，由 CI、QA 与用户体验验收后合并；定时上游同步只提 PR，不得自动恢复已删营销、私有服务器和会员限制。
 \n## 隐私并发与 Markdown 导出边界（扩展验收）\n\n- 日志记录与里程碑必须比较当前同意周期 `enabledAt`，避免“停止/清除后再次启用”时旧协程重新写入事件。清理保留期限时同步清空可能引用已删除记录的会话缓存。\n- Markdown 用户原文不可以被解析成意外的有序/无序列表：引用块和多行笔记的行首标记必须转义；保留用户的换行与 Unicode。\n
 - 标签管理列表采用懒加载分组，降低同步后存在大量分组时的首屏组合成本；每个分组内部仍保留一个连续的 `GroupedCard` 和插入式分隔线，不分裂成视觉上互不相关的浮动卡片。极端单组超大标签数仍需真机压力测试。
+
+## 社区实施质量契约（2026-11-21）
+
+参考 [Now in Android 的测试策略](https://github.com/android/nowinandroid/wiki/Testing-strategy-and-how-to-test)、[AnkiDroid 的 UI 贡献原则](https://github.com/ankidroid/Anki-Android/wiki/User-Interface-contribution)、[Android 官方 Compose 测试](https://developer.android.com/develop/ui/compose/testing)、[Android 无障碍指南](https://developer.android.com/guide/topics/ui/accessibility/apps) 与 [截图测试指南](https://developer.android.com/training/testing/ui-tests/screenshot)。这些用于校验方法和交互约束，不照搬其他产品的视觉风格。
+
+### 可检查的契约与责任边界
+
+| 合约 | 自动化（PR 必须通过） | 真机验收（发布前） |
+| --- | --- | --- |
+| 隐藏书籍保密 | `AnnotationFeedTest.hiddenBooksNeverEnterTheCrossBookFeedOrItsSearchAndExport` + `NotesExportSourceTest` | 隐藏书籍后，全局标注列表、搜索、标签筛选和导出均不得出现隐藏内容；重新解锁后只能在授权路径出现 |
+| 筛选导出正确性 | `NotesExportSourceTest` + `BookNotesExportFormatterTest` | TXT / Markdown 使用当前筛选结果；系统 SAF 取消不写入；长文本、Unicode、换行保留 |
+| 日志授权与保留 | `ReadingJournalCoreTest` + 现有 Repository/Recorder 测试 | 默认不开启；明确同意后记录；停用保留历史；清空须二次确认，且旧异步写入不能复活 |
+| 主题与阅读交互 | 当前 reader/ui JVM 回归 + device smoke 的 Liquid Glass 控件测试 | 三主题的信息结构、触控语义一致；Glass 硬件渲染只能设备验收，不能用 JVM 软件位图冒充 |
+| 语义与自适应 | 保留 Compose 语义而非依赖节点坐标，回归复用现有组件 | 中文/英文、fontScale 1.0/1.3/2.0、窄屏 320dp、横屏/RTL、TalkBack、系统返回、取消与错误状态 |
+
+### 交互、可访问性和视觉基准
+
+- **新建社区操作按钮的有效点击目标至少 48×48dp**，符合 Android 官方触控可访问性建议。原项目的 44dp 约束作为历史视觉下限保留，增大的是交互目标/可增长的容器，而不是任意改写全局圆角与视觉令牌；本 PR 的 `TagManagerAction` 强制最小高度 48dp。
+- 测试先验证语义树中的角色、可用状态、选中状态、确认/取消分支、焦点可达性，再验证主题视觉。不得仅凭截图判定数据删除和授权流程成功。
+- 对每个高风险变更保留三主题的同场景截图，固定 Android API、分辨率、系统字体、时区、语言和动画设置；动态 Material 色与 Glass 背景捕获须统一测试种子/样本，否则使用人审差异。截图基线需人工审查更新，不能在失败时自动覆盖基准图。
+- 验证浅色/深色、Lumi/Material3/Glass、正常/大字号、正常/RTL 的**成对覆盖**，不要求每一维度笛卡尔积；任何影响交互位置或触控目标的改动必须增加至少一组完整设备场景。
+- 尽量使用 Compose test semantics、`waitUntil` 或空闲同步替代固定 sleep；动画的几何/光学断言采用与设备/渲染器一致的可解释容差，而不是全局放宽像素误差。
+- 删除组/删除标签/清空日志/保留期限缩短/批量导出都要覆盖取消、连续点击、异常重试以及重新打开后的状态一致性；绝不能通过暂时禁用测试掩盖真实回归。
+- 设备烟雾测试与耗时 benchmark 继续放在周度或手动流程；未获得真实硬件测试数据时，不对应用流畅性或电耗做量化承诺。
+
+### 合并决策
+
+优先修复 **编译与真实测试失败 → 数据泄漏与破坏性操作 → 无障碍/视觉回归 → 性能基线**。只有 Required CI summary 全绿、关键隐私路径有回归测试、Android 真机关键路径完成验收后才将 Draft 置为 Ready；没有真机验证时在 PR 明示缺口而非推定通过。
