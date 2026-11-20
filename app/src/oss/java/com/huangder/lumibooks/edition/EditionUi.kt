@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.huangder.lumibooks.ui.statistics.report.ReadingReportPeriod
 
 @Composable
@@ -12,15 +13,23 @@ internal fun EditionMembershipEntry() = Unit
 @Composable
 internal fun EditionTagManagementSettingsEntry() {
     var type by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
-    androidx.compose.foundation.layout.Column {
+    // Exactly one inset grouped card, matching other Settings sections.
+    com.huangder.lumibooks.ui.components.GroupedCard {
         com.huangder.lumibooks.ui.settings.CategoryItem(
-            icon = com.huangder.lumibooks.ui.icons.AppIcons.Tile.Folders,
+            icon = com.huangder.lumibooks.ui.icons.AppIcons.Tag,
             label = androidx.compose.ui.res.stringResource(com.huangder.lumibooks.R.string.community_manage_book_tags),
+            grouped = true,
             tileColor = com.huangder.lumibooks.ui.components.SettingsTileColors.Blue
         ) { type = com.huangder.lumibooks.domain.model.TagTypes.BOOK }
+        com.huangder.lumibooks.ui.components.GroupedRowDivider(
+            startInset = com.huangder.lumibooks.ui.theme.AppSpace.md +
+                com.huangder.lumibooks.ui.components.SettingsIconTileSize +
+                com.huangder.lumibooks.ui.components.SettingsIconTileGap
+        )
         com.huangder.lumibooks.ui.settings.CategoryItem(
-            icon = com.huangder.lumibooks.ui.icons.AppIcons.Tile.Folders,
+            icon = com.huangder.lumibooks.ui.icons.AppIcons.Tag,
             label = androidx.compose.ui.res.stringResource(com.huangder.lumibooks.R.string.community_manage_annotation_tags),
+            grouped = true,
             tileColor = com.huangder.lumibooks.ui.components.SettingsTileColors.Indigo
         ) { type = com.huangder.lumibooks.domain.model.TagTypes.ANNOTATION }
     }
@@ -48,12 +57,14 @@ internal fun rememberToReadHomeAction(): (() -> Unit)? = null
 @Composable
 internal fun EditionTagManagementButton(type: String, modifier: Modifier = Modifier, toolbar: Boolean = false) {
     var shown by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
-    androidx.compose.material3.IconButton(modifier = modifier, onClick = { shown = true }) {
-        androidx.compose.material3.Icon(
-            imageVector = com.huangder.lumibooks.ui.icons.AppIcons.DotsThreeVertical,
-            contentDescription = androidx.compose.ui.res.stringResource(com.huangder.lumibooks.R.string.annotation_tag_manage)
-        )
-    }
+    com.huangder.lumibooks.ui.components.LiquidGlassIconButton(
+        imageVector = com.huangder.lumibooks.ui.icons.AppIcons.Tag,
+        contentDescription = androidx.compose.ui.res.stringResource(com.huangder.lumibooks.R.string.annotation_tag_manage),
+        modifier = modifier,
+        size = if (toolbar) com.huangder.lumibooks.ui.components.PageToolbarButtonSize else 44.dp,
+        iconSize = if (toolbar) com.huangder.lumibooks.ui.components.PageToolbarIconSize else 20.dp,
+        onClick = { shown = true }
+    )
     if (shown) CommunityTagManagementSheet(type) { shown = false }
 }
 
