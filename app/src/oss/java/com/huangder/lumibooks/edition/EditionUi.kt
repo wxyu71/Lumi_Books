@@ -73,7 +73,7 @@ internal fun EditionAnnotationFeedExportButton(
     entries: List<com.huangder.lumibooks.ui.bookshelf.AnnotationFeedEntry>,
     enabled: Boolean,
     modifier: Modifier = Modifier
-) = Unit
+) = CommunityAnnotationFeedExportButton(entries, enabled, modifier)
 
 internal fun canOpenBookNotesExport(hasAnnotations: Boolean): Boolean = hasAnnotations
 

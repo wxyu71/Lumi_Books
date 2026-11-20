@@ -45,4 +45,9 @@
     <string name="community_export_choice_hint">选择格式后，由系统文件选择器决定存储位置。导出的内容包含高亮、笔记、书签、章节及标签。</string>
     <string name="community_export_txt">纯文本（.txt）</string>
     <string name="community_export_md">Markdown（.md）</string>
+    <string name="community_export_selection">导出当前筛选的 %1$d 条标注，涉及 %2$d 本书。</string>
+    <string name="community_export_all_title">导出筛选结果</string>
+    <string name="community_export_preparing">正在整理笔记…</string>
+    <string name="community_export_failed">导出准备失败，请检查书籍文件后重试</string>
+    <string name="community_export_no_hilt">当前无法加载笔记导出组件</string>
 </resources>

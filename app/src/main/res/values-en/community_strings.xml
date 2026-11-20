@@ -45,4 +45,9 @@
     <string name="community_export_choice_hint">Choose a format, then select a destination. Both formats include highlights, notes, bookmarks, chapters and tags.</string>
     <string name="community_export_txt">Plain text (.txt)</string>
     <string name="community_export_md">Markdown (.md)</string>
+    <string name="community_export_selection">Export the %1$d currently filtered annotations from %2$d books.</string>
+    <string name="community_export_all_title">Export filtered annotations</string>
+    <string name="community_export_preparing">Preparing notes…</string>
+    <string name="community_export_failed">Could not prepare the export. Check the source books and try again.</string>
+    <string name="community_export_no_hilt">Notes export is unavailable in this context</string>
 </resources>
