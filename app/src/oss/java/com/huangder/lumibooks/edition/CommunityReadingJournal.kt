@@ -83,7 +83,7 @@ internal fun CommunityReadingJournalEntry(bookId: String? = null) {
             onClick = { open = true }
         )
     }
-    if (open) CommunityReadingJournalSheet(bookId) { open = false }
+    if (open) CommunityReadingJournalSheet(bookId = bookId, onDismiss = { open = false })
 }
 
 @Composable
