@@ -1158,8 +1158,11 @@ class ContinuousScrollReaderTest {
             val right = with(compose.density) { 16.dp.roundToPx() }
             val vertical = with(compose.density) { 20.dp.roundToPx() }
             assertEquals("text starts at the configured left margin", left, textLocation[0] - rootLocation[0])
+            // The AndroidView deliberately extends into the right margin to
+            // draw annotation markers. TextView.paddingRight is that reserved
+            // space; compare the actual text column, not the wider marker layer.
             assertEquals("text ends at the configured right margin", right,
-                composeRoot.width - left - textView.width)
+                composeRoot.width - left - textView.width + textView.paddingRight)
             assertEquals("vertical margins belong to the viewport and survive scrolling",
                 composeRoot.height - 2 * vertical, list.layoutInfo.viewportSize.height)
             assertEquals(0, list.layoutInfo.beforeContentPadding)
