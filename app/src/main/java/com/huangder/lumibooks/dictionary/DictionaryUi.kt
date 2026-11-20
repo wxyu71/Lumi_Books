@@ -27,7 +27,6 @@ import com.huangder.lumibooks.ui.components.LiquidGlassTextButton
 import com.huangder.lumibooks.ui.components.LiquidGlassSwitch
 import com.huangder.lumibooks.ui.components.lumiCardSurface
 import com.huangder.lumibooks.ui.settings.DetailActivity
-import com.huangder.lumibooks.ui.settings.FeedbackActivity
 import com.huangder.lumibooks.ui.theme.*
 import com.kyant.backdrop.Backdrop
 import kotlinx.coroutines.Dispatchers
@@ -37,7 +36,11 @@ import kotlinx.coroutines.withContext
 fun openDictionarySettings(context: Context) {
     context.startActivity(Intent(context, DetailActivity::class.java).putExtra("category", "local_dictionaries"))
 }
-fun openDictionaryFeedback(context: Context) { context.startActivity(Intent(context, FeedbackActivity::class.java)) }
+fun openDictionaryFeedback(context: Context) {
+    runCatching {
+        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/wxyu71/Lumi_Books/discussions")))
+    }
+}
 
 @Composable
 fun DictionaryDisclaimerFooter(onSources: () -> Unit) {

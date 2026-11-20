@@ -138,7 +138,10 @@ internal fun RemoteLibraryRoute(
                 onEdit = { openForm(it) },
                 onDelete = viewModel::deleteSource,
                 onFeedback = {
-                    context.startActivity(android.content.Intent(context, com.huangder.lumibooks.ui.settings.FeedbackActivity::class.java))
+                    context.startActivity(android.content.Intent(
+                        android.content.Intent.ACTION_VIEW,
+                        android.net.Uri.parse("https://github.com/wxyu71/Lumi_Books/discussions")
+                    ))
                 }
             )
             RemoteScreen.Browse -> {
