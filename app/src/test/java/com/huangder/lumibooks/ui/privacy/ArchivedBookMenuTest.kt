@@ -36,7 +36,11 @@ class ArchivedBookMenuTest {
             }
         }
         compose.runOnIdle { state.onLongPressConfirmed(book, Rect(20f, 30f, 110f, 170f), {}) }
+        // Allow the launch from rememberCoroutineScope to start before advancing
+        // the virtual clock, then ensure the menu is actually composed.
+        compose.waitForIdle()
         compose.mainClock.advanceTimeBy(1_000)
+        compose.waitForIdle()
         compose.onNodeWithText(context.getString(R.string.archive_book)).performScrollTo().performClick()
         compose.runOnIdle { assertEquals(book, archived) }
         compose.mainClock.advanceTimeBy(1_000)

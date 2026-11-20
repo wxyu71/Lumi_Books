@@ -127,6 +127,9 @@ class ReadingInsightsScreenTest {
                 StatisticsScreen(viewModel=model)
             }
         }
+        // Flush the initial stateIn/WhileSubscribed collection before reading
+        // the async view-model state (landscape can delay the first composition).
+        compose.waitForIdle()
         compose.waitUntil(10_000) { model.uiState.value.insights != null }
         compose.onNodeWithText(context.getString(R.string.tab_month)).performClick()
         compose.waitUntil(10_000) { model.uiState.value.selection.scope == StatisticsScope.MONTH && model.uiState.value.insights != null }

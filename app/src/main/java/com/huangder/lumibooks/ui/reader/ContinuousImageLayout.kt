@@ -190,8 +190,10 @@ private class ContinuousLineHeight(
             start >= range.first && limit <= range.last + 1
         }?.second else null
         if (paragraphSpacerHeight != null) {
-            val height = (paragraphSpacerHeight * multiplier.coerceAtLeast(0.1f) + lineSpacingExtraPx)
-                .roundToInt().coerceAtLeast(0)
+            // Parser spacers are absolute pixels. Applying the text line-spacing
+            // multiplier here double-counts paragraph spacing for mixed EPUB
+            // images and text (e.g. 14 px becomes 21 px at 1.5x).
+            val height = paragraphSpacerHeight.coerceAtLeast(0)
             fm.ascent = 0
             fm.top = 0
             fm.descent = height

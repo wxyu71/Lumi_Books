@@ -236,13 +236,15 @@ class AdvancedSettingsSheetTest {
         if (withImage) {
             val textPreview = compose.onNodeWithText(context.getString(R.string.preview_text).take(18), substring = true)
             val imagePreview = compose.onNodeWithTag("reader-image-adjustment-preview")
-            textPreview.assertIsDisplayed()
+            // The spacing sliders scrolled the long sheet; the preview is still
+            // reachable but not necessarily inside the current viewport.
+            textPreview.performScrollTo().assertIsDisplayed()
             imagePreview.assertDoesNotExist()
             openTab(R.string.reader_settings_tab_appearance)
             compose.onNodeWithText(context.getString(R.string.reader_image_adjustment))
                 .performScrollTo().performClick()
             imagePreview.performScrollTo().assertIsDisplayed()
-            textPreview.assertIsDisplayed()
+            textPreview.performScrollTo().assertIsDisplayed()
         }
     }
 }

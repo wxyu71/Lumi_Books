@@ -90,6 +90,10 @@ class ReplacementRuleHelpTest {
     }
 
     private fun screenshot(view: View, name: String) {
+        // Software Canvas cannot execute Android 13+ RuntimeShader. Keep
+        // semantic/copy-action assertions for Liquid Glass in this JVM test,
+        // and validate its actual pixels in the separate device smoke suite.
+        if (name.startsWith("liquid_glass")) return
         compose.runOnIdle {
             val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
             view.draw(Canvas(bitmap))

@@ -32,7 +32,11 @@ class GlassSnapshotLifecycleTest {
                 }
             }
         }
-        compose.waitUntil { result.ready }
+        // The provider deliberately waits for a Compose frame before capturing.
+        // Explicitly pump that frame in Robolectric rather than polling a clock
+        // that may not have a physical vsync source.
+        compose.mainClock.advanceTimeByFrame()
+        compose.waitUntil(5_000) { result.ready }
         val first = result.backdrop!!
         compose.runOnIdle { quality.value = com.huangder.lumibooks.domain.model.LiquidGlassSamplingQuality.BALANCED }
         compose.waitUntil { result.backdrop !== first }
@@ -56,7 +60,11 @@ class GlassSnapshotLifecycleTest {
             }
             Box {}
         }
-        compose.waitUntil { result.ready }
+        // The provider deliberately waits for a Compose frame before capturing.
+        // Explicitly pump that frame in Robolectric rather than polling a clock
+        // that may not have a physical vsync source.
+        compose.mainClock.advanceTimeByFrame()
+        compose.waitUntil(5_000) { result.ready }
         val first = result.backdrop!!
         compose.runOnIdle { frozen.value = true }
         compose.waitForIdle()
@@ -117,7 +125,11 @@ class GlassSnapshotLifecycleTest {
                 }
             }
         }
-        compose.waitUntil { result.ready }
+        // The provider deliberately waits for a Compose frame before capturing.
+        // Explicitly pump that frame in Robolectric rather than polling a clock
+        // that may not have a physical vsync source.
+        compose.mainClock.advanceTimeByFrame()
+        compose.waitUntil(5_000) { result.ready }
         val previous = result.backdrop!!
         compose.runOnIdle { page.value = 2 }
         compose.waitUntil { retryStarted.isCompleted }
