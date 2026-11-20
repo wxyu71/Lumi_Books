@@ -1,0 +1,128 @@
+name: Android Community Beta
+
+on:
+  push:
+    branches:
+      - main
+      - 'community/**'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+# No signing credentials are used in PR builds. All jobs use a read-only token.
+permissions:
+  contents: read
+
+concurrency:
+  group: android-beta-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build & test OSS APK
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Java 17
+        uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle and validate wrapper
+        uses: gradle/actions/setup-gradle@017a9effdb900e5b5b2fddfb590a105619dca3c3 # v4.4.2
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
+
+      - name: Install Android 17 SDK, NDK and CMake
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdk_root="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+          test -n "$sdk_root"
+          sdkmanager="$sdk_root/cmdline-tools/latest/bin/sdkmanager"
+          if [[ ! -x "$sdkmanager" ]]; then
+            sdkmanager="$(command -v sdkmanager)"
+          fi
+          "$sdkmanager" --install \
+            "platforms;android-37" \
+            "build-tools;37.0.0" \
+            "ndk;28.0.13004108" \
+            "cmake;3.22.1"
+
+      - name: Verify community-only inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -d app/src/premium/java
+          grep -q 'val premiumEdition = false' app/build.gradle.kts
+          grep -q 'applicationId = "io.github.wxyu71.lumibooks"' app/build.gradle.kts
+          chmod +x ./gradlew
+
+      - name: Assemble debug-signed community beta APKs
+        run: ./gradlew --no-daemon --stacktrace :app:assembleDebug
+
+      - name: Verify APK metadata and create SHA-256 checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(sed -n 's/^lumi.communityVersionName=//p' gradle.properties)"
+          version_code="$(sed -n 's/^lumi.communityVersionCode=//p' gradle.properties)"
+          test -n "$version"
+          test -n "$version_code"
+          sdk_root="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          aapt="$sdk_root/build-tools/37.0.0/aapt"
+          test -x "$aapt"
+          mkdir -p dist
+          shopt -s nullglob
+          apks=(app/build/oss/outputs/apk/debug/*.apk)
+          if (( ${#apks[@]} == 0 )); then
+            echo "No OSS debug APKs found" >&2
+            exit 1
+          fi
+          for apk in "${apks[@]}"; do
+            metadata="$("$aapt" dump badging "$apk" | grep '^package:')"
+            [[ "$metadata" == *"name='io.github.wxyu71.lumibooks'"* ]] || { echo "$metadata" >&2; exit 1; }
+            [[ "$metadata" == *"versionName='$version'"* ]] || { echo "$metadata" >&2; exit 1; }
+            [[ "$metadata" == *"versionCode='$version_code'"* ]] || { echo "$metadata" >&2; exit 1; }
+            cp "$apk" "dist/Lumi-Community-$version-$(basename "$apk")"
+          done
+          (cd dist && sha256sum ./*.apk > SHA256SUMS.txt)
+          {
+            echo "### Community Beta APKs"
+            echo "Version: \`$version\` / code \`$version_code\`"
+            echo "Debug builds are signed with CI's temporary debug key; they are not stable release-signed builds."
+            echo
+            echo '```'
+            ls -lh dist
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload installable debug APKs
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: Lumi-Community-Beta-${{ github.run_number }}
+          path: dist/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+
+      - name: Run local unit tests
+        run: ./gradlew --no-daemon --stacktrace :app:testDebugUnitTest
+
+      - name: Upload unit test reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: Lumi-Community-UnitTests-${{ github.run_number }}
+          path: |
+            app/build/oss/reports/tests/testDebugUnitTest/
+            app/build/oss/test-results/testDebugUnitTest/
+          if-no-files-found: ignore
+          retention-days: 14

@@ -14,9 +14,8 @@ val releaseStartupTrace = providers.gradleProperty("lumiStartupTrace")
     .map { it.toBooleanStrict() }
     .orElse(false)
 
-// The optional private checkout supplies the official edition. A public clone builds on its own.
-val forceOss = providers.gradleProperty("lumi.oss").map { it.toBooleanStrict() }.orElse(false)
-val premiumEdition = !forceOss.get() && file("src/premium/java").isDirectory
+// Community fork: always compile the OSS source set. Never bundle the private official edition.
+val premiumEdition = false
 // KSP/Hilt outputs must not survive a switch to a source set with fewer declarations.
 // Concurrent verification in this checkout needs separate generated resources and classes.
 val buildTag = providers.gradleProperty("lumi.buildTag").orNull
@@ -41,11 +40,11 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.huangder.lumibooks"
+        applicationId = "io.github.wxyu71.lumibooks"
         minSdk = 26
         targetSdk = 37
-        versionCode = 18
-        versionName = "2.3.11"
+        versionCode = providers.gradleProperty("lumi.communityVersionCode").get().toInt()
+        versionName = providers.gradleProperty("lumi.communityVersionName").get()
 
         buildConfigField("boolean", "DIAGNOSTIC_BUILD", "false")
         buildConfigField("boolean", "STARTUP_TRACE_ENABLED", "false")

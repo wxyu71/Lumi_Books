@@ -20,6 +20,8 @@
 
 </div>
 
+> **社区 Beta 分支（非官方版）**：本 Fork 提供独立安装的 Lumi Community，使用公开源码构建，不包含官方私有 Premium 功能或会员服务。当前目标版本：**2.3.12-beta.1**。安装包请从 [GitHub Actions 构建记录](https://github.com/wxyu71/Lumi_Books/actions/workflows/android-beta.yml) 下载，具体说明见 [COMMUNITY.md](COMMUNITY.md)。此项目与原作者的官方版本分别维护。
+
 Lumi 是一款 Android 本地电子书阅读器。书籍和阅读数据默认保存在手机上，基础功能免费、开源、无广告。
 
 ## 截图
