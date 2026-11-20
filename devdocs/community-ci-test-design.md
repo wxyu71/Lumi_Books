@@ -34,11 +34,15 @@ the matrix handles parallelism across three isolated runners (at most two at onc
 
 ## Cache design
 
-The official Gradle action validates the wrapper. APK builds on trusted same-repo
-PRs are allowed to save a scoped Gradle cache (fork-originated PRs stay read-only).
-The three test jobs read the cache but never compete to update it. Main branch
-builds also save Gradle state. This addresses the former default-branch-only cache
-rule, where a cancelled branch Push left the PR without warm dependencies.
+The official Gradle action validates the wrapper. Following AnkiDroid, only
+the **trusted default-branch APK build** writes the shared Gradle cache.
+Pull requests and all test shards are read-only to avoid cache poisoning and
+competing writes. The Gradle v6 action uses the open-source **basic** cache
+provider, with pinned SHA and Node 24 compatible runner actions. PR branches
+build on the PR event, not duplicate Push events; this eliminates the
+cancellation race. Downloaded dependencies are restored from the main branch
+cache on PRs. We intentionally do not enable remote proprietary build scan
+upload, configuration-cache encryption secrets, or third-party telemetry.
 
 Never let a job executed from an external fork access signing keys, repository write
 permissions, a production release token, or untrusted workflow dispatch inputs.
@@ -110,3 +114,31 @@ Emulator Macrobenchmark metrics are comparable only within controlled emulator
 hardware/build configurations. Do not publish speedup percentages from different
 runner hardware or infer real-device battery and thermals from these values. Test
 on a representative physical device before release.
+
+## Open-source reference and ongoing maintenance
+
+Reference workflows examined on 2026-11-20:
+
+| Project | Applicable pattern | Deliberate adaptation |
+| --- | --- | --- |
+| [AnkiDroid](https://github.com/ankidroid/Anki-Android/blob/main/.github/workflows/tests_unit.yml) | JUnit failure summaries, scheduled JVM tests, Gradle v6 basic cache | Preserve full test coverage in three isolated shards; do not delete failing tests |
+| [AnkiDroid emulator](https://github.com/ankidroid/Anki-Android/blob/main/.github/workflows/tests_emulator.yml) | API/machine matrix, retained logs, manual diagnostics | Weekly device smoke, manual performance suite; avoid expensive emulators on every PR |
+| [AntennaPod](https://github.com/AntennaPod/AntennaPod/blob/develop/.github/workflows/checks.yml) | Separate static-analysis, unit and emulator checks | Stage quality baseline separately before making it a required gate |
+| [NewPipe](https://github.com/TeamNewPipe/NewPipe/blob/dev/.github/workflows/ci.yml) | Actionable reports and SDK-specific UI tests | Use a failing final gate but still upload artifacts and diagnostics |
+| [Now in Android](https://github.com/android/nowinandroid/blob/main/.github/workflows/Build.yaml) | Android Lint, screenshot regressions, APK validation | Run Android Lint weekly and move only stable checks to PR required gates |
+| [Android platform samples](https://github.com/android/platform-samples/blob/main/.github/workflows/build.yml) | Wrapper integrity, Android Lint, device reports | Use pinned actions and no publishing secrets in PR jobs |
+
+The new local composite action centralizes JDK 17/21 setup, Gradle wrapper
+validation, cache policy and Android SDK/NDK/CMake versions, so future
+dependency bumps cannot silently diverge between the APK, JVM and device jobs.
+`tools/ci_junit_summary.py` prints failing cases and top slow tests, or
+compiler errors when there is no JUnit XML. It never turns a failing
+Gradle invocation green.
+
+`android-quality.yml` is a weekly/manual lint baseline, not yet a required
+PR gate until initial warnings/errors are triaged. `dependabot.yml` proposes
+reviewed SHA updates for GitHub Actions; never auto-merge, and avoid
+uncontrolled Java/Gradle/Android plugin upgrade waves.
+
+Always validate release signing and provenance independently before publishing
+a stable APK; CI debug artifacts are **not** stable-upgrade-signed releases.
