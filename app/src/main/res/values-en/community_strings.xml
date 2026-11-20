@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="community_app_name">Lumi Community β</string>
     <string name="community_agree_continue">Agree and start reading</string>
     <string name="community_manage_book_tags">Manage book tags</string>
     <string name="community_manage_annotation_tags">Manage annotation tags</string>

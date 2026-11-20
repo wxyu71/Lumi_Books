@@ -40,6 +40,7 @@ ensure("add(WelcomePage.FEATURES)" not in onboarding and "add(WelcomePage.SUPPOR
 ensure("onContinue = onFinished" in welcome, "Agreement must immediately enter reader")
 startup = main.split("private fun performStartupUpdateCheck()", 1)[1]
 ensure("UpdateChecker.fetchUpdateConfig()" not in startup, "Startup network update request reintroduced")
+ensure('name="community_app_name"' in file("app/src/main/res/values/community_strings.xml"), "Community launcher label missing")
 ensure("premium_pricing" not in config, "Official Premium pricing reintroduced in community config")
 ensure("Premium" not in community_changelog and "会员" not in community_changelog,
        "Official subscription marketing reintroduced into the visible changelog")
