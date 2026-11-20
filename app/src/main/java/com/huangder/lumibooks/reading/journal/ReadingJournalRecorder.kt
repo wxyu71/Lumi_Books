@@ -71,6 +71,10 @@ class ReadingJournalRecorder @Inject constructor(
         scope.launch {
             runCatching {
                 mutex.withLock {
+                    // The task may have been queued before the user disabled or erased history.
+                    // Recheck persisted consent under the same lock as clearAll(): no post-erase
+                    // event can be inserted by an in-flight activity callback.
+                    if (!settings.current().enabled) return@withLock
                     if (readingMs > 0) appendSession(bookId, false, startTime, endTime, readingMs)
                     if (listeningMs > 0) appendSession(bookId, true, startTime, endTime, listeningMs)
                 }

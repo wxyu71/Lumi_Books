@@ -54,6 +54,14 @@
 
 ## 社区反馈与设计判断
 
-Fork 的 Issues/Discussions 当前关闭，无法据此假装存在正式投票结果。需求依据是用户明确列出的 16 项取舍、现行项目 UI 规范与现有 Repository 测试。收集公开社区反馈时，应注明讨论来源及其适用范围，避免将少数个案当成社区共识。
+Fork 的 Issues/Discussions 当前关闭，不能把上游工单称为 Fork 社区投票。当前可核对的上游公开反馈包括：
+
+- [#42 液态玻璃菜单展开/关闭卡顿](https://github.com/huangder/Lumi_Books/issues/42)：组件必须复用现有 Glass Host、能力回退与静态内容表面；本扩展不写第二套背景采样和手势算法。
+- [#47 长章节标题右侧被截断](https://github.com/huangder/Lumi_Books/issues/47)：大字号及小屏幕下，优先自动换行和垂直增长，不能截断关键操作名称。
+- [#54 纵向阅读误触左右翻页](https://github.com/huangder/Lumi_Books/issues/54)：避免在日志时间线、分组列表和导出确认弹层新增全屏水平手势，与阅读器现有手势隔离。
+- [#40 自定义选中文字菜单](https://github.com/huangder/Lumi_Books/issues/40)及[相关实现 #41](https://github.com/huangder/Lumi_Books/pull/41)：保留全局配置驱动的阅读器菜单顺序，不在标签 UI 中重新定义另一套排序或长按协议。
+- [#56 后台音乐切歌打断 TTS](https://github.com/huangder/Lumi_Books/issues/56)：属于音频焦点问题；不应通过阅读日志记录/清理操作自行恢复 TTS 或改变音频焦点。
+
+这些是具体用户场景和工程线索，不代表无统计依据的社区共识。需求依据还包括本 PR 的用户要求、项目 UI 规范及现有 Repository 测试。
 
 新功能先保持在 Draft PR 中，由 CI、QA 与用户体验验收后合并；定时上游同步只提 PR，不得自动恢复已删营销、私有服务器和会员限制。

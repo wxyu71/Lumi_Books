@@ -48,12 +48,12 @@ internal class CommunityJournalViewModel @Inject constructor(
 ) : ViewModel() {
     val state = combine(
         journal.settings.state,
-        journal.observeEvents(0L, Long.MAX_VALUE),
+        journal.observeRecent(limit = 300),
         books.getAllBooks()
     ) { preferences, events, library ->
         CommunityJournalState(
             preferences,
-            events.sortedByDescending { it.startedAt }.take(300),
+            events,
             library.filterNot { it.isHidden }.associate { it.id to it.title }
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CommunityJournalState())

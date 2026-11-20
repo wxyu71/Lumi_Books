@@ -18,6 +18,10 @@ interface ReadingJournalDao {
     )
     fun observeBetween(startInclusive: Long, endExclusive: Long): Flow<List<ReadingJournalEventEntity>>
 
+    /** Limit the timeline query itself; a UI cap after loading all rows is not bounded work. */
+    @Query("SELECT * FROM reading_journal_events WHERE $VISIBLE_BOOK ORDER BY startedAt DESC, id DESC LIMIT :limit")
+    fun observeRecent(limit: Int): Flow<List<ReadingJournalEventEntity>>
+
     @Query("SELECT * FROM reading_journal_events WHERE bookId = :bookId ORDER BY startedAt, id")
     fun observeForBook(bookId: String): Flow<List<ReadingJournalEventEntity>>
 

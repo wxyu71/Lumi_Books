@@ -10,7 +10,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.toggleableState
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.huangder.lumibooks.R
 import com.huangder.lumibooks.data.local.entity.TagGroupEntity
@@ -58,7 +62,6 @@ internal fun CommunityTagManagementSheet(type: String, onDismiss: () -> Unit) {
         else R.string.community_manage_annotation_tags
     )
     val noTags = stringResource(R.string.community_no_tags)
-    val countFormat = stringResource(R.string.community_tag_count)
     val groupDeleteHint = stringResource(R.string.community_delete_group_hint)
     val tagDeleteHint = stringResource(R.string.community_delete_tag_hint)
     val duplicate = stringResource(R.string.tag_name_exists)
@@ -179,9 +182,12 @@ internal fun CommunityTagManagementSheet(type: String, onDismiss: () -> Unit) {
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(AppSpace.md)
             ) {
-                val buckets = listOf<TagGroupEntity?>(null) + groups
-                buckets.forEach { group ->
-                    val members = tags.filter { it.groupId == group?.id }
+                val groupIds = groups.mapTo(mutableSetOf()) { it.id }
+                (listOf<TagGroupEntity?>(null) + groups).forEach { group ->
+                    val members = tags.filter { tag ->
+                        if (group == null) tag.groupId == null || tag.groupId !in groupIds
+                        else tag.groupId == group.id
+                    }
                     GroupedCard(horizontalPadding = 0.dp) {
                         LumiRow(
                             title = group?.name ?: stringResource(R.string.tag_picker_uncategorized),
@@ -214,6 +220,9 @@ internal fun CommunityTagManagementSheet(type: String, onDismiss: () -> Unit) {
                                 GroupedRowDivider()
                                 LumiRow(
                                     title = tag.name,
+                                    modifier = if (selecting) Modifier.semantics {
+                                        toggleableState = if (tag.key in selected) ToggleableState.On else ToggleableState.Off
+                                    } else Modifier,
                                     subtitle = stringResource(R.string.community_usage_count, tag.usageCount),
                                     role = if (selecting) Role.Checkbox else Role.Button,
                                     onClick = {
