@@ -40,4 +40,8 @@
     <string name="community_journal_consent_body">将阅读和听书时间、对应书籍记录在本机；你主动发起的备份或同步可能包含这些数据。可随时关闭记录、调整保留期限或彻底清除。</string>
     <string name="community_journal_enable">同意并开启</string>
     <string name="community_journal_erase_warning">这将停止记录并永久清除已保存的日志，阅读进度、笔记与书签不会删除。确定继续？</string>
+    <string name="community_export_choice_title">导出书籍笔记</string>
+    <string name="community_export_choice_hint">选择格式后，由系统文件选择器决定存储位置。导出的内容包含高亮、笔记、书签、章节及标签。</string>
+    <string name="community_export_txt">纯文本（.txt）</string>
+    <string name="community_export_md">Markdown（.md）</string>
 </resources>

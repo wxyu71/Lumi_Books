@@ -40,4 +40,8 @@
     <string name="community_journal_consent_body">Records reading and listening sessions with the associated book on this device. Backups or syncs you initiate may include these records. Pause, change retention or erase them at any time.</string>
     <string name="community_journal_enable">Agree and enable</string>
     <string name="community_journal_erase_warning">This stops recording and permanently deletes all journal events. Reading positions, notes and bookmarks are preserved. Continue?</string>
+    <string name="community_export_choice_title">Export book notes</string>
+    <string name="community_export_choice_hint">Choose a format, then select a destination. Both formats include highlights, notes, bookmarks, chapters and tags.</string>
+    <string name="community_export_txt">Plain text (.txt)</string>
+    <string name="community_export_md">Markdown (.md)</string>
 </resources>
