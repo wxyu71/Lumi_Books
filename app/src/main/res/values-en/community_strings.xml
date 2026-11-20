@@ -3,4 +3,19 @@
     <string name="community_agree_continue">Agree and start reading</string>
     <string name="community_manage_book_tags">Manage book tags</string>
     <string name="community_manage_annotation_tags">Manage annotation tags</string>
+    <string name="community_create_tag">New tag</string>
+    <string name="community_create_group">New group</string>
+    <string name="community_tag_count">%1$d tags</string>
+    <string name="community_usage_count">Used %1$d times</string>
+    <string name="community_select_tags">Select multiple</string>
+    <string name="community_move_selected">Move selected</string>
+    <string name="community_delete_selected">Delete selected</string>
+    <string name="community_rename_group">Rename group</string>
+    <string name="community_delete_group">Delete group</string>
+    <string name="community_move_tag">Move to group</string>
+    <string name="community_no_tags">No tags yet</string>
+    <string name="community_name_hint">Name</string>
+    <string name="community_move_hint">Choose a destination. Existing book and note assignments are preserved.</string>
+    <string name="community_delete_group_hint">Tags will move to Ungrouped. Book and note assignments will be preserved.</string>
+    <string name="community_delete_tag_hint">This removes the tag from all linked books, notes and bookmarks. This cannot be undone. Continue?</string>
 </resources>

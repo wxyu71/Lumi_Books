@@ -27,19 +27,7 @@ internal fun EditionTagManagementSettingsEntry() {
     type?.let { selected -> CommunityTagManagementSheet(selected) { type = null } }
 }
 
-@Composable
-private fun CommunityTagManagementSheet(type: String, onDismiss: () -> Unit) {
-    com.huangder.lumibooks.ui.components.AnnotationTagSheet(
-        selected = emptyList(),
-        available = emptyList(),
-        onSave = {},
-        onDismiss = onDismiss,
-        managementOnly = true,
-        catalogType = type,
-        // Use the existing open-source Repository and management UI for local CRUD.
-        onCreate = {}
-    )
-}
+
 
 @Composable
 internal fun EditionReadingReviewEntry(period: ReadingReportPeriod, compact: Boolean = false) = Unit

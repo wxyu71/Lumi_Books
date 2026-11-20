@@ -1,7 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="community_app_name">Lumi Community β</string>
     <string name="community_agree_continue">同意并开始阅读</string>
     <string name="community_manage_book_tags">管理书籍标签</string>
     <string name="community_manage_annotation_tags">管理标注标签</string>
+    <string name="community_create_tag">新建标签</string>
+    <string name="community_create_group">新建分组</string>
+    <string name="community_tag_count">%1$d 个标签</string>
+    <string name="community_usage_count">使用 %1$d 次</string>
+    <string name="community_select_tags">批量选择</string>
+    <string name="community_move_selected">移动选中标签</string>
+    <string name="community_delete_selected">删除选中标签</string>
+    <string name="community_rename_group">重命名分组</string>
+    <string name="community_delete_group">删除分组</string>
+    <string name="community_move_tag">移动到分组</string>
+    <string name="community_no_tags">暂无标签</string>
+    <string name="community_name_hint">输入名称</string>
+    <string name="community_move_hint">选择目标分组，标签的已有使用记录不会丢失。</string>
+    <string name="community_delete_group_hint">删除分组后，组内标签会移到「未分组」，不会删除关联的书籍和笔记。</string>
+    <string name="community_delete_tag_hint">删除标签会移除它在关联书籍、笔记或书签中的标记，此操作不可撤销。确定继续？</string>
 </resources>
