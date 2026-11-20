@@ -1,6 +1,8 @@
 package com.huangder.lumibooks.edition
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -246,15 +248,18 @@ internal fun CommunityTagManagementSheet(type: String, onDismiss: () -> Unit) {
                     }
                 }
             }
-            Column(
-                Modifier
-                    .fillMaxWidth()
-                    .weight(1f, fill = false)
-                    .verticalScroll(rememberScrollState()),
+            // Compose only visible groups, not every group in a large synced catalog.
+            // Keep each group's rows inside one shared GroupedCard to preserve the
+            // settings-style separators, corner geometry and accessible row semantics.
+            val groupIds = remember(groups) { groups.mapTo(mutableSetOf()) { it.id } }
+            LazyColumn(
+                Modifier.fillMaxWidth().weight(1f, fill = false),
                 verticalArrangement = Arrangement.spacedBy(AppSpace.md)
             ) {
-                val groupIds = groups.mapTo(mutableSetOf()) { it.id }
-                (listOf<TagGroupEntity?>(null) + groups).forEach { group ->
+                items(
+                    items = listOf<TagGroupEntity?>(null) + groups,
+                    key = { group -> group?.let { "group:${it.id}" } ?: "group:ungrouped" }
+                ) { group ->
                     val members = tags.filter { tag ->
                         if (group == null) tag.groupId == null || tag.groupId !in groupIds
                         else tag.groupId == group.id
@@ -317,7 +322,7 @@ internal fun CommunityTagManagementSheet(type: String, onDismiss: () -> Unit) {
                         }
                     }
                 }
-                Spacer(Modifier.height(AppSpace.sm))
+                item(key = "list-bottom-spacer") { Spacer(Modifier.height(AppSpace.sm)) }
             }
         }
     }
