@@ -131,13 +131,7 @@ fun SettingsScreen(
 
     AdaptiveSettingsOverview(
         onBack = onNavigateBack,
-        actions = {
-            LiquidGlassIconButton(
-                imageVector = AppIcons.ChatCircle,
-                contentDescription = stringResource(R.string.notice_history_title),
-                onClick = { context.startActivity(DetailActivity.createIntent(context, NOTICE_HISTORY_CATEGORY)) }
-            )
-        },
+        actions = {}, // Community edition does not surface legacy remote/donor notices.
         overview = {
             Spacer(Modifier.height(AppSpace.sm))
 

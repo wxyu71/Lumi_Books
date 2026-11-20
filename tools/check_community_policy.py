@@ -20,6 +20,7 @@ edition = file("app/src/oss/java/com/huangder/lumibooks/edition/EditionUi.kt")
 main = file("app/src/main/java/com/huangder/lumibooks/MainActivity.kt")
 config = json.loads(file("docs/app-config.json"))
 gradle = file("app/build.gradle.kts")
+community_changelog = file("app/src/main/assets/changelog.md")
 
 ensure("val premiumEdition = false" in gradle, "Fork must always use the public OSS source set")
 ensure("io.github.wxyu71.lumibooks" in gradle, "Fork package ID was overwritten")
@@ -40,6 +41,8 @@ ensure("onContinue = onFinished" in welcome, "Agreement must immediately enter r
 startup = main.split("private fun performStartupUpdateCheck()", 1)[1]
 ensure("UpdateChecker.fetchUpdateConfig()" not in startup, "Startup network update request reintroduced")
 ensure("premium_pricing" not in config, "Official Premium pricing reintroduced in community config")
+ensure("Premium" not in community_changelog and "会员" not in community_changelog,
+       "Official subscription marketing reintroduced into the visible changelog")
 ensure(config["release_url"].startswith("https://github.com/wxyu71/Lumi_Books/"),
        "Update config points to non-community releases")
 print("Community policy guardrails passed.")
