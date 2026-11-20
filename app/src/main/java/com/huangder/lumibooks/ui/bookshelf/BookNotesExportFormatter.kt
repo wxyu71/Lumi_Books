@@ -122,7 +122,7 @@ internal object BookNotesExportFormatter {
     }.trimEnd() + "\n"
 
     private fun StringBuilder.appendQuote(text: String) {
-        val normalized = text.trim().replace("\\r\\n", "\\n").replace('\\r', '\\n')
+        val normalized = text.trim().replace("\r\n", "\n").replace('\r', '\n')
         normalized.lineSequence().forEach { line -> appendLine("> ${markdownEscape(line)}") }
     }
 
@@ -134,7 +134,7 @@ internal object BookNotesExportFormatter {
 
     private fun markdownEscape(text: String): String = buildString {
         text.forEach { ch ->
-            if (ch == '\\\\' || ch in "`*_[]<>#|!") append('\\\\')
+            if (ch == '\\' || ch in "`*_[]<>#|!") append('\\')
             append(ch)
         }
     }
