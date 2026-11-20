@@ -939,8 +939,8 @@ class EpubLiveTurnRenderingTest {
         SystemClock.sleep(90)
         // Scrolling transitions are opaque vertical slides, not a fade to
         // white; publisher pages must not become translucent while moving.
-        val outgoing = pixel()
-        assertEquals(Color.RED, outgoing)
+        val outgoingPixel = pixel()
+        assertEquals(Color.RED, outgoingPixel)
         assertEquals(0, commits)
         assertEquals(EpubPageTarget(0, 2), host.currentPageTarget())
         SystemClock.sleep(180)
