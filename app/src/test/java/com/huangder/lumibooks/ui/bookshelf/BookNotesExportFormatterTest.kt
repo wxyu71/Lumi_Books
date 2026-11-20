@@ -85,6 +85,29 @@ class BookNotesExportFormatterTest {
         )
     }
 
+
+    @Test
+    fun markdownExportPreservesChaptersNotesAndTagsAndEscapesMarkup() {
+        val highlight = note("A *highlight*\nsecond line", "", 0).copy(tags = listOf("思考"))
+        val memo = note("原句", "我的 [笔记]", 1)
+        val bookmark = Bookmark(bookId = "book", chapterIndex = 2, position = 0f, title = "第二页", createdAt = 0)
+        val output = BookNotesExportFormatter.formatMarkdown(
+            "书 *题*",
+            listOf(highlight, memo),
+            listOf(BookmarkExportItem(bookmark, "尾声", null)),
+            mapOf(0 to "开篇", 1 to "中段"),
+            labels
+        )
+        assertTrue(output.startsWith("# 书 \\*题\\*"))
+        assertTrue(output.contains("> A \\*highlight\\*\n> second line"))
+        assertTrue(output.contains("**用户所写笔记内容**"))
+        assertTrue(output.contains("我的 \\[笔记\\]"))
+        assertTrue(output.contains("思考"))
+        assertTrue(output.contains("尾声"))
+        assertTrue(output.contains("第二页"))
+        assertEquals("书_名-书签与笔记.md", BookNotesExportFormatter.suggestedFileName("书/名", labels.fileSuffix, "md"))
+    }
+
     private fun note(
         selectedText: String,
         noteText: String,
