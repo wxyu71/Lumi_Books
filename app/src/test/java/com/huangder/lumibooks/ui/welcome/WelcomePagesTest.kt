@@ -5,18 +5,18 @@ import org.junit.Test
 
 class WelcomePagesTest {
     @Test
-    fun `new installation goes from introduction through the updates to the final page`() {
+    fun `new installation proceeds directly to consent after language selection`() {
         assertEquals(
-            listOf(WelcomePage.LANGUAGE_SETUP, WelcomePage.INTRODUCTION, WelcomePage.FEATURES, WelcomePage.SUPPORT),
+            listOf(WelcomePage.LANGUAGE_SETUP, WelcomePage.INTRODUCTION),
             welcomePages(shouldShowLanguageSetup = true, isNewInstallation = true, isEInkMode = false)
         )
     }
 
     @Test
-    fun `updates and ink users see the same flow without a theme step`() {
+    fun `all users can accept without a promotional tour`() {
         for (fresh in listOf(true, false)) for (ink in listOf(true, false)) {
             assertEquals(
-                listOf(WelcomePage.INTRODUCTION, WelcomePage.FEATURES, WelcomePage.SUPPORT),
+                listOf(WelcomePage.INTRODUCTION),
                 welcomePages(shouldShowLanguageSetup = false, isNewInstallation = fresh, isEInkMode = ink)
             )
         }

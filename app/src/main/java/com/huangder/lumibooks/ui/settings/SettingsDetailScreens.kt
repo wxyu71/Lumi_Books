@@ -2616,21 +2616,10 @@ fun AboutDetail(viewModel: SettingsViewModel) {
             context.startActivity(Intent(context, DetailActivity::class.java).putExtra("category", "changelog"))
         }
         SettingsDivider()
-        ActionRow(label = stringResource(R.string.official_qq_group)) {
-            val opened = runCatching {
-                context.startActivity(
-                    Intent(Intent.ACTION_VIEW, Uri.parse("https://qm.qq.com/q/pq77woweNG"))
-                )
-            }.isSuccess
-            if (!opened) {
-                Toast.makeText(context, R.string.network_error, Toast.LENGTH_LONG).show()
-            }
-        }
-        SettingsDivider()
         ActionRow(label = stringResource(R.string.github_discussions)) {
             val opened = runCatching {
                 context.startActivity(
-                    Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/huangder/Lumi_Books/discussions"))
+                    Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/wxyu71/Lumi_Books/discussions"))
                 )
             }.isSuccess
             if (!opened) {
@@ -2641,12 +2630,16 @@ fun AboutDetail(viewModel: SettingsViewModel) {
         ActionRow(label = stringResource(R.string.github_repository)) {
             val opened = runCatching {
                 context.startActivity(
-                    Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/huangder/Lumi_Books"))
+                    Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/wxyu71/Lumi_Books"))
                 )
             }.isSuccess
             if (!opened) {
                 Toast.makeText(context, R.string.network_error, Toast.LENGTH_LONG).show()
             }
+        }
+        SettingsDivider()
+        ActionRow(label = stringResource(R.string.category_sponsor)) {
+            context.startActivity(Intent(context, SponsorActivity::class.java))
         }
     }
 

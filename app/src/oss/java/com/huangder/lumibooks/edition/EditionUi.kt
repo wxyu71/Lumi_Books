@@ -8,7 +8,36 @@ import com.huangder.lumibooks.ui.statistics.report.ReadingReportPeriod
 internal fun EditionMembershipEntry() = Unit
 
 @Composable
-internal fun EditionTagManagementSettingsEntry() = Unit
+internal fun EditionTagManagementSettingsEntry() {
+    var type by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
+    androidx.compose.foundation.layout.Column {
+        com.huangder.lumibooks.ui.settings.CategoryItem(
+            icon = com.huangder.lumibooks.ui.icons.AppIcons.Tile.Folders,
+            label = androidx.compose.ui.res.stringResource(com.huangder.lumibooks.R.string.community_manage_book_tags),
+            tileColor = com.huangder.lumibooks.ui.components.SettingsTileColors.Blue
+        ) { type = com.huangder.lumibooks.domain.model.TagTypes.BOOK }
+        com.huangder.lumibooks.ui.settings.CategoryItem(
+            icon = com.huangder.lumibooks.ui.icons.AppIcons.Tile.Folders,
+            label = androidx.compose.ui.res.stringResource(com.huangder.lumibooks.R.string.community_manage_annotation_tags),
+            tileColor = com.huangder.lumibooks.ui.components.SettingsTileColors.Indigo
+        ) { type = com.huangder.lumibooks.domain.model.TagTypes.ANNOTATION }
+    }
+    type?.let { selected -> CommunityTagManagementSheet(selected) { type = null } }
+}
+
+@Composable
+private fun CommunityTagManagementSheet(type: String, onDismiss: () -> Unit) {
+    com.huangder.lumibooks.ui.components.AnnotationTagSheet(
+        selected = emptyList(),
+        available = emptyList(),
+        onSave = {},
+        onDismiss = onDismiss,
+        managementOnly = true,
+        catalogType = type,
+        // Use the existing open-source Repository and management UI for local CRUD.
+        onCreate = {}
+    )
+}
 
 @Composable
 internal fun EditionReadingReviewEntry(period: ReadingReportPeriod, compact: Boolean = false) = Unit
@@ -27,7 +56,16 @@ internal fun EditionBookJournalEntry(bookId: String) = Unit
 internal fun rememberToReadHomeAction(): (() -> Unit)? = null
 
 @Composable
-internal fun EditionTagManagementButton(type: String, modifier: Modifier = Modifier, toolbar: Boolean = false) = Unit
+internal fun EditionTagManagementButton(type: String, modifier: Modifier = Modifier, toolbar: Boolean = false) {
+    var shown by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    androidx.compose.material3.IconButton(modifier = modifier, onClick = { shown = true }) {
+        androidx.compose.material3.Icon(
+            imageVector = com.huangder.lumibooks.ui.icons.AppIcons.DotsThreeVertical,
+            contentDescription = androidx.compose.ui.res.stringResource(com.huangder.lumibooks.R.string.annotation_tag_manage)
+        )
+    }
+    if (shown) CommunityTagManagementSheet(type) { shown = false }
+}
 
 @Composable
 internal fun rememberRemoteSourcePermission(sourceCount: Int): () -> Boolean = { true }
