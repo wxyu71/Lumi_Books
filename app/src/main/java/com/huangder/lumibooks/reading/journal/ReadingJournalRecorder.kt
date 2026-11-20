@@ -59,22 +59,33 @@ class ReadingJournalRecorder @Inject constructor(
                 }
                 .collect { (books, enabledAt) ->
                     val events = detector.update(books, System.currentTimeMillis(), deviceId(), enabledAt)
-                    if (events.isNotEmpty()) runCatching { dao.upsertAll(events) }
-                        .onFailure { Log.w(TAG, "Unable to save journal milestone", it) }
+                    if (events.isNotEmpty()) runCatching {
+                        mutex.withLock {
+                            val persisted = settings.current()
+                            // A late milestone from a cancelled collector must not recreate
+                            // history after the user stopped or erased the journal.
+                            if (persisted.enabled && persisted.enabledAt == enabledAt) {
+                                dao.upsertAll(events)
+                            }
+                        }
+                    }.onFailure { Log.w(TAG, "Unable to save journal milestone", it) }
                 }
         }
     }
 
     /** Called by the activity tracker after a time increment was committed. */
     fun recordActivity(bookId: String, readingMs: Long, listeningMs: Long, startTime: Long, endTime: Long) {
-        if (!state.enabled) return
+        val consentEpoch = state.enabledAt
+        if (!state.enabled || consentEpoch <= 0L) return
         scope.launch {
             runCatching {
                 mutex.withLock {
-                    // The task may have been queued before the user disabled or erased history.
-                    // Recheck persisted consent under the same lock as clearAll(): no post-erase
-                    // event can be inserted by an in-flight activity callback.
-                    if (!settings.current().enabled) return@withLock
+                    // A queued callback from an earlier consent epoch must never be revived
+                    // by a later disable/erase -> re-enable sequence.
+                    val persisted = settings.current()
+                    if (!persisted.enabled || persisted.enabledAt != consentEpoch) return@withLock
+                    val cutoff = ReadingJournalRetentionPolicy.cutoff(persisted.retention, System.currentTimeMillis())
+                    if (cutoff != null && endTime < cutoff) return@withLock
                     if (readingMs > 0) appendSession(bookId, false, startTime, endTime, readingMs)
                     if (listeningMs > 0) appendSession(bookId, true, startTime, endTime, listeningMs)
                 }
@@ -92,11 +103,13 @@ class ReadingJournalRecorder @Inject constructor(
         openSessions[listening] = next
     }
 
-    suspend fun cleanupNow(now: Long = System.currentTimeMillis()): Int {
+    suspend fun cleanupNow(now: Long = System.currentTimeMillis()): Int = mutex.withLock {
         val cutoff = ReadingJournalRetentionPolicy.cutoff(settings.current().retention, now)
         val removed = if (cutoff == null) 0 else dao.deleteEndedBefore(cutoff)
+        // A retained in-memory session can otherwise restore a just-pruned entry.
+        if (removed > 0) openSessions.clear()
         settings.markCleanup(now)
-        return removed
+        removed
     }
 
     suspend fun clearAll() = mutex.withLock {

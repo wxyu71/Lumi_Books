@@ -132,12 +132,33 @@ internal object BookNotesExportFormatter {
         }
     }
 
-    private fun markdownEscape(text: String): String = buildString {
-        text.forEach { ch ->
-            if (ch == '\\' || ch in "`*_[]<>#|!") append('\\')
-            append(ch)
+    /** Escape Markdown syntax without changing a reader's actual line breaks or prose.
+     * In particular, an annotation beginning with "- " or "1. " must not turn into
+     * an unintended list inside a blockquote or a multiline note.
+     */
+    private fun markdownEscape(text: String): String = text
+        .replace("\r\n", "\n")
+        .replace('\r', '\n')
+        .split('\n')
+        .joinToString("\n") { line ->
+            val indent = line.indexOfFirst { it != ' ' }.let { if (it < 0) line.length else it }
+            val rest = line.drop(indent)
+            val numbered = Regex("""^\d+[.)](?=\s)""").find(rest)
+            val firstMarker = indent <= 3 &&
+                (rest.startsWith("- ") || rest.startsWith("+ ") || rest.startsWith("* "))
+            val markerIndex = when {
+                indent > 3 -> -1
+                numbered != null -> indent + numbered.value.length - 1
+                firstMarker -> indent
+                else -> -1
+            }
+            buildString {
+                line.forEachIndexed { index, ch ->
+                    if (index == markerIndex || ch == '\\' || ch in "`*_[]<>#|!") append('\\')
+                    append(ch)
+                }
+            }
         }
-    }
 
     private fun StringBuilder.appendTags(tags: List<String>, label: String) {
         if (tags.isNotEmpty()) appendLine("【$label】${tags.joinToString("、")}")
