@@ -34,4 +34,4 @@ The baseline is an intentional exception to the preferred official Android Lint 
 
 ## Risk and release
 
-Do not declare the 556 tracked errors fixed, and do not add new hashes automatically in CI. A conscious change to the baseline requires reviewing exact issue locations, updating the checksum and regression tests, and a successful fresh Actions run. The current release remains blocked on actual physical-device, accessibility and network/privacy smoke checks independent of PR unit/emulator checks.
+Do not declare the 556 tracked errors fixed, and do not add new hashes automatically in CI. A conscious change to the baseline requires reviewing exact issue locations, updating the checksum and regression tests, and a successful fresh Actions run. All build, Lint, JVM, emulator UI/screenshot, artifact and workflow-security checks execute solely inside GitHub Actions. No physical-device or external device-farm tasks, secrets, provider integrations, reserved approvals or offline test gates are configured.

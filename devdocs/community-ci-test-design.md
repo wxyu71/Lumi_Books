@@ -86,22 +86,22 @@ Resolution strategy:
 
 - Required: all 3 logical JVM groups, source partition validation, no empty
   JUnit XML, test failure summaries, privacy/edition checks and APK metadata.
-- Weekly/manual: `.github/workflows/android-device-smoke.yml` tests Android
-  API 35 emulator interaction, optional Macrobenchmark; quality workflow runs
-  Android Lint and uploads reports. Emulator evidence is not a PR screenshot
-  assertion or real-device verification of Liquid Glass optics.
+- All verification runs only inside GitHub Actions. PR API 29/35 emulator
+  tests exercise real Room/Compose code with image-diff assertions and
+  exported PNG evidence. Weekly/manual `.github/workflows/android-emulator-extended.yml`
+  adds API 26/33/36 emulators and optional emulator-only Macrobenchmark.
 - PR artifacts are **temporary debug-signed**, never release-signed; publish
   APK and SHA256SUMS only after package/version validation. No Play credentials,
   persistent signing keys or release tokens appear in the PR workflow.
-  Production release requires separately authorized protected-branch flow,
-  signing identities, provenance and at least one physical-device smoke test.
+  CI never distributes these release variants or reserves additional
+  signing/device-farm credentials, outside-device approvals or tests.
 
 ## Validation process and known risks
 
 Check the exact GitHub Actions run, not only the aggregate red/green icon.
 Review source, Gradle plugin download, cache read/write, and test XML before
 each fix; CI is green only when the required summary is `success`. Keep
-Draft status until full CI and separate hardware-level UX validation finish.
+Draft status until the complete GitHub Actions Required CI Gate is green.
 An observed Maven 404 may be a transient CDN event or an artifact distribution
 issue, and the mirror may also lag: compare HTTP status per endpoint rather
 than blindly upgrading dependencies or disabling tests.
@@ -123,7 +123,6 @@ skip JVM diagnostics inside the combined verification job.
 | API26/33/36 expanded devices | More migrations, welcome, preferences, baseline visual interaction | No; weekly/manual | Instrumentation XML, device screenshots, logcat |
 | Release/diagnostic Android Lint | `:app:lintRelease :app:lintDiagnostic` | No; weekly/manual | Lint HTML/XML |
 | Reader Macrobenchmark | Separate benchmark instrumentation on latest API | No; explicit manual option | Perf trace/artifacts |
-| Real physical devices / manual UX | API levels, OEMs, Liquid Glass optics, accessibility, privacy network checks | Human release blocker, **not falsely represented as automated** | Acceptance checklist |
 
 ### Device-result integrity
 
@@ -142,8 +141,9 @@ explicitly distinct from Robolectric JUnit reports.
 `AppIconScreenshotInstrumentedTest` renders the actual App Icon options UI,
 takes before/after PNGs on the emulator, changes the selected icon style
 through the UI, validates semantic selection and asserts significant
-pixel differences. PNGs are saved to app external storage and pulled
-for diagnosis. This checks a real interactive visual regression but is
+pixel differences. PNGs on API 29+ are stored through Android MediaStore in
+public `Pictures/LumiCI` and pulled before emulator teardown; missing PNG
+artifacts now fail the required job. This checks a real interactive visual regression but is
 **not** a full golden-image baseline: anti-aliased text, GPU RenderNodes
 and OEM drivers are not yet certified against golden screenshots. The
 existing reader pixel geometry instrumentation remains in the codebase
@@ -182,5 +182,35 @@ It also exposed two real gaps:
 1. Full `:app:lintDebug` was not previously in the PR Gate. The first run found **556 pre-existing errors**, 989 warnings and 31 hints, so the strict raw Lint task failed. Instead of disabling full Lint, we keep running it and compare every Error/Fatal location to an immutable, checksummed snapshot: [`tools/ci_lint_legacy_debt.md`](../tools/ci_lint_legacy_debt.md). Any new issue, moved source location, increased duplicate count, missing/malformed report or unrelated Gradle failure **fails** the Required Gate. Existing debt is explicit and not claimed fixed. Full HTML/XML remains uploaded and the weekly full lint review remains available. Risk categories include NewApi, JavaScript interfaces, App Link URLs and format strings; prioritize those for remediation.
 2. The new `AppIconScreenshotInstrumentedTest` passed a real pixel-difference and UI-semantics assertion on API29 and API35 but the initial artifacts contained **no PNGs**: Gradle removed the app-specific external-files directory when instrumentation finished. Screenshots now write through Android 29+ MediaStore into public `Pictures/LumiCI`; the script downloads them before the emulator exits and **fails closed** if no PNG was exported. All required instrumented test *class names* must also appear in parsed JUnit XML; a total test count alone cannot conceal a skipped screenshot suite.
 
-Required checks remain policy, full APK/JVM verify, Lint/debt gate and release/diagnostic variant build, both emulator API matrix legs, and the final strict summary. API26/33/36 extended tests, full Release/Diagnostic lint, Macrobenchmark and real physical-device/a11y/privacy acceptance remain deliberately separate. A passing emulator is not evidence of a real device.
+Required checks remain policy, full APK/JVM verify, frozen-fingerprint
+full Android Lint gate, release/diagnostic variant compilation, both
+API 29/35 emulator legs with actual exported PNGs and per-class JUnit,
+and a strict final summary. Additional API 26/33/36 emulators, variant
+Lint and emulator Macrobenchmark are GitHub Actions schedule/dispatch
+tasks only. No physical-device, third-party cloud device-farm,
+secret/credential or offline acceptance task exists or is reserved.
 
+
+## CI #90 emulator dependency-resolution regression
+
+Run #90 proved the full exact-error-fingerprint Lint gate passed, all 3,152
+JVM tests passed, and API 35 completed 26 instrumented tests and persisted
+**both** icon-style PNG screenshots. The API 29 Gradle compile failed *before*
+instrumented execution because it could not find four JetBrains Compose 1.7.1
+POMs (runtime-saveable, ui-geometry, ui-graphics and ui-unit) from the only
+configured Google and canonical Maven Central endpoints. The resolver's
+required JUnit floor correctly failed closed on zero testcases.
+
+The follow-up restricts alternate official Maven Central endpoints to
+`org.jetbrains.compose.*` groups, adds a bounded per-emulator GET probe,
+and reuses the verified dependency-only `--refresh-dependencies` retry
+for this **specific AndroidTest 1.7.1** miss. Genuine compiler failures,
+assertions, OOM and missing test results remain unretryable failures.
+
+### GitHub Actions-only policy
+
+No GitHub workflow invokes a phone, physical test hardware, Firebase Test Lab,
+BrowserStack, AWS Device Farm or other external device-farm provider. No
+credentials, provider secrets, reservation steps, or manual test checklists
+are created for those services. Every required test stays on GitHub-hosted
+Ubuntu runners or Android emulators running inside those same runners.

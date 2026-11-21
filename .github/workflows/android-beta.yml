@@ -36,7 +36,7 @@ jobs:
           python3 tools/check_community_policy.py
           python3 tools/ci_test_inventory.py
           python3 tools/check_community_translations.py
-          bash -n tools/ci_gradle_retry.sh tools/ci_run_jvm_shards.sh tools/ci_hilt_artifact_probe.sh tools/ci_run_device_smoke.sh
+          bash -n tools/ci_gradle_retry.sh tools/ci_run_jvm_shards.sh tools/ci_hilt_artifact_probe.sh tools/ci_compose_artifact_probe.sh tools/ci_run_device_smoke.sh
           python3 -m compileall -q tools
           python3 -m unittest discover -s tools/tests -p 'test_*.py' -v
 

@@ -28,5 +28,11 @@ class HiltRepositoryRoutingTest(unittest.TestCase):
         self.assertIn("gradlePluginPortal()", self.settings)
         self.assertIn('useModule("com.google.dagger:hilt-android-gradle-plugin:${requested.version}")', self.settings)
 
+    def test_jetbrains_compose_mirrors_are_limited_to_compose_groups(self):
+        self.assertEqual(2, self.settings.count(
+            'includeGroupByRegex("org[.]jetbrains[.]compose[.].*")'
+        ))
+        self.assertNotIn('includeGroupByRegex(".*")', self.settings)
+
 if __name__ == "__main__":
     unittest.main()

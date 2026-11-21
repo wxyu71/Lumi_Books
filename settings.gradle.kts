@@ -43,11 +43,17 @@ dependencyResolutionManagement {
         maven(url = "https://repo1.maven.org/maven2") {
             content {
                 includeGroup("com.google.dagger")
+                // Haze's transitive JetBrains Compose 1.7.1 dependencies may
+                // resolve differently across GitHub-hosted emulator runners.
+                includeGroupByRegex("org[.]jetbrains[.]compose[.].*")
             }
         }
         // Fallback for Hilt runtime and annotation processor dependencies.
         maven(url = "https://maven-central.storage-download.googleapis.com/maven2") {
-            content { includeGroup("com.google.dagger") }
+            content {
+                includeGroup("com.google.dagger")
+                includeGroupByRegex("org[.]jetbrains[.]compose[.].*")
+            }
         }
         mavenCentral()
     }

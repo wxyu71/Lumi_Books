@@ -31,7 +31,21 @@ def is_retryable_resolution_failure(log: str) -> bool:
             or "com.google.dagger.hilt.android.gradle.plugin:2.58" in log
         )
     )
-    return published_hilt or bool(NETWORK_MARKERS.search(log))
+    # CI #90: an isolated API 29 runner saw multiple 404-like misses for
+    # existing JetBrains Compose 1.7.1 modules required by Haze. The same
+    # pinned test sources passed on API 35 and earlier both API levels.
+    # Permit a bounded metadata refresh ONLY for these exact coordinates
+    # and only within Android instrumented dependency resolution.
+    compose_androidtest = (
+        "debugAndroidTestCompileClasspath" in log
+        and "Searched in the following locations:" in log
+        and bool(re.search(
+            r"Could not find org[.]jetbrains[.]compose[.](?:runtime|ui):"
+            r"(?:runtime-saveable|ui-geometry|ui-graphics|ui-unit):1[.]7[.]1[.]",
+            log,
+        ))
+    )
+    return published_hilt or compose_androidtest or bool(NETWORK_MARKERS.search(log))
 
 def main() -> int:
     if len(sys.argv) != 2:

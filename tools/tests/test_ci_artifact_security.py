@@ -8,7 +8,7 @@ class ArtifactSecurityContractTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.required = (ROOT / ".github/workflows/android-beta.yml").read_text()
-        cls.extended = (ROOT / ".github/workflows/android-device-smoke.yml").read_text()
+        cls.extended = (ROOT / ".github/workflows/android-emulator-extended.yml").read_text()
         cls.quality = (ROOT / ".github/workflows/android-quality.yml").read_text()
 
     def test_only_debug_signed_apks_are_published_from_pr(self):

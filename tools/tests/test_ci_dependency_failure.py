@@ -33,6 +33,23 @@ class CiDependencyFailureTest(unittest.TestCase):
             with self.subTest(detail=detail):
                 self.assertFalse(is_retryable_resolution_failure(detail))
 
+    def test_compose_171_emulator_cache_misses_only_retry_in_instrumentation(self):
+        error = (
+            "Could not resolve all files for configuration "
+            "':app:debugAndroidTestCompileClasspath'.\\n"
+            "Could not find org.jetbrains.compose.runtime:runtime-saveable:1.7.1.\\n"
+            "Searched in the following locations:\\n"
+            "https://repo.maven.apache.org/maven2/"
+        )
+        self.assertTrue(is_retryable_resolution_failure(error))
+        self.assertFalse(is_retryable_resolution_failure(error.replace(
+            "debugAndroidTestCompileClasspath", "debugRuntimeClasspath"
+        )))
+        self.assertFalse(is_retryable_resolution_failure(error.replace("1.7.1.", "1.7.99.")))
+        self.assertFalse(is_retryable_resolution_failure(
+            error + "\\nThere were failing tests"
+        ))
+
     def test_generic_misconfiguration_is_not_retryable(self):
         self.assertFalse(is_retryable_resolution_failure("Plugin [id: 'not.a.real.plugin'] was not found"))
         self.assertFalse(is_retryable_resolution_failure("Could not find method android() for arguments"))
