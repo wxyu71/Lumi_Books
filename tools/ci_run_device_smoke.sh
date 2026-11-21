@@ -9,14 +9,15 @@ classes=(
   com.huangder.lumibooks.ui.components.LiquidGlassButtonInteractionInstrumentedTest
   com.huangder.lumibooks.ui.settings.AppIconStyleScreenInstrumentedTest
   com.huangder.lumibooks.ui.settings.AppIconScreenshotInstrumentedTest
+  com.huangder.lumibooks.ui.reader.engine.ReaderVariableFontsInstrumentedTest
 )
-minimum_tests=20
+minimum_tests=21
 if [[ "${LUMI_DEVICE_EXTENDED:-0}" == 1 ]]; then
   classes+=(
     com.huangder.lumibooks.data.local.ReaderPreferencesSnapshotTest
     com.huangder.lumibooks.ui.welcome.WelcomeScreenInstrumentedTest
   )
-  minimum_tests=24
+  minimum_tests=25
 fi
 IFS=,
 test_classes="${classes[*]}"
