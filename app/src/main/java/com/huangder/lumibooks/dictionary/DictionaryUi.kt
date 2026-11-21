@@ -166,7 +166,7 @@ fun DictionarySourceDialog(descriptors: List<DictionaryDescriptor>, repository: 
     backdrop: Backdrop? = null, onDismiss: () -> Unit) {
     val context = LocalContext.current
     val dialogHeight = (LocalConfiguration.current.screenHeightDp * 0.5f).dp.coerceAtMost(420.dp)
-    val available = repository.state.value.items.map { it.descriptor }
+    val available = repository.state.collectAsState().value.items.map { it.descriptor }
     val listed = (if (descriptors.isEmpty()) available else descriptors).distinctBy { it.id }
     var licenses by remember(listed.map { it.id }) { mutableStateOf<Map<String, String>>(emptyMap()) }
     LaunchedEffect(listed.map { it.id }) {

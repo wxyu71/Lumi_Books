@@ -1005,7 +1005,7 @@ private fun CategoryBooksPage(
 
     fun requestBookMove(bookIds: Set<String>, targetFolderId: String?, isBatch: Boolean) {
         val targetName = targetFolderId
-            ?.let { id -> viewModel.uiState.value.folders.firstOrNull { it.id == id }?.name }
+            ?.let { id -> operationState.folders.firstOrNull { it.id == id }?.name }
             ?: context.getString(R.string.library_root)
         val request = PendingCrossStorageBookMove(bookIds, targetFolderId, isBatch, targetName)
         if (viewModel.requiresCrossStorageMoveConfirmation(bookIds, targetFolderId)) {
@@ -1081,7 +1081,7 @@ private fun CategoryBooksPage(
                     selectedBookIds = selectedBookIds,
                     contextMenuState = contextMenuState,
                     syncedBookIds = syncedBookIds,
-                    downloadStates = viewModel.uiState.value.downloadStates,
+                    downloadStates = operationState.downloadStates,
                     expandedListBookId = expandedListBookId,
                     topPadding = LocalCollapsingPageTopInset.current + 12.dp,
                     bottomPadding = com.huangder.lumibooks.ui.components.LocalCollapsingPageBottomInset.current + 32.dp,
@@ -1201,7 +1201,7 @@ private fun CategoryBooksPage(
     }
     if (showBatchMoveSheet) {
         FolderMoveSheet(
-            folders = viewModel.uiState.value.folders,
+            folders = operationState.folders,
             selectedBookCount = selectedBookIds.size,
             sourceFolderId = "__mixed_category__",
             onDismiss = { showBatchMoveSheet = false },
@@ -1212,10 +1212,10 @@ private fun CategoryBooksPage(
         )
     }
     moveTargetBook?.let { targetBook ->
-        val sourceFolderId = viewModel.uiState.value.bookFolderLinks
+        val sourceFolderId = operationState.bookFolderLinks
             .firstOrNull { it.bookId == targetBook.id }?.folderId
         FolderMoveSheet(
-            folders = viewModel.uiState.value.folders,
+            folders = operationState.folders,
             selectedBookCount = 1,
             sourceFolderId = sourceFolderId,
             onDismiss = { moveTargetBook = null },

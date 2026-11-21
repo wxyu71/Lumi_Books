@@ -13347,7 +13347,7 @@ internal fun HighlightNoteItem(
                             .padding(vertical = 6.dp)
                     )
                     Text(
-                        java.text.SimpleDateFormat("MM/dd", java.util.Locale.getDefault()).format(java.util.Date(item.createdAt)),
+                        java.text.SimpleDateFormat("MM/dd", (androidx.compose.ui.platform.LocalConfiguration.current.locales[0] ?: java.util.Locale.ROOT)).format(java.util.Date(item.createdAt)),
                         fontSize = AppType.Caption,
                         color = AccentColor
                     )

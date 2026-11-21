@@ -74,7 +74,7 @@ fun WebdavSettingsDetail(
     val isEnabled = config.enabled
     val hasToken = uiState.webdavHasToken
     val lastSyncText = if (config.lastSyncTime > 0) {
-        val fmt = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+        val fmt = SimpleDateFormat("yyyy-MM-dd HH:mm", (androidx.compose.ui.platform.LocalConfiguration.current.locales[0] ?: Locale.ROOT))
         stringResource(R.string.webdav_last_sync_time, fmt.format(Date(config.lastSyncTime)))
     } else {
         stringResource(R.string.webdav_not_configured)

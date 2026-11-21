@@ -243,9 +243,10 @@ private fun ReaderRouter(
         }
     }
     val appIsDark = LocalIsDarkTheme.current
+    val readerState by viewModel.uiState.collectAsState()
     val paperColor by remember(viewModel, appIsDark) {
         viewModel.uiState.map { it.resolveReaderPaperColor(appIsDark) }.distinctUntilChanged()
-    }.collectAsState(initial = viewModel.uiState.value.resolveReaderPaperColor(appIsDark))
+    }.collectAsState(initial = readerState.resolveReaderPaperColor(appIsDark))
     val documentState by viewModel.documentState.collectAsState()
     if (documentState.book != null) {
         androidx.compose.runtime.SideEffect { onReaderPaperColorChanged(paperColor) }
@@ -549,7 +550,8 @@ fun MainNavGraph(
     val navigationState = remember(homeViewModel) {
         homeViewModel.uiState.map { it.forNavigation() }.distinctUntilChanged().flowOn(Dispatchers.Default)
     }
-    val homeUiState by navigationState.collectAsStateWithLifecycle(initialValue = homeViewModel.uiState.value.forNavigation())
+    val initialHomeState by homeViewModel.uiState.collectAsStateWithLifecycle()
+    val homeUiState by navigationState.collectAsStateWithLifecycle(initialValue = initialHomeState.forNavigation())
     val folderBooksLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
