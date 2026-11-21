@@ -140,8 +140,24 @@ class ReadingInsightsScreenTest {
         // the async view-model state (landscape can delay the first composition).
         compose.waitForIdle()
         compose.waitUntil(10_000) { model.uiState.value.insights != null }
-        compose.onNodeWithText(context.getString(R.string.tab_month)).performClick()
-        compose.waitUntil(10_000) { model.uiState.value.selection.scope == StatisticsScope.MONTH && model.uiState.value.insights != null }
+        // Verify the actual user-facing tab semantics, not a direct model call.
+        val monthTab = compose.onNodeWithText(context.getString(R.string.tab_month))
+        monthTab.performClick()
+        try {
+            compose.waitUntil(10_000) {
+                model.uiState.value.selection.scope == StatisticsScope.MONTH &&
+                    model.uiState.value.insights != null
+            }
+        } catch (error: androidx.compose.ui.test.ComposeTimeoutException) {
+            val state = model.uiState.value
+            throw AssertionError(
+                "Month tab failed: scope=${state.selection.scope}, " +
+                    "loaded=${state.insights != null}, comparison=${state.comparison != null}, " +
+                    "error=${state.error}",
+                error
+            )
+        }
+        monthTab.assertIsSelected()
         compose.onNodeWithContentDescription(context.getString(R.string.insights_previous_period)).performClick()
         val previous = ReadingInsightsFixtures.today.minusMonths(1)
         compose.waitUntil(10_000) { model.uiState.value.selection.year == previous.year &&

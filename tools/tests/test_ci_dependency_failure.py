@@ -7,10 +7,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from ci_dependency_failure import is_retryable_resolution_failure
 
 class CiDependencyFailureTest(unittest.TestCase):
-    def test_hilt_marker_resolution_can_be_retried(self):
+    def test_missing_hilt_marker_is_not_automatically_retryable(self):
         log = """Plugin [id: 'com.google.dagger.hilt.android', version: '2.58', apply: false] was not found
         Plugin Repositories (could not resolve plugin artifact 'com.google.dagger.hilt.android:com.google.dagger.hilt.android.gradle.plugin:2.58')"""
-        self.assertTrue(is_retryable_resolution_failure(log))
+        self.assertFalse(is_retryable_resolution_failure(log))
+        self.assertTrue(is_retryable_resolution_failure(log + "\nCould not GET https://repo.maven.apache.org/"))
 
     def test_network_errors(self):
         for detail in ("Could not GET 'https://repo.maven.apache.org/maven2'",

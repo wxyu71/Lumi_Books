@@ -55,8 +55,14 @@ internal class StatisticsViewModel private constructor(
             readingRepository.getTotalDurationBetweenDates(pairs.first.start.readingDate(), pairs.first.endInclusive.readingDate()),
             readingRepository.getTotalDurationBetweenDates(pairs.second.start.readingDate(), pairs.second.endInclusive.readingDate())
         ) { current, previous -> PeriodComparison(pairs.first, pairs.second, current ?: 0, previous ?: 0) }
-        combine(observeReadingInsights(readingRepository, bookRepository, selected.range(today), today, goal,
-            selected.scope == StatisticsScope.ALL), comparison) { insights, compared -> StatisticsUiState(selected, insights, compared) }
+        // A slow/empty comparison query must never block the main reading
+        // insights. Show the primary statistics first; enrich when ready.
+        combineStatisticsResults(
+            selected,
+            observeReadingInsights(readingRepository, bookRepository, selected.range(today), today, goal,
+                selected.scope == StatisticsScope.ALL),
+            comparison
+        )
             .onStart { emit(StatisticsUiState(selected)) }
             .catch { emit(StatisticsUiState(selected, error = it.message ?: "")) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), StatisticsUiState())
@@ -64,3 +70,15 @@ internal class StatisticsViewModel private constructor(
     fun selectScope(scope: StatisticsScope) { selection.update { it.copy(scope = scope) } }
     fun shift(delta: Int) { selection.update { it.shift(delta, LocalDate.now()) } }
 }
+
+/** Comparison figures are secondary. Do not hold the entire stats screen in
+ * loading if the comparison source has not emitted yet (e.g. an empty Room query).
+ */
+internal fun combineStatisticsResults(
+    selected: StatisticsSelection,
+    insights: Flow<ReadingInsights>,
+    comparison: Flow<PeriodComparison?>
+): Flow<StatisticsUiState> =
+    combine(insights, comparison.onStart { emit(null) }) { data, compared ->
+        StatisticsUiState(selection = selected, insights = data, comparison = compared)
+    }

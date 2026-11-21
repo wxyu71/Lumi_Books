@@ -19,11 +19,10 @@ def is_retryable_resolution_failure(log: str) -> bool:
         log, re.IGNORECASE,
     ):
         return False
-    hilt_marker = (
-        "Plugin [id: 'com.google.dagger.hilt.android'" in log
-        and "could not resolve plugin artifact" in log
-    )
-    return hilt_marker or bool(NETWORK_MARKERS.search(log))
+    # A missing plugin-marker message alone is not a proven transient outage.
+    # CI #81 retried the identical unresolved marker three times to no avail.
+    # Only explicit network failures qualify for a bounded retry.
+    return bool(NETWORK_MARKERS.search(log))
 
 def main() -> int:
     if len(sys.argv) != 2:

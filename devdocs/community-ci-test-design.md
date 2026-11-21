@@ -33,6 +33,24 @@ immediately rather than being reproduced on two more expensive runners.
 Real assertion failures do not stop the remaining shards and fail the final
 job after all available evidence is gathered.
 
+## Run #81 follow-up: plugin marker & independent statistics loading
+
+GitHub-hosted APK attempts resolved the same missing Hilt marker three times, so
+retrying the message itself is not evidence of a transient outage. The settings
+pluginManagement block now maps the pinned Hilt plugin ID directly to the
+published `com.google.dagger:hilt-android-gradle-plugin` implementation using
+Gradle's `resolutionStrategy.eachPlugin.useModule`; version remains 2.58.
+Only actual network timeouts, resets, 429 or 5xx now qualify for retry.
+
+The last UI test failure was switching to a MONTH period in landscape. The
+statistics model used `combine(insights, comparison)` and could withhold valid
+primary insights while the optional comparison query had not emitted. It now
+seeds comparison with null, displays primary data immediately, and updates
+comparison when available. A dedicated JVM regression test covers a comparison
+Flow that completes without any emission. The landscape UI test now reports
+its observed selection, data and error on timeout instead of only saying
+`ComposeTimeoutException`.
+
 ## Scoped dependency retries and secure caching
 
 The tools/ci_gradle_retry.sh wrapper allows at most three total attempts and

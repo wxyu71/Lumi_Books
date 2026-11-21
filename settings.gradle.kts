@@ -4,7 +4,16 @@ pluginManagement {
         mavenCentral()
         gradlePluginPortal()
     }
-}
+    // Bypass intermittent Hilt plugin-marker lookup by resolving its
+    // published implementation artifact directly. Keep version pinned.
+    resolutionStrategy {
+        eachPlugin {
+            if (requested.id.id == "com.google.dagger.hilt.android" && requested.version != null) {
+                useModule("com.google.dagger:hilt-android-gradle-plugin:${requested.version}")
+            }
+        }
+    }
+
 plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
