@@ -41,7 +41,8 @@ class ArtifactSecurityContractTest(unittest.TestCase):
         capture = (ROOT / "app/src/androidTest/java/com/huangder/lumibooks/ui/settings/AppIconScreenshotInstrumentedTest.kt").read_text()
         self.assertIn("MediaStore.Images.Media.RELATIVE_PATH", capture)
         self.assertIn("/sdcard/Pictures/LumiCI", runner)
-        self.assertIn("Screenshot PNGs were not exported", runner)
+        self.assertIn("Required screenshot $png was not exported", runner)
+        self.assertIn("icon-style-before.png icon-style-after.png", runner)
         self.assertIn('"$test_classes"', runner)
         self.assertIn("required_classes", verifier)
 
