@@ -187,12 +187,16 @@ internal object NativeEpubChapterRenderer {
             val embedded = config.embeddedTypefaces
                 .filter { it.family.equals(style.family, ignoreCase = true) }
                 .minByOrNull { (if (it.italic == style.italic) 0 else 1000) + abs(it.weight - style.weight) }
-            typeface = embedded?.let { Typeface.create(it.typeface, style.weight, style.italic) }
-                ?: Typeface.create(
-                    if (style.family == "serif") config.typeface else Typeface.create(style.family, Typeface.NORMAL),
-                    style.weight,
-                    style.italic
-                )
+            val baseTypeface = embedded?.typeface
+                ?: if (style.family == "serif") config.typeface else Typeface.create(style.family, Typeface.NORMAL)
+            typeface = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                Typeface.create(baseTypeface, style.weight, style.italic)
+            } else {
+                // API 26/27 support the four coarse styles, not exact OpenType weights.
+                val oldStyle = (if (style.weight >= 600) Typeface.BOLD else Typeface.NORMAL) or
+                    (if (style.italic) Typeface.ITALIC else Typeface.NORMAL)
+                Typeface.create(baseTypeface, oldStyle)
+            }
             letterSpacing = style.letterSpacing / style.size
             isUnderlineText = style.underline
         }

@@ -6687,6 +6687,26 @@ private fun openExternalBookLink(context: Context, href: String): Boolean {
     }.isSuccess
 }
 
+/** Concrete JavaScript bridge for the legacy local PDF viewer. */
+private class LegacyReaderJavascriptBridge(private val viewModel: ReaderViewModel) {
+    @android.webkit.JavascriptInterface
+    fun onPageChanged(page: Int, total: Int) = viewModel.onPageChanged(page, total)
+
+    @android.webkit.JavascriptInterface
+    fun onCenterTap() = viewModel.toggleMenu()
+
+    @android.webkit.JavascriptInterface
+    fun onPaginationComplete() = viewModel.onPaginationDone()
+
+    @android.webkit.JavascriptInterface
+    fun onPageFlip(dir: Int) { /* No native action for an in-chapter flip. */ }
+
+    @android.webkit.JavascriptInterface
+    fun onChapterFlipReady(dir: Int) {
+        if (dir > 0) viewModel.nextChapter() else viewModel.previousChapter()
+    }
+}
+
 /**
  * 旧 WebView 路径（PDF 格式保留使用）。
  * 简化版：单 WebView，无跨章 conveyor。
@@ -6706,25 +6726,8 @@ private fun LegacyWebViewContent(
     var prevTheme by remember { mutableStateOf(uiState.readerTheme) }
     val webViewRef = remember { mutableStateOf<WebView?>(null) }
 
-    // JS bridge for PDF (simplified)
-    val bridge = remember {
-        object {
-            @android.webkit.JavascriptInterface
-            fun onPageChanged(page: Int, total: Int) {
-                viewModel.onPageChanged(page, total)
-            }
-            @android.webkit.JavascriptInterface
-            fun onCenterTap() { viewModel.toggleMenu() }
-            @android.webkit.JavascriptInterface
-            fun onPaginationComplete() { viewModel.onPaginationDone() }
-            @android.webkit.JavascriptInterface
-            fun onPageFlip(dir: Int) {}
-            @android.webkit.JavascriptInterface
-            fun onChapterFlipReady(dir: Int) {
-                if (dir > 0) viewModel.nextChapter() else viewModel.previousChapter()
-            }
-        }
-    }
+    // A concrete, method-annotated type lets WebView expose only the intended methods.
+    val bridge = remember(viewModel) { LegacyReaderJavascriptBridge(viewModel) }
 
     AndroidView(
         factory = { ctx ->
