@@ -312,11 +312,14 @@ fun TxtEditorScreen(
         viewModel.search(textFieldValue.text, currentCursor())
     }
 
-    LaunchedEffect(uiState.lastReplaceCount) {
+    // Resolve the resource in composition so a language change is observable.
+    val replacedCountFormat = androidx.compose.ui.res.stringResource(R.string.txt_editor_replaced_count)
+    val replacedCountLocale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0] ?: java.util.Locale.ROOT
+    LaunchedEffect(uiState.lastReplaceCount, replacedCountFormat, replacedCountLocale) {
         val count = uiState.lastReplaceCount ?: return@LaunchedEffect
         Toast.makeText(
             context,
-            context.getString(R.string.txt_editor_replaced_count, count),
+            String.format(replacedCountLocale, replacedCountFormat, count),
             Toast.LENGTH_SHORT
         ).show()
         viewModel.consumeReplaceCount()

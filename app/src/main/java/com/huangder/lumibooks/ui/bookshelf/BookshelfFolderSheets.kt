@@ -75,10 +75,13 @@ internal fun FolderNameDialog(
 ) {
     var selectedStorage by remember(storageChoices) { mutableStateOf(storageChoices.firstOrNull()?.second) }
     val context = LocalContext.current
+    val authorizedFolderFormat = stringResource(R.string.folder_storage_authorized)
+    val resourceLocale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0] ?: java.util.Locale.ROOT
     val resolvedStorageChoices by produceState(
         initialValue = storageChoices,
         key1 = storageChoices,
-        key2 = context
+        key2 = context,
+        key3 = authorizedFolderFormat
     ) {
         val manager = AuthorizedStorageManager()
         value = withContext(Dispatchers.IO) {
@@ -92,7 +95,7 @@ internal fun FolderNameDialog(
                     val fallbackName = uri.substringAfterLast('/').let(android.net.Uri::decode)
                         .substringAfterLast(':')
                         .ifBlank { uri }
-                    context.getString(R.string.folder_storage_authorized, displayName ?: fallbackName) to uri
+                    String.format(resourceLocale, authorizedFolderFormat, displayName ?: fallbackName) to uri
                 }
             }
         }

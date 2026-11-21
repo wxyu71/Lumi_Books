@@ -226,7 +226,7 @@ internal fun EpubImagePreviewOverlay(
                         .build(),
                     imageLoader = imageLoader,
                     contentDescription = request.altText.ifBlank {
-                        context.getString(R.string.epub_image_preview)
+                        stringResource(R.string.epub_image_preview)
                     },
                     contentScale = ContentScale.Fit,
                     colorFilter = androidx.compose.ui.graphics.ColorFilter.colorMatrix(

@@ -52,7 +52,12 @@ internal data class ReaderGlyphInk(val left: Float, val width: Float) {
 /** measureText rounds up on Android; shaping advances must stay fractional. */
 internal fun readerNaturalAdvance(paint: Paint, text: CharSequence, start: Int, end: Int): Float {
     val chars = CharArray(end - start) { text[start + it] }
-    return paint.getTextRunAdvances(chars, 0, chars.size, 0, chars.size, false, null, 0)
+    return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+        paint.getTextRunAdvances(chars, 0, chars.size, 0, chars.size, false, null, 0)
+    } else {
+        // The fractional shaping API is unavailable on API 26–28.
+        paint.measureText(chars, 0, chars.size)
+    }
 }
 
 /** 量取 [start, end) 区间字形的墨迹；无墨迹时返回零值。 */
@@ -64,7 +69,12 @@ internal fun readerGlyphInk(
 ): ReaderGlyphInk {
     if (start >= end || start < 0 || end > text.length) return ReaderGlyphInk(0f, 0f)
     val bounds = Rect()
-    paint.getTextBounds(text, start, end, bounds)
+    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+        paint.getTextBounds(text, start, end, bounds)
+    } else {
+        val fragment = text.subSequence(start, end).toString()
+        paint.getTextBounds(fragment, 0, fragment.length, bounds)
+    }
     if (bounds.isEmpty) return ReaderGlyphInk(0f, 0f)
     return ReaderGlyphInk(bounds.left.toFloat(), (bounds.right - bounds.left).toFloat())
 }
