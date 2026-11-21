@@ -69,10 +69,20 @@ class FullScreenTtsActivity : ComponentActivity() {
         @Suppress("DEPRECATION")
         overridePendingTransition(0, 0)
     }
-    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        if (TtsMediaButtons.isSupportedEvent(event) && TtsMediaButtons.handleEvent(model.controller, event).consumed) return true
-        return super.dispatchKeyEvent(event)
-    }
+    // ComponentActivity owns dispatchKeyEvent internally. Handle only keys not
+    // consumed by focused controls through the public Activity callbacks.
+    private fun handleUnconsumedMediaKey(event: KeyEvent): Boolean =
+        TtsMediaButtons.isSupportedEvent(event) &&
+            TtsMediaButtons.handleEvent(model.controller, event).consumed
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean =
+        if (handleUnconsumedMediaKey(event)) true else super.onKeyDown(keyCode, event)
+
+    override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean =
+        if (handleUnconsumedMediaKey(event)) true else super.onKeyUp(keyCode, event)
+
+    override fun onKeyMultiple(keyCode: Int, repeatCount: Int, event: KeyEvent): Boolean =
+        if (handleUnconsumedMediaKey(event)) true else super.onKeyMultiple(keyCode, repeatCount, event)
     companion object {
         const val BOOK_ID = "tts_book_id"
         const val SESSION_ID = "tts_session_id"

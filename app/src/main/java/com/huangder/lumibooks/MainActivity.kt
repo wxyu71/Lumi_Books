@@ -228,23 +228,32 @@ class MainActivity : ComponentActivity() {
     /** 当前阅读页可分别处理两个音量键；返回 false 时交给系统处理。 */
     var readerVolumeKeyHandler: ((KeyEvent) -> Boolean)? = null
 
-    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+    /**
+     * Let the view hierarchy dispatch first. Activity.onKey* is the public window
+     * fallback for unconsumed keys; ComponentActivity.dispatchKeyEvent is reserved
+     * for AndroidX internals and must not be overridden by app code.
+     */
+    private fun handleUnconsumedReaderOrMediaKey(event: KeyEvent): Boolean {
         val isVolumeKey = event.keyCode == KeyEvent.KEYCODE_VOLUME_UP ||
             event.keyCode == KeyEvent.KEYCODE_VOLUME_DOWN
-        if (isVolumeKey && readerVolumeKeyHandler?.invoke(event) == true) {
-            return true
-        }
-        // 部分 ROM / 耳机把媒体按键投递给前台窗口而不是 MediaSession。
-        // 听书进行中时在这里兜底处理；未听书时不拦截，仍交给系统的媒体按键路由。
+        if (isVolumeKey && readerVolumeKeyHandler?.invoke(event) == true) return true
+        // Some ROMs route headphone events to the Activity rather than MediaSession.
         if (TtsMediaButtons.isSupportedKey(event.keyCode)) {
             val result = TtsMediaButtons.handleEvent(ttsController, event)
             logMediaButtonDelivery("activity_window", event, result, ttsController)
-            if (result.consumed && ttsController.playbackState.value != TtsPlaybackState.IDLE) {
-                return true
-            }
+            if (result.consumed && ttsController.playbackState.value != TtsPlaybackState.IDLE) return true
         }
-        return super.dispatchKeyEvent(event)
+        return false
     }
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean =
+        if (handleUnconsumedReaderOrMediaKey(event)) true else super.onKeyDown(keyCode, event)
+
+    override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean =
+        if (handleUnconsumedReaderOrMediaKey(event)) true else super.onKeyUp(keyCode, event)
+
+    override fun onKeyMultiple(keyCode: Int, repeatCount: Int, event: KeyEvent): Boolean =
+        if (handleUnconsumedReaderOrMediaKey(event)) true else super.onKeyMultiple(keyCode, repeatCount, event)
 
     // Startup dialog pending states.
     /** Pending app update dialog; non-null means show it after startup. */
