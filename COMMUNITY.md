@@ -13,13 +13,13 @@
 
 [Android Community Beta 工作流](https://github.com/wxyu71/Lumi_Books/actions/workflows/android-beta.yml)
 
-在 `community/**` 或 `main` 推送，以及向 `main` 发起 PR 时自动运行；也可从 `main` 的 Actions 页面手动触发。
+向 `main` 发起 PR 或推送 `main` 时自动运行；也可从默认分支的 Actions 页面手动触发。PR 检查不再与功能分支 Push 重复运行。
 
-1. 在 `ubuntu-24.04` runner 上使用 JDK 17，安装 Android API 37、Build Tools 37.0.0、NDK 28.0.13004108 和 CMake 3.22.1。
+1. 在 `ubuntu-24.04` runner 上安装 Android API 37、Build Tools 37.0.0、NDK 28.0.13004108 和 CMake 3.22.1；APK 使用 JDK 17，Robolectric JVM 单测使用 JDK 21。
 2. 使用校验过的 Gradle Wrapper 与官方 Gradle Actions 缓存；所有第三方 Action 固定完整 commit SHA。
 3. 只读 `GITHUB_TOKEN`，无仓库私钥，无 `pull_request_target`，且检查仓库内没有私有 Premium 源集。
 4. 运行 `./gradlew :app:assembleDebug`，验证每个 APK 的 package/versionCode/versionName，上传 APK 与 `SHA256SUMS.txt`。
-5. 运行 `./gradlew :app:testDebugUnitTest` 并上传测试报告。测试失败时，工作流标记失败；即使构建产物存在，也应视为待排查版本。
+5. JVM 检查在单个 Runner 上依次执行 reader/ui/core 三个逻辑分片，共用 Kotlin 编译结果，各自验证 JUnit XML、上传日志；测试失败则最终 Gate 失败。只有明确的依赖仓库解析故障有限重试，编译错误和断言失败不会重试。
 
 在工作流页面打开成功的运行记录，下载 `Lumi-Community-Beta-<run_number>` Artifact，解压后选择 `*universal*apk`（通用版）或适配设备架构的文件，安装到 Android 8.0+ 设备。可在解压目录执行 `sha256sum -c SHA256SUMS.txt` 验证文件一致性。
 

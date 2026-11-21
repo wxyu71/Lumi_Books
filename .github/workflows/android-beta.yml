@@ -36,6 +36,7 @@ jobs:
           python3 tools/check_community_policy.py
           python3 tools/ci_test_inventory.py
           python3 tools/check_community_translations.py
+          bash -n tools/ci_gradle_retry.sh tools/ci_run_jvm_shards.sh
           python3 -m compileall -q tools
           python3 -m unittest discover -s tools/tests -p 'test_*.py' -v
 
@@ -66,8 +67,8 @@ jobs:
           python3 tools/check_community_policy.py
           chmod +x ./gradlew
 
-      - name: Assemble debug-signed community beta APKs
-        run: ./gradlew --no-daemon --stacktrace :app:assembleDebug
+      - name: Assemble debug-signed community beta APKs (targeted dependency retry)
+        run: bash tools/ci_gradle_retry.sh test-logs/apk.log :app:assembleDebug
 
       - name: Verify APK metadata and create SHA-256 checksums
         shell: bash
@@ -110,6 +111,15 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Upload failed APK Gradle diagnostics
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: Lumi-Community-APK-failure-${{ github.run_number }}-${{ github.run_attempt }}
+          path: test-logs/
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Upload installable debug APKs
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -121,15 +131,10 @@ jobs:
 
 
   unit-tests:
-    name: JVM unit tests (${{ matrix.shard }})
+    name: JVM unit tests (reader + ui + core)
     needs: policy
     runs-on: ubuntu-24.04
-    timeout-minutes: 38
-    strategy:
-      fail-fast: false
-      max-parallel: 2
-      matrix:
-        shard: [reader, ui, core]
+    timeout-minutes: 80
     steps:
       - name: Checkout sources
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -140,7 +145,7 @@ jobs:
         uses: ./.github/actions/setup-android-toolchain
         with:
           java-version: '21'
-          cache-read-only: true
+          cache-read-only: 'true'
 
       - name: Verify community-only inputs
         shell: bash
@@ -152,42 +157,18 @@ jobs:
           python3 tools/check_community_policy.py
           chmod +x ./gradlew
 
-      - name: Run bounded JVM test shard with test-level progress
+      # One machine compiles Kotlin tests once and reuses outputs for three
+      # individually bounded and verified test filters, keeping separate reports.
+      - name: Run bounded JVM shards with separate reports
         shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p test-logs
-          # Exit 124 if the test invocation exceeds 26 minutes. Preserve the
-          # last STARTED test in the log, even when Gradle never terminates.
-          timeout --signal=TERM --kill-after=30s 26m \
-            ./gradlew --no-daemon --console=plain --stacktrace \
-            -Plumi.testShard=${{ matrix.shard }} :app:testDebugUnitTest \
-            2>&1 | tee "test-logs/${{ matrix.shard }}.log"
+        run: bash tools/ci_run_jvm_shards.sh
 
-      - name: Summarize failures and slow tests (even if Gradle fails)
-        if: always()
-        shell: bash
-        run: |
-          python3 tools/ci_junit_summary.py "${{ matrix.shard }}" \
-            app/build/oss/test-results/testDebugUnitTest \
-            "test-logs/${{ matrix.shard }}.log" >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Verify JUnit reports and shard assignment
-        if: success()
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 tools/ci_verify_junit.py "${{ matrix.shard }}" app/build/oss/test-results/testDebugUnitTest
-
-      - name: Upload JUnit XML, HTML and diagnostic log
+      - name: Upload JUnit XML, HTML and diagnostic logs for all shards
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: Lumi-Community-JVM-${{ matrix.shard }}-${{ github.run_number }}-${{ github.run_attempt }}
-          path: |
-            app/build/oss/reports/tests/testDebugUnitTest/
-            app/build/oss/test-results/testDebugUnitTest/
-            test-logs/
+          name: Lumi-Community-JVM-all-${{ github.run_number }}-${{ github.run_attempt }}
+          path: test-logs/
           if-no-files-found: warn
           retention-days: 14
 
@@ -212,6 +193,6 @@ jobs:
             echo "| --- | --- |"
             echo "| Community policy and test inventory | $POLICY |"
             echo "| Android APK and SHA-256 | $APK |"
-            echo "| All three JVM test shards | $UNIT_TESTS |"
+            echo "| JVM runner with 3 verified shards | $UNIT_TESTS |"
           } >> "$GITHUB_STEP_SUMMARY"
           [[ "$POLICY" == success && "$APK" == success && "$UNIT_TESTS" == success ]]

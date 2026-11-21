@@ -1,80 +1,68 @@
 # Community CI Architecture and Test Execution
 
-This document is the operational runbook for the community OSS fork. The existing
-android-beta.yml used one job for a full APK followed by approximately **571 JVM
-test files**. The previous workflow could spend over half an hour on one undiagnosed
-test step. It also saved no cache from in-repo PRs while their matching branch Push
-run was immediately cancelled.
+2026-11-21: this runbook supersedes the former three-runner JVM matrix.
+Recent runs #74, #77 and #78 revealed duplicate test compilation errors on
+three separate runners, and intermittent Maven/plugin marker resolution errors
+for Hilt 2.58. The artifact exists on Maven Central, so version changes are
+not the first response to a single transient resolver failure.
 
-## Required PR checks (all are mandatory)
+## Required PR checks
 
-| Job | Scope | Budget | Diagnostic |
+| Job | Scope | Budget | Diagnostics |
 | --- | --- | --- | --- |
-| Community policy & test inventory | No SDK needed; guardrails, translation placeholders, exhaustive test package routing | 5 min | Standard output |
-| OSS APK and checksum | JDK 17 / Android 37.0; universal APK in PR, all ABI APKs on main/manual | 50 min | Artifact and SHA-256 |
-| JVM unit tests (reader) | `com.huangder.lumibooks.ui.reader.*` (~199 source files) | 26 min Gradle command / 38 min job | JUnit XML + console log |
-| JVM unit tests (ui) | Other `com.huangder.lumibooks.ui.*` (~164 source files) | 26 min / 38 min | JUnit XML + console log |
-| JVM unit tests (core) | Everything outside `ui` (~208 source files) | 26 min / 38 min | JUnit XML + console log |
-| Required CI summary | Explicit result gate for all four stages | 5 min | GitHub step summary |
+| policy | Fork restrictions, translation checks, shard source inventory and Python tests | 5 min | Console |
+| apk | JDK 17, OSS debug APK, metadata and checksum | 50 min job | APK artifact or failure log |
+| unit-tests | JDK 21; reader, ui and core sequential on ONE runner | 80 min job | XML, HTML and log per shard |
+| ci-gate | policy, APK and all three JVM shards required | 5 min | GitHub Step Summary |
 
-Counts are approximate and are verified on every commit by
-`tools/ci_test_inventory.py`. The `testDebugUnitTest` task is the same one
-used locally; `-Plumi.testShard` only filters packages without disabling any
-class for the combined suite. The XML verifier confirms non-empty reports and
-prevents accidental test leakage between shards.
+## Why logical test sharding now uses one runner
 
-The 26-minute step limit returns exit 124 on timeout, leaving a log artifact with
-the latest Gradle `STARTED` test. The 38-minute job limit covers SDK installation
-and failure-report uploads as well. Do **not** turn all unit-test failures into warnings
-or blanket-disable slow tests. If a group times out, rerun that one shard locally with
-the saved log, then inspect its last started test, external I/O, deadlocks, and
-Robolectric runtime resolution. `forkEvery = 100`, `maxParallelForks = 1`
-and a 1536 MB test heap limit process leaks and avoid parallel fork memory pressure;
-the matrix handles parallelism across three isolated runners (at most two at once).
+Running three parallel JVM jobs meant each installed the SDK, downloaded Gradle
+plugins and compiled the same approximately 571 JVM test source files before
+its package filter could take effect. A single Kotlin test compiler error
+therefore failed all three independent jobs without running any assertions.
 
-## Cache design
+The tools/ci_run_jvm_shards.sh script invokes :app:testDebugUnitTest in one
+workspace with -Plumi.testShard=reader, ui and core in succession.
+The first pass compiles shared sources and subsequent passes reuse the outputs.
+Each test task has a fresh XML directory and an isolated worker invocation.
+The existing tools/ci_verify_junit.py checks every shard for nonempty reports,
+out-of-shard cases and failures; tools/ci_junit_summary.py publishes failures
+and slow cases with their logs. A shared compiler failure with no XML aborts
+immediately rather than being reproduced on two more expensive runners.
+Real assertion failures do not stop the remaining shards and fail the final
+job after all available evidence is gathered.
 
-The official Gradle action validates the wrapper. Following AnkiDroid, only
-the **trusted default-branch APK build** writes the shared Gradle cache.
-Pull requests and all test shards are read-only to avoid cache poisoning and
-competing writes. The Gradle v6 action uses the open-source **basic** cache
-provider, with pinned SHA and Node 24 compatible runner actions. PR branches
-build on the PR event, not duplicate Push events; this eliminates the
-cancellation race. Downloaded dependencies are restored from the main branch
-cache on PRs. We intentionally do not enable remote proprietary build scan
-upload, configuration-cache encryption secrets, or third-party telemetry.
+## Scoped dependency retries and secure caching
 
-Never let a job executed from an external fork access signing keys, repository write
-permissions, a production release token, or untrusted workflow dispatch inputs.
+The tools/ci_gradle_retry.sh wrapper allows at most three total attempts and
+only when tools/ci_dependency_failure.py positively detects plugin/dependency
+resolution or transient network errors. Kotlin compiler errors, test failures,
+timeouts, OOM and cancellations are terminal; no tests are ignored or retried
+to obtain an accidental pass. Each attempt is logged separately and reported.
+The Gradle commands have a 21-minute per-attempt timeout and bounded jobs.
 
-## Performance, device tests and follow-up automation
+The shared composite action pins SDK, NDK, CMake and the Gradle setup Action.
+Only trusted main writes the Gradle basic cache. PRs read only; no third-party
+build scans, signing secrets, unsafe pull_request_target or configuration cache.
+Run the emulator and Macrobenchmark workflows separately, weekly or manually.
 
-* Start by measuring the duration of each shard and its JUnit XML. Preserve the
-  full-suite behavior locally with `./gradlew :app:testDebugUnitTest`.
-* New features require focused JVM tests around repository transactions,
-  consent/clear races, serialization, Markdown escaping, and hidden books.
-* Compose interactions require separate instrumented tests on an emulator/device,
-  across Lumi, Material 3, Liquid Glass, and e-ink/reduced-motion fallbacks.
-  These must be added to a **scheduled/manual device-test workflow**, not run
-  inside the fast JVM stage. Screenshots, TalkBack and gesture tests must use
-  actual UI state and stable semantics, not arbitrary sleeps.
-* Cold start, opening a large EPUB, switching themes, bulk tag editing,
-  and writing 1000+ journal events should be measured separately using
-  Android Macrobenchmark (the existing `benchmark/` module) and a baseline.
-  Do not classify an emulator-in-CI measurement as a real-device performance
-  regression until hardware has been controlled.
-* Each blocking job must leave machine-readable JUnit output and concise
-  human-readable failures. Never replace the JUnit gate with a “best effort” echo.
-* For upstream sync PRs, the same mandatory gates must pass after conflicts
-  and community policy checks are resolved.
+## Community project comparison
 
-References:
-- https://docs.gradle.org/current/userguide/java_testing.html
-- https://docs.gradle.org/current/userguide/performance.html
-- https://docs.gradle.org/current/userguide/github-actions.html
-- https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax
-- https://robolectric.org/configuring/
+- AnkiDroid: https://github.com/ankidroid/Anki-Android/blob/main/.github/workflows/tests_unit.yml
+  Uses a bounded unit-test matrix, dependency preparation retry, and controlled
+  Gradle basic caching. Its matrix covers OS/iterations, unlike Lumi's former
+  repeated full compilation on identical Ubuntu workers.
+- AntennaPod: https://github.com/AntennaPod/AntennaPod/blob/develop/.github/workflows/checks.yml
+  Separate static analysis, variant build/test, emulator matrix and final gate.
+- NewPipe: https://github.com/TeamNewPipe/NewPipe/blob/dev/.github/workflows/ci.yml
+  Combines APK assembly and JVM tests per build job; instrumentation separately.
+- Now in Android: https://github.com/android/nowinandroid/blob/main/.github/workflows/Build.yaml
+  Adds local-unit, screenshot baseline, APK, Android Lint and emulator evidence.
 
+Keep APK on JDK 17 and Robolectric tests on JDK 21, preserve upstream community
+visual tokens, and require device-level checks for actual Liquid Glass optics.
+No green Required CI summary or device smoke evidence means no release merge.
 ## Robolectric / JDK compatibility
 
 The previous full-suite log (run 44744611437, attempt 2) records a
