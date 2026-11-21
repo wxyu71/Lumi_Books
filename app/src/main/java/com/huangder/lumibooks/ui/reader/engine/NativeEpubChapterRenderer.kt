@@ -193,8 +193,12 @@ internal object NativeEpubChapterRenderer {
                 Typeface.create(baseTypeface, style.weight, style.italic)
             } else {
                 // API 26/27 support the four coarse styles, not exact OpenType weights.
-                val oldStyle = (if (style.weight >= 600) Typeface.BOLD else Typeface.NORMAL) or
-                    (if (style.italic) Typeface.ITALIC else Typeface.NORMAL)
+                val oldStyle = when {
+                    style.weight >= 600 && style.italic -> Typeface.BOLD_ITALIC
+                    style.weight >= 600 -> Typeface.BOLD
+                    style.italic -> Typeface.ITALIC
+                    else -> Typeface.NORMAL
+                }
                 Typeface.create(baseTypeface, oldStyle)
             }
             letterSpacing = style.letterSpacing / style.size
