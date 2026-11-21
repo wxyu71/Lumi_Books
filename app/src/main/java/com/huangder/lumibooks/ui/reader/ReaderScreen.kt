@@ -1409,6 +1409,11 @@ private fun ReaderScreenContent(
     }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val themeImportSuccessFormat = stringResource(R.string.theme_bundle_import_success)
+    val themeMissingBackgroundFormat = stringResource(R.string.theme_bundle_missing_background_fallback)
+    val themeImportFailureFormat = stringResource(R.string.theme_bundle_import_failed)
+    val chapterFallbackFormat = stringResource(R.string.reader_chapter_fallback)
+    val readerResourceLocale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0] ?: java.util.Locale.ROOT
     LaunchedEffect(uiState.markdownSourceMessage) {
         uiState.markdownSourceMessage?.let { Toast.makeText(context, it, Toast.LENGTH_LONG).show() }
         viewModel.dismissMarkdownSourceMessage()
@@ -1439,14 +1444,14 @@ private fun ReaderScreenContent(
                     onSuccess = { report ->
                         Toast.makeText(
                             context,
-                            context.getString(R.string.theme_bundle_import_success, report.importedCount),
+                            String.format(readerResourceLocale, themeImportSuccessFormat, report.importedCount),
                             Toast.LENGTH_LONG
                         ).show()
                         if (report.missingBackgroundImages.isNotEmpty()) {
                             Toast.makeText(
                                 context,
-                                context.getString(
-                                    R.string.theme_bundle_missing_background_fallback,
+                                String.format(
+                                    readerResourceLocale, themeMissingBackgroundFormat,
                                     report.missingBackgroundImages.joinToString("、")
                                 ),
                                 Toast.LENGTH_LONG
@@ -1454,7 +1459,7 @@ private fun ReaderScreenContent(
                         }
                         null
                     },
-                    onFailure = { error -> context.getString(R.string.theme_bundle_import_failed, error.message ?: "invalid file") }
+                    onFailure = { error -> String.format(readerResourceLocale, themeImportFailureFormat, error.message ?: "invalid file") }
                 )
                 message?.let { Toast.makeText(context, it, Toast.LENGTH_LONG).show() }
             }
@@ -5567,10 +5572,7 @@ private fun ReaderScreenContent(
                     .getOrNull(request.targetChapterIndex)
                     .orEmpty()
                     .ifBlank {
-                        context.getString(
-                            R.string.reader_chapter_fallback,
-                            request.targetChapterIndex + 1
-                        )
+                        String.format(readerResourceLocale, chapterFallbackFormat, request.targetChapterIndex + 1)
                     },
                 stage = epubNavigationStage,
                 backgroundColor = composeBgColor,

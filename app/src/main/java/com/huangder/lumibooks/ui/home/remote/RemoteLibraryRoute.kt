@@ -54,6 +54,10 @@ internal fun RemoteLibraryRoute(
     viewModel: RemoteLibraryViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
+    val downloadSummaryFormat = androidx.compose.ui.res.stringResource(R.string.remote_download_summary)
+    val errorDestinationText = androidx.compose.ui.res.stringResource(R.string.remote_error_destination)
+    val localNetworkErrorText = androidx.compose.ui.res.stringResource(R.string.remote_error_local_network)
+    val textLocale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0] ?: java.util.Locale.ROOT
     val scope = rememberCoroutineScope()
     val state by viewModel.uiState.collectAsState()
     // Keep the selected item data when navigating out of a remote folder so the final batch
@@ -67,11 +71,11 @@ internal fun RemoteLibraryRoute(
     val eInkMode = LocalEInkMode.current
 
     LaunchedEffect(type, targetFolderId) { viewModel.start(type, targetFolderId) }
-    LaunchedEffect(viewModel) {
+    LaunchedEffect(viewModel, downloadSummaryFormat, textLocale) {
         viewModel.batchFinished.collect { summary ->
             Toast.makeText(
                 context,
-                context.getString(R.string.remote_download_summary, summary.imported, summary.existing, summary.failed),
+                String.format(textLocale, downloadSummaryFormat, summary.imported, summary.existing, summary.failed),
                 Toast.LENGTH_SHORT
             ).show()
         }
@@ -96,7 +100,7 @@ internal fun RemoteLibraryRoute(
         scope.launch {
             val folder = viewModel.authorizeFolder(uri)
             if (folder == null) {
-                Toast.makeText(context, context.getString(R.string.remote_error_destination), Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, errorDestinationText, Toast.LENGTH_SHORT).show()
             } else {
                 viewModel.download(items, RemoteDestination.AuthorizedFolder(folder.treeUri, folder.name))
                 pendingDownload = null
@@ -132,7 +136,7 @@ internal fun RemoteLibraryRoute(
                 onAdd = addSource,
                 onOpen = { source ->
                     requestLocalNetworkPermission(source.url, { viewModel.openSource(source) }, {
-                        Toast.makeText(context, context.getString(R.string.remote_error_local_network), Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, localNetworkErrorText, Toast.LENGTH_SHORT).show()
                     })
                 },
                 onEdit = { openForm(it) },
