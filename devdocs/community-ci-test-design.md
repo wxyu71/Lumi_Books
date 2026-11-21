@@ -179,10 +179,10 @@ References: [Android Lint official documentation](https://developer.android.com/
 
 It also exposed two real gaps:
 
-1. Full `:app:lintDebug` was not previously in the PR Gate. The first run found **556 pre-existing errors**, 989 warnings and 31 hints, so the strict raw Lint task failed. Instead of disabling full Lint, we keep running it and compare every Error/Fatal location to an immutable, checksummed snapshot: [`tools/ci_lint_legacy_debt.md`](../tools/ci_lint_legacy_debt.md). Any new issue, moved source location, increased duplicate count, missing/malformed report or unrelated Gradle failure **fails** the Required Gate. Existing debt is explicit and not claimed fixed. Full HTML/XML remains uploaded and the weekly full lint review remains available. Risk categories include NewApi, JavaScript interfaces, App Link URLs and format strings; prioritize those for remediation.
+1. Full `:app:lintDebug` was not previously in the PR Gate. The first run found **556 pre-existing errors**, 989 warnings and 31 hints, so the strict raw Lint task failed. An earlier version of this PR accepted the known errors using a fingerprint allowlist. **That exception has been removed**: full Lint runs with its normal failure behavior and an independent XML check rejects **every** Error/Fatal finding, including previously known errors. A missing/malformed report or an unrelated Gradle failure also fails. This quality job must remain red until the remaining errors are repaired; the 556-error starting point is not claimed fixed. Full HTML/XML remains uploaded and the weekly lint review remains available. Risk categories include NewApi, JavaScript interfaces, App Link URLs and format strings; prioritize those for remediation.
 2. The new `AppIconScreenshotInstrumentedTest` passed a real pixel-difference and UI-semantics assertion on API29 and API35 but the initial artifacts contained **no PNGs**: Gradle removed the app-specific external-files directory when instrumentation finished. Screenshots now write through Android 29+ MediaStore into public `Pictures/LumiCI`; the script downloads them before the emulator exits and **fails closed** if no PNG was exported. All required instrumented test *class names* must also appear in parsed JUnit XML; a total test count alone cannot conceal a skipped screenshot suite.
 
-Required checks remain policy, full APK/JVM verify, frozen-fingerprint
+Required checks remain policy, full APK/JVM verify, zero-error
 full Android Lint gate, release/diagnostic variant compilation, both
 API 29/35 emulator legs with actual exported PNGs and per-class JUnit,
 and a strict final summary. Additional API 26/33/36 emulators, variant
@@ -193,7 +193,7 @@ secret/credential or offline acceptance task exists or is reserved.
 
 ## CI #90 emulator dependency-resolution regression
 
-Run #90 proved the full exact-error-fingerprint Lint gate passed, all 3,152
+Run #90 proved the previous Lint fingerprint budget gate passed (not a zero-error lint run), all 3,152
 JVM tests passed, and API 35 completed 26 instrumented tests and persisted
 **both** icon-style PNG screenshots. The API 29 Gradle compile failed *before*
 instrumented execution because it could not find four JetBrains Compose 1.7.1
