@@ -6709,6 +6709,11 @@ private class LegacyReaderJavascriptBridge(private val viewModel: ReaderViewMode
     }
 }
 
+private fun WebView.installLegacyReaderJavascriptBridge(bridge: LegacyReaderJavascriptBridge) {
+    // Keep the concrete annotated bridge type visible to Lint at the call site.
+    addJavascriptInterface(bridge, "AndroidBridge")
+}
+
 /**
  * 旧 WebView 路径（PDF 格式保留使用）。
  * 简化版：单 WebView，无跨章 conveyor。
@@ -6729,7 +6734,7 @@ private fun LegacyWebViewContent(
     val webViewRef = remember { mutableStateOf<WebView?>(null) }
 
     // A concrete, method-annotated type lets WebView expose only the intended methods.
-    val bridge = remember(viewModel) { LegacyReaderJavascriptBridge(viewModel) }
+    val bridge: LegacyReaderJavascriptBridge = remember(viewModel) { LegacyReaderJavascriptBridge(viewModel) }
 
     AndroidView(
         factory = { ctx ->
@@ -6741,7 +6746,7 @@ private fun LegacyWebViewContent(
                     builtInZoomControls = false
                     displayZoomControls = false
                 }
-                addJavascriptInterface(bridge, "AndroidBridge")
+                installLegacyReaderJavascriptBridge(bridge)
                 val bgJs = when (uiState.readerTheme) {
                     "night" -> "#1a1a1a"; "sepia" -> "#f5e6d3"; "green" -> "#e8f5e9"; else -> "#ffffff"
                 }
