@@ -66,8 +66,23 @@ android {
         }
     }
 
+    // PR variants remain unsigned; only the protected Beta release job provides the key.
+    val betaKeystore = System.getenv("LUMI_RELEASE_KEYSTORE_PATH")
+    if (!betaKeystore.isNullOrBlank()) {
+        signingConfigs {
+            create("communityBeta") {
+                storeFile = file(betaKeystore)
+                storePassword = requireNotNull(System.getenv("LUMI_RELEASE_STORE_PASSWORD"))
+                keyAlias = requireNotNull(System.getenv("LUMI_RELEASE_KEY_ALIAS"))
+                keyPassword = requireNotNull(System.getenv("LUMI_RELEASE_KEY_PASSWORD"))
+                enableV2Signing = true
+            }
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig = signingConfigs.findByName("communityBeta")
             buildConfigField("boolean", "STARTUP_TRACE_ENABLED", releaseStartupTrace.get().toString())
             isMinifyEnabled = true
             isShrinkResources = true
@@ -78,6 +93,7 @@ android {
         }
         create("diagnostic") {
             initWith(getByName("release"))
+            signingConfig = null
             versionNameSuffix = "-diagnostic"
             isDebuggable = true
             isMinifyEnabled = false

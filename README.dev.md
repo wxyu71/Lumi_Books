@@ -8,7 +8,7 @@
 
 Android 本地电子书阅读器的技术说明，面向贡献者和二次开发者。
 
-[![Version](https://img.shields.io/badge/version-2.3.11-coral)](https://github.com/huangder/Lumi_Books/releases)
+[![Version](https://img.shields.io/badge/version-2.3.12--beta.1-coral)](https://github.com/wxyu71/Lumi_Books/releases)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
 [![Android](https://img.shields.io/badge/Android-8.0%2B-blue)](https://developer.android.com)
 
@@ -91,7 +91,7 @@ android_books/
 ### 环境
 
 - Android Studio（最新稳定版），或命令行
-- JDK 17
+- JDK 21
 - Android SDK：compileSdk 37 及对应的 build-tools
 - 命令行构建时设置 `ANDROID_HOME`；Windows 下使用 `gradlew.bat`
 
@@ -112,33 +112,17 @@ android_books/
 ./gradlew :app:compileDebugAndroidTestKotlin      # 仪器测试的编译检查
 ```
 
-### 官方版与版本边界
+### 社区版构建边界与 Beta 发布
 
-公开仓库和官方版共用同一套代码。两者的差异通过 `edition/` 中的接口隔离：公开仓库提供可独立编译的实现，官方版的私有实现放在 `app/src/premium/`。该目录被公开仓库忽略，拥有私有仓库权限的开发者可以按需克隆：
+本 Fork 固定从公开 `app/src/oss/` 构建，包名为 `io.github.wxyu71.lumibooks`，不接入原作者的私有 Premium 仓库，也不使用原版发布签名。PR 必需检查与正式签名发布相互隔离。
 
-```bash
-git clone --branch main https://github.com/huangder/Lumi_Books-premium.git app/src/premium
-```
-
-当 `app/src/premium/java` 存在时，默认构建会切换为官方版，产物位于 `app/build/official/`。要在这种环境下验证公开版，可以加上 `-Plumi.oss=true`：
-
-```bash
-./gradlew '-Plumi.oss=true' :app:assembleDebug
-```
-
-两种版本使用不同的构建目录，避免 KSP 和 Hilt 生成的代码混用。修改公共接口、数据格式或构建配置时，需要同时确认公开版和官方版都能编译。更详细的规则见 [devdocs/editions.md](devdocs/editions.md)。
-
-### 签名与发布
-
-- release 构建开启了 R8 混淆和资源压缩（`isMinifyEnabled = true`）。
-- 仓库中没有提供签名配置。发布前需要在 `app/build.gradle.kts` 中为 release 配置自己的 `signingConfig`。
-- 启动诊断等特殊构建类型见 `app/build.gradle.kts` 中的 `buildTypes`。
+`./gradlew :app:assembleDebug` 适合本地验证；正式 Beta 必须先通过完整 Required CI，在主分支的版本 Tag 上通过 `.github/workflows/android-release.yml` 与受保护的 `beta-release` 环境生成签名 APK、校验 SHA-256 并发布 GitHub Pre-release。详细步骤、所需 Secrets 与证书指纹见 [COMMUNITY.md](COMMUNITY.md)。
 
 ## 贡献
 
 欢迎提交 Issue 和 Pull Request。
 
-- **Bug 报告**：通过 [GitHub Issues](https://github.com/huangder/Lumi_Books/issues) 提交，附上设备型号、Android 版本和复现步骤。
+- **Bug 报告**：通过 [GitHub Issues](https://github.com/wxyu71/Lumi_Books/issues) 提交，附上设备型号、Android 版本和复现步骤。
 - **功能建议**：在 Issues 中发起讨论。
 - **代码贡献**：
   1. Fork 仓库
@@ -150,19 +134,15 @@ git clone --branch main https://github.com/huangder/Lumi_Books-premium.git app/s
 
 `devdocs/` 中的详细文档目前主要为中文，欢迎贡献其他语言的翻译。
 
-## 文档索引
+## 文档导航
 
-| 文档 | 路径 |
-|------|------|
-| 应用内更新日志 | [app/src/main/assets/changelog.md](app/src/main/assets/changelog.md) |
-| 线上更新日志 | [huangder.top/changelog](https://huangder.top/changelog.html) |
-| 版本与构建边界 | [devdocs/editions.md](devdocs/editions.md) |
-| 需求文档 | [devdocs/requirements.md](devdocs/requirements.md) |
-| 技术规范 | [devdocs/technical-spec.md](devdocs/technical-spec.md) |
-| 设计规范 | [devdocs/design-spec.md](devdocs/design-spec.md) |
-| 现行 UI 与动效规范 | [devdocs/lumi-ui-motion-design-system.md](devdocs/lumi-ui-motion-design-system.md) |
-| 项目状态 | [devdocs/project-status.md](devdocs/project-status.md) |
-| 开发计划 | [devdocs/development-plan.md](devdocs/development-plan.md) |
+- [COMMUNITY.md](COMMUNITY.md)：社区产品边界、CI 和签名 Beta 发布流程。
+- [AGENTS.md](AGENTS.md)：Agent 批量提交、安全审查约定。
+- [devdocs/community-ci-test-design.md](devdocs/community-ci-test-design.md)：详细 CI 技术契约。
+- [devdocs/community-ui-ux-implementation.md](devdocs/community-ui-ux-implementation.md) 与 [UI 动效规范](devdocs/lumi-ui-motion-design-system.md)：现行社区 UI 规范。
+- [app/src/main/assets/changelog.md](app/src/main/assets/changelog.md)：社区版内更新日志。
+
+`devdocs/` 中其余上游架构文档和 handoff 是历史参考，不要作为本 Fork 当前构建/发布的依据。
 
 ## 许可证
 
@@ -186,6 +166,7 @@ Lumi 原创代码采用 [Apache License 2.0](LICENSE) 开源。
 
 ## 链接
 
-- 官网：[huangder.top](https://huangder.top)
-- GitHub：[github.com/huangder/Lumi_Books](https://github.com/huangder/Lumi_Books)
-- 邮箱：huangder0104@126.com
+- 社区 GitHub：[wxyu71/Lumi_Books](https://github.com/wxyu71/Lumi_Books)
+- 原作者网站：[huangder.top](https://huangder.top)
+- 上游项目：[huangder/Lumi_Books](https://github.com/huangder/Lumi_Books)
+- 原作者邮箱：huangder0104@126.com

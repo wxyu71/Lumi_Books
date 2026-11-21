@@ -8,7 +8,7 @@
 
 Android용 로컬 전자책 리더의 기술 문서입니다. 기여자와 2차 개발자를 대상으로 합니다.
 
-[![Version](https://img.shields.io/badge/version-2.3.11-coral)](https://github.com/huangder/Lumi_Books/releases)
+[![Version](https://img.shields.io/badge/version-2.3.12--beta.1-coral)](https://github.com/wxyu71/Lumi_Books/releases)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
 [![Android](https://img.shields.io/badge/Android-8.0%2B-blue)](https://developer.android.com)
 
@@ -91,7 +91,7 @@ android_books/
 ### 준비 사항
 
 - Android Studio(최신 안정 버전) 또는 명령줄
-- JDK 17
+- JDK 21
 - Android SDK: compileSdk 37과 해당 build-tools
 - 명령줄로 빌드할 때는 `ANDROID_HOME`을 설정하세요. Windows에서는 `gradlew.bat`을 사용합니다.
 
@@ -112,33 +112,17 @@ android_books/
 ./gradlew :app:compileDebugAndroidTestKotlin      # 계측 테스트 컴파일 확인
 ```
 
-### 공식 버전과 버전 경계
+### 커뮤니티 빌드와 Beta 배포
 
-공개 저장소와 공식 버전은 같은 코드를 공유합니다. 두 버전의 차이는 `edition/`의 인터페이스로 분리되어 있습니다. 공개 저장소에는 단독으로 컴파일되는 구현이 있고, 공식 버전의 비공개 구현은 `app/src/premium/`에 둡니다. 이 디렉터리는 공개 저장소에서 추적하지 않습니다. 비공개 저장소에 접근 권한이 있는 개발자는 필요할 때 아래처럼 클론할 수 있습니다.
+이 포크는 공개 `app/src/oss/`만 컴파일하며 앱 ID는 `io.github.wxyu71.lumibooks`입니다. 원본의 비공개 Premium 저장소나 원본 서명 키를 사용하지 않습니다.
 
-```bash
-git clone --branch main https://github.com/huangder/Lumi_Books-premium.git app/src/premium
-```
-
-`app/src/premium/java`가 있으면 기본 빌드는 공식 버전으로 바뀌고, 결과물은 `app/build/official/`에 생성됩니다. 이런 환경에서 공개 버전을 검증하려면 `-Plumi.oss=true`를 붙이세요.
-
-```bash
-./gradlew '-Plumi.oss=true' :app:assembleDebug
-```
-
-두 버전은 빌드 디렉터리를 분리해 둡니다. KSP와 Hilt가 생성하는 코드가 섞이지 않도록 하기 위해서입니다. 공용 인터페이스, 데이터 형식, 빌드 설정을 바꿀 때는 공개 버전과 공식 버전이 모두 컴파일되는지 확인하세요. 자세한 규칙은 [devdocs/editions.md](devdocs/editions.md)를 참고하세요.
-
-### 서명과 릴리스
-
-- release 빌드는 R8 난독화와 리소스 축소를 켭니다(`isMinifyEnabled = true`).
-- 저장소에는 서명 설정이 들어 있지 않습니다. 배포 전에 `app/build.gradle.kts`에서 release용 `signingConfig`를 직접 설정하세요.
-- 실행 진단 등 특수 빌드 타입은 `app/build.gradle.kts`의 `buildTypes`를 참고하세요.
+`./gradlew :app:assembleDebug`는 로컬 확인용입니다. 정식 Beta는 Required CI를 통과한 후 `main`에 포함된 버전 태그를 통해 `.github/workflows/android-release.yml`에서 서명과 SHA-256 검증을 수행하고 GitHub Pre-release로 공개합니다. 비밀 값과 절차는 [COMMUNITY.md](COMMUNITY.md)를 참고하세요.
 
 ## 기여
 
 Issue와 Pull Request를 환영합니다.
 
-- **버그 신고**: [GitHub Issues](https://github.com/huangder/Lumi_Books/issues)에 제출해 주세요. 기기 모델, Android 버전, 재현 절차를 함께 적어 주세요.
+- **버그 신고**: [GitHub Issues](https://github.com/wxyu71/Lumi_Books/issues)에 제출해 주세요. 기기 모델, Android 버전, 재현 절차를 함께 적어 주세요.
 - **기능 제안**: Issues에서 논의를 시작해 주세요.
 - **코드 기여**:
   1. 저장소를 Fork합니다.
@@ -150,19 +134,15 @@ Issue와 Pull Request를 환영합니다.
 
 `devdocs/`의 자세한 문서는 현재 대부분 중국어입니다. 다른 언어로의 번역도 환영합니다.
 
-## 문서 색인
+## 문서 안내
 
-| 문서 | 경로 |
-|------|------|
-| 앱 내 업데이트 로그 | [app/src/main/assets/changelog.md](app/src/main/assets/changelog.md) |
-| 온라인 업데이트 로그 | [huangder.top/changelog](https://huangder.top/changelog.html) |
-| 버전과 빌드 경계 | [devdocs/editions.md](devdocs/editions.md) |
-| 요구사항 문서 | [devdocs/requirements.md](devdocs/requirements.md) |
-| 기술 명세 | [devdocs/technical-spec.md](devdocs/technical-spec.md) |
-| 디자인 명세 | [devdocs/design-spec.md](devdocs/design-spec.md) |
-| 현행 UI 및 모션 규격 | [devdocs/lumi-ui-motion-design-system.md](devdocs/lumi-ui-motion-design-system.md) |
-| 프로젝트 상태 | [devdocs/project-status.md](devdocs/project-status.md) |
-| 개발 계획 | [devdocs/development-plan.md](devdocs/development-plan.md) |
+- [COMMUNITY.md](COMMUNITY.md): 커뮤니티 범위 및 Beta 릴리스 절차.
+- [AGENTS.md](AGENTS.md): Agent 일괄 커밋 및 안전 수칙.
+- [CI 설계](devdocs/community-ci-test-design.md): 품질 검증 계약.
+- [커뮤니티 UI](devdocs/community-ui-ux-implementation.md), [모션 디자인](devdocs/lumi-ui-motion-design-system.md): 현행 UI 기준.
+- [앱 변경 기록](app/src/main/assets/changelog.md): 커뮤니티 변경 사항.
+
+기타 `devdocs/`의 과거 계획과 handoff는 역사적 참고 자료입니다.
 
 ## 라이선스
 
@@ -186,6 +166,7 @@ Lumi의 원본 코드는 [Apache License 2.0](LICENSE)으로 공개됩니다.
 
 ## 링크
 
-- 공식 사이트: [huangder.top](https://huangder.top)
-- GitHub: [github.com/huangder/Lumi_Books](https://github.com/huangder/Lumi_Books)
-- 이메일: huangder0104@126.com
+- 커뮤니티 GitHub: [wxyu71/Lumi_Books](https://github.com/wxyu71/Lumi_Books)
+- 원본 개발자 사이트: [huangder.top](https://huangder.top)
+- 상위 프로젝트: [huangder/Lumi_Books](https://github.com/huangder/Lumi_Books)
+- 원본 개발자 이메일: huangder0104@126.com

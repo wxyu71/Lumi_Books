@@ -10,6 +10,7 @@ on:
     branches:
       - main
   workflow_dispatch:
+  workflow_call:
 
 # Untrusted pull requests never gain write permissions, tokens or signing keys.
 permissions:

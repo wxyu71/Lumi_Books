@@ -1,17 +1,17 @@
 {
   "config_version": 1,
-  "latest_version": "2.3.12-beta.1",
-  "latest_version_code": 19,
+  "latest_version": "",
+  "latest_version_code": 0,
   "release_url": "https://github.com/wxyu71/Lumi_Books/releases",
   "terms_version": 6,
   "privacy_version": 6,
   "update": {
-    "latest_version_code": 19,
-    "latest_version_name": "2.3.12-beta.1",
+    "latest_version_code": 0,
+    "latest_version_name": "",
     "download_url": "https://github.com/wxyu71/Lumi_Books/releases",
     "title": "Lumi Community Beta",
-    "message": "非官方社区版：仅在你主动点击时检查更新，不提供会员系统。",
-    "changelog": "社区版：独立本地阅读体验。",
+    "message": "仅手动查询此社区 Fork 已公开的 GitHub Pre-release；不会连接上游更新源。",
+    "changelog": "以 GitHub Pre-release 发布说明为准。",
     "force_update_below_version_code": 0
   },
   "notice": {

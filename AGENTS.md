@@ -6,7 +6,7 @@
 
 - 这是 `wxyu71/Lumi_Books` 的非官方开源社区 Fork。先核对目标仓库、当前分支、PR 的 base/head 及最新 head SHA，**不要默认修改 `main`**。社区版必须保持 OSS 源集、独立包名、上游署名和许可证；范围见 `COMMUNITY.md`。
 - 以当前分支的真实源码、`.github/workflows/android-beta.yml` 为准；CI 设计和门禁依据见 `devdocs/community-ci-test-design.md`，UI 任务参考 `devdocs/community-ui-ux-implementation.md` 和 `devdocs/lumi-ui-motion-design-system.md`。
-- `devdocs/agent-onboarding.md`、`devdocs/gpt55-onboarding.md` 等旧交接材料可能描述历史架构；不能用它们覆盖当前源码、构建配置或 CI 事实。
+- 历史 handoff、计划和设计资料只供背景参考；不能覆盖当前源码、构建配置、CI 与 `COMMUNITY.md` 的文档导航。
 
 ## Commit 与 Push 是两件事
 
@@ -35,6 +35,11 @@ GitHub Contents API 的 `create_file`、`update_file`、`delete_file` **每次�
 - CI 失败时先收集同一轮所有相关 job/测试失败、区分代码问题与临时依赖或网络故障，再集中修复。确属偶发基础设施故障且源码未变时，可按需重跑失败的 job；不要用空提交、改文档或反复推送来触发重试。
 - 保持现有完整 PR Required Gate（含零 Error/Fatal Android Lint、APK/JVM、模拟器及最终 `Required CI summary`）。不要为省 CI 使用 `[skip ci]`、路径过滤或绕过/放宽必需检查；没有明确任务理由不要调整 CI YAML。
 - **验证状态始终绑定精确 head SHA**：旧提交的绿色 CI 不能证明新提交通过。保持当前 Draft PR 的审查/合并条件；不得擅自合并或声称仓库保护规则已经启用。
+
+## Beta 发布边界
+
+- 版本、签名及 Tag 发布步骤见 `COMMUNITY.md`；不得在未合并的 PR 上创建正式 Beta Tag，不能以 Debug APK、历史绿色 CI 或缺失签名证书的产物冒充 Pre-release。
+- Tag 发布流水线需使用独立的受保护 Environment、固定签名身份与完整的 Required Gate。只有用户明确要求并且完成发布前检查后，Agent 才可启动公开发布；不要求 Agent 能读取或生成签名密钥。
 
 ## 文档放置原则
 

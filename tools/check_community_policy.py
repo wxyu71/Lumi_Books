@@ -22,6 +22,8 @@ config = json.loads(file("docs/app-config.json"))
 gradle = file("app/build.gradle.kts")
 community_changelog = file("app/src/main/assets/changelog.md")
 tag_repository = file("app/src/main/java/com/huangder/lumibooks/data/repository/TagManagementRepository.kt")
+update_checker = file("app/src/main/java/com/huangder/lumibooks/util/UpdateChecker.kt")
+update_sheet = file("app/src/main/java/com/huangder/lumibooks/ui/components/UpdateDownloadSheet.kt")
 journal_ui = file("app/src/oss/java/com/huangder/lumibooks/edition/CommunityReadingJournal.kt")
 tags_ui = file("app/src/oss/java/com/huangder/lumibooks/edition/CommunityTagManagement.kt")
 export_ui = file("app/src/oss/java/com/huangder/lumibooks/edition/CommunityAnnotationFeedExport.kt")
@@ -58,4 +60,22 @@ ensure("Premium" not in community_changelog and "会员" not in community_change
        "Official subscription marketing reintroduced into the visible changelog")
 ensure(config["release_url"].startswith("https://github.com/wxyu71/Lumi_Books/"),
        "Update config points to non-community releases")
+ensure("https://api.github.com/repos/wxyu71/Lumi_Books/releases" in update_checker,
+       "Manual update checker does not read this fork's GitHub Releases")
+ensure("https://raw.githubusercontent.com/wxyu71/Lumi_Books/main/docs/app-config.json" in update_checker,
+       "Policy config moved to an untrusted source")
+for prohibited in ("pan.baidu.com", "lanzoub.com", "gitee.com/huangder", "github.com/huangder"):
+    ensure(prohibited not in update_sheet, "Upstream download endpoint reintroduced: " + prohibited)
+ensure(config.get("latest_version_code") == 0 and config["update"]["latest_version_code"] == 0,
+       "Static config must not claim a new unpublished APK")
+for readme in ("README.md", "README.en.md", "README.ja.md", "README.ko.md"):
+    content = file(readme)
+    ensure("https://github.com/huangder/Lumi_Books/releases" not in content,
+           "An upstream download link reappeared in " + readme)
+    ensure("pan.baidu.com" not in content and "lanzoub.com" not in content,
+           "An upstream distribution mirror reappeared in " + readme)
+for dev_readme in ("README.dev.md", "README.dev.en.md", "README.dev.ja.md", "README.dev.ko.md"):
+    ensure("Lumi_Books-premium.git" not in file(dev_readme),
+           "Private official edition checkout instructions reappeared in " + dev_readme)
+ensure(not (ROOT / "docs/CNAME").exists(), "Upstream custom domain must not be deployed from this fork")
 print("Community policy guardrails passed.")

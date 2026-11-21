@@ -8,7 +8,7 @@
 
 **Keep your reading to yourself.**
 
-[![Version](https://img.shields.io/badge/version-2.3.11-coral)](https://github.com/huangder/Lumi_Books/releases)
+[![Version](https://img.shields.io/badge/version-2.3.12--beta.1-coral)](https://github.com/wxyu71/Lumi_Books/releases)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
 [![Android](https://img.shields.io/badge/Android-8.0%2B-blue)](https://developer.android.com)
 
@@ -17,6 +17,8 @@
 **User Guide** · [Developer Guide](README.dev.en.md)
 
 </div>
+
+> **Lumi Community (unofficial fork):** Independent from Huangder's official app. Downloads belong to `wxyu71/Lumi_Books`; original-author attribution is retained.
 
 Lumi is a local e-book reader for Android. Books and reading data are stored on your phone by default. The basic features are free, open source and ad-free.
 
@@ -57,11 +59,11 @@ Lumi is a local e-book reader for Android. Books and reading data are stored on 
 - Listening continues after you leave the book. Floating subtitles show the text being read.
 - Supports headset controls and lock screen media controls.
 
-### Statistics and widgets
+### Reading statistics
 
 - Reading time, daily goals, and weekly, monthly and yearly trends and heatmaps.
 - Reading streak, annotation count, personal reviews and ratings.
-- Home screen widgets can show the book you are reading, and can also display excerpts.
+- The original desktop widgets are not registered in this Community Beta.
 
 ### Sync and backup
 
@@ -92,30 +94,15 @@ Lumi is a local e-book reader for Android. Books and reading data are stored on 
 
 ## Download
 
-Download the latest APK from [GitHub Releases](https://github.com/huangder/Lumi_Books/releases).
+Signed Community Beta APKs and `SHA256SUMS.txt` are published as **Pre-releases** at [this fork's GitHub Releases](https://github.com/wxyu71/Lumi_Books/releases). There is no publicly downloadable official Community Beta until its verified release workflow succeeds. Do not install an upstream or mirror APK as a Community Beta.
 
-Alternative downloads: [Baidu Netdisk](https://pan.baidu.com/s/1vDdFsoqQuuZlntUTUjssZw?pwd=lumi) (password: lumi) · [Lanzou Cloud (蓝奏云)](https://wwaug.lanzoub.com/b0xxfmxvi) (password: lumi)
+## Community Beta
 
-## Editions
-
-Lumi comes in an open-source edition and an official edition:
-
-- **Open-source edition** (built from this repository): all reading features and basic excerpt styles. It has no membership entry, reading report or tag management.
-- **Official edition**: adds optional Premium features on top of the open-source edition, including the reading report, advanced excerpt templates and tag management. The reading report and advanced excerpts can be previewed, and exporting requires unlocking. The official edition offers a 5-day trial.
-
-For release notes, see the [changelog page](https://huangder.top/changelog.html). They are also available in the app.
+This is an independent, unofficial OSS fork (`io.github.wxyu71.lumibooks`, `2.3.12-beta.1`). It includes community tags, opt-in local reading journal and TXT/Markdown exports without private Premium features. See [COMMUNITY.md](COMMUNITY.md).
 
 ## Support Lumi
 
-If Lumi is useful to you, you can support the developer through the [sponsorship page](https://huangder.top/sponsor.html), or with the **Sponsor** button on the right side of the GitHub page. Sponsorship is entirely voluntary and does not affect any feature or issue handling.
-
-## Star History
-
-<p align="center">
-  <a href="https://star-history.com/#huangder/Lumi_Books&Date">
-    <img src="https://api.star-history.com/svg?repos=huangder/Lumi_Books&type=Date" alt="Star History Chart" width="600">
-  </a>
-</p>
+You can optionally support Huangder, the original author, via the [upstream sponsorship page](https://huangder.top/sponsor.html). This is not payment for the Community fork.
 
 ## License
 
@@ -125,6 +112,7 @@ Lumi's original code is open-sourced under the [Apache License 2.0](LICENSE). Th
 
 ## Links
 
-- Website: [huangder.top](https://huangder.top)
-- GitHub: [github.com/huangder/Lumi_Books](https://github.com/huangder/Lumi_Books)
-- Email: huangder0104@126.com
+- Community repository: [wxyu71/Lumi_Books](https://github.com/wxyu71/Lumi_Books)
+- Original author's website: [huangder.top](https://huangder.top)
+- Upstream source: [huangder/Lumi_Books](https://github.com/huangder/Lumi_Books)
+- Original author's email: huangder0104@126.com

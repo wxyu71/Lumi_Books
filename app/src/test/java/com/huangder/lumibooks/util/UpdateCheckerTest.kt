@@ -1,5 +1,6 @@
 package com.huangder.lumibooks.util
 
+import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -159,6 +160,55 @@ class UpdateCheckerTest {
         assertEquals(notice, result.notice)
         assertNull(UpdateChecker.evaluate(config, "2.3.10", 16, 0, 0).notice)
         assertNull(UpdateChecker.evaluate(config.copy(notice = notice.copy(enabled = false)), "2.3.11", 17, 0, 0).notice)
+    }
+
+    @Test
+    fun `published beta requires correct signed community asset and is numerically ordered`() {
+        val releases = JSONArray()
+            .put(betaRelease("v2.3.12-beta.2", withApk = false))
+            .put(betaRelease("v2.3.12-beta.1"))
+            .put(betaRelease("v2.3.12-beta.10", draft = true))
+            .put(betaRelease("v2.3.12-beta.3", prerelease = false))
+            .put(betaRelease("v2.3.12-beta.4", withApk = false))
+            .put(betaRelease("v2.3.12-beta.2"))
+        val actual = UpdateChecker.selectLatestPublishedBeta(releases)!!
+        assertEquals("2.3.12-beta.2", actual.version)
+        assertEquals(
+            "https://github.com/wxyu71/Lumi_Books/releases/tag/v2.3.12-beta.2",
+            actual.releaseUrl
+        )
+        assertNull(UpdateChecker.selectLatestPublishedBeta(JSONArray()))
+    }
+
+    @Test
+    fun `beta update comparison respects prerelease ordinal and stable version precedence`() {
+        assertTrue(evaluateAppUpdate("2.3.12-beta.2", "2.3.12-beta.1"))
+        assertFalse(evaluateAppUpdate("2.3.12-beta.1", "2.3.12-beta.2"))
+        assertFalse(evaluateAppUpdate("2.3.12-beta.2", "2.3.12"))
+        assertTrue(evaluateAppUpdate("2.3.12", "2.3.12-beta.2"))
+        assertFalse(evaluateAppUpdate("2.3.12-beta.2", "2.3.12"))
+        assertTrue(evaluateAppUpdate("2.3.13-beta.1", "2.3.12"))
+    }
+
+    private fun betaRelease(
+        tag: String,
+        draft: Boolean = false,
+        prerelease: Boolean = true,
+        withApk: Boolean = true
+    ): JSONObject {
+        val assets = JSONArray()
+        if (withApk) {
+            assets.put(JSONObject()
+                .put("name", "Lumi-Community-$tag-universal.apk")
+                .put("state", "uploaded")
+                .put("size", 1000))
+        }
+        return JSONObject()
+            .put("tag_name", tag)
+            .put("draft", draft)
+            .put("prerelease", prerelease)
+            .put("body", "Release notes")
+            .put("assets", assets)
     }
 
     private fun noticeJson() = JSONObject()

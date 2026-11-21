@@ -8,7 +8,7 @@
 
 Android 向けのローカル電子書籍リーダーの技術説明です。コントリビューターと二次開発者を対象にしています。
 
-[![Version](https://img.shields.io/badge/version-2.3.11-coral)](https://github.com/huangder/Lumi_Books/releases)
+[![Version](https://img.shields.io/badge/version-2.3.12--beta.1-coral)](https://github.com/wxyu71/Lumi_Books/releases)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
 [![Android](https://img.shields.io/badge/Android-8.0%2B-blue)](https://developer.android.com)
 
@@ -91,7 +91,7 @@ android_books/
 ### 環境
 
 - Android Studio（最新の安定版）またはコマンドライン
-- JDK 17
+- JDK 21
 - Android SDK：compileSdk 37 とそれに対応する build-tools
 - コマンドラインでビルドする場合は `ANDROID_HOME` を設定してください。Windows では `gradlew.bat` を使います。
 
@@ -112,33 +112,17 @@ android_books/
 ./gradlew :app:compileDebugAndroidTestKotlin      # 計測テストのコンパイル確認
 ```
 
-### 公式版と版の境界
+### コミュニティ版のビルドと Beta 配布
 
-公開リポジトリと公式版は、同じコードベースを共有しています。両者の違いは `edition/` のインターフェースで分離されています。公開リポジトリには独立してコンパイルできる実装があり、公式版の非公開実装は `app/src/premium/` に置かれます。このディレクトリは公開リポジトリの管理対象外です。非公開リポジトリへのアクセス権を持つ開発者は、必要に応じて次のようにクローンできます。
+本フォークは公開 `app/src/oss/` のみを使用し、アプリ ID は `io.github.wxyu71.lumibooks` です。上流の非公開 Premium リポジトリや元作者の署名鍵には依存しません。
 
-```bash
-git clone --branch main https://github.com/huangder/Lumi_Books-premium.git app/src/premium
-```
-
-`app/src/premium/java` が存在すると、デフォルトのビルドは公式版に切り替わり、成果物は `app/build/official/` に出力されます。この環境で公開版を検証するには、`-Plumi.oss=true` を付けます。
-
-```bash
-./gradlew '-Plumi.oss=true' :app:assembleDebug
-```
-
-2 つの版はビルドディレクトリを分けています。KSP と Hilt が生成するコードが混ざらないようにするためです。公共のインターフェース、データ形式、ビルド設定を変更した場合は、公開版と公式版の両方がコンパイルできることを確認してください。詳しい規則は [devdocs/editions.md](devdocs/editions.md) を参照してください。
-
-### 署名とリリース
-
-- release ビルドでは R8 による難読化とリソースの縮小が有効です（`isMinifyEnabled = true`）。
-- リポジトリには署名の設定が含まれていません。リリースする前に、`app/build.gradle.kts` で release 用の `signingConfig` を設定してください。
-- 起動診断などの特別なビルドタイプは、`app/build.gradle.kts` の `buildTypes` を参照してください。
+`./gradlew :app:assembleDebug` はローカル検証用です。公開 Beta は Required CI 完了後、`main` 上の版タグによって `.github/workflows/android-release.yml` から署名・SHA-256 検証を行い、GitHub Pre-release として公開します。鍵の設定と手順は [COMMUNITY.md](COMMUNITY.md) を参照してください。
 
 ## コントリビューション
 
 Issue と Pull Request を歓迎します。
 
-- **バグ報告**：[GitHub Issues](https://github.com/huangder/Lumi_Books/issues) から報告してください。端末の機種、Android のバージョン、再現手順を添えてください。
+- **バグ報告**：[GitHub Issues](https://github.com/wxyu71/Lumi_Books/issues) から報告してください。端末の機種、Android のバージョン、再現手順を添えてください。
 - **機能の提案**：Issues で議論を始めてください。
 - **コードの貢献**：
   1. リポジトリを Fork する
@@ -150,19 +134,15 @@ Issue と Pull Request を歓迎します。
 
 `devdocs/` の詳しいドキュメントは現在ほぼ中国語です。他の言語への翻訳も歓迎します。
 
-## ドキュメント一覧
+## ドキュメント案内
 
-| ドキュメント | パス |
-|------|------|
-| アプリ内の更新ログ | [app/src/main/assets/changelog.md](app/src/main/assets/changelog.md) |
-| オンラインの更新ログ | [huangder.top/changelog](https://huangder.top/changelog.html) |
-| バージョンとビルドの境界 | [devdocs/editions.md](devdocs/editions.md) |
-| 要件定義 | [devdocs/requirements.md](devdocs/requirements.md) |
-| 技術仕様 | [devdocs/technical-spec.md](devdocs/technical-spec.md) |
-| デザイン仕様 | [devdocs/design-spec.md](devdocs/design-spec.md) |
-| 現行の UI とモーションの仕様 | [devdocs/lumi-ui-motion-design-system.md](devdocs/lumi-ui-motion-design-system.md) |
-| プロジェクトの状態 | [devdocs/project-status.md](devdocs/project-status.md) |
-| 開発計画 | [devdocs/development-plan.md](devdocs/development-plan.md) |
+- [COMMUNITY.md](COMMUNITY.md)：コミュニティ版の範囲と Beta 配布手順。
+- [AGENTS.md](AGENTS.md)：Agent の一括コミットと安全な作業手順。
+- [CI 設計](devdocs/community-ci-test-design.md)：品質チェックの詳細。
+- [コミュニティ UI](devdocs/community-ui-ux-implementation.md) と [動作デザイン](devdocs/lumi-ui-motion-design-system.md)：現行 UI 指針。
+- [アプリ内変更履歴](app/src/main/assets/changelog.md)：コミュニティ版の変更履歴。
+
+その他の `devdocs/` の旧計画や handoff は歴史的参考資料です。
 
 ## ライセンス
 
@@ -186,6 +166,7 @@ Lumi のオリジナルコードは [Apache License 2.0](LICENSE) で公開さ�
 
 ## リンク
 
-- 公式サイト：[huangder.top](https://huangder.top)
-- GitHub：[github.com/huangder/Lumi_Books](https://github.com/huangder/Lumi_Books)
-- メール：huangder0104@126.com
+- コミュニティ GitHub：[wxyu71/Lumi_Books](https://github.com/wxyu71/Lumi_Books)
+- 原作者サイト：[huangder.top](https://huangder.top)
+- 上流プロジェクト：[huangder/Lumi_Books](https://github.com/huangder/Lumi_Books)
+- 原作者メール：huangder0104@126.com
