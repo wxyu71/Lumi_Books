@@ -71,7 +71,8 @@ internal fun readerVariableWeightRange(context: Context, fontType: String,
     synchronized(axisCache) { axisCache.get(key)?.let { return it.range } }
     val range = runCatching {
     when {
-        fontType == "serif" -> context.resources.openRawResource(R.raw.source_serif4_regular_bytes).use {
+        // Android Resources can stream font resources directly; no invalid @raw alias needed.
+        fontType == "serif" -> context.resources.openRawResource(R.font.source_serif4_regular).use {
             variableWeightRange(ByteBuffer.wrap(it.readBytes()))
         }
         fontType in listOf("system", "sans_serif", "monospace") && Build.VERSION.SDK_INT >= 31 -> {
