@@ -1,7 +1,9 @@
 pluginManagement {
     repositories {
-        google()
+        // Hilt 2.58 marker and implementation are published to Maven Central.
+        // Android Gradle Plugin continues to resolve from Google's repository.
         mavenCentral()
+        google()
         gradlePluginPortal()
     }
     // Bypass intermittent Hilt plugin-marker lookup by resolving its

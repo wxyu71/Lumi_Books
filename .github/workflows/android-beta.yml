@@ -55,7 +55,9 @@ jobs:
         uses: ./.github/actions/setup-android-toolchain
         with:
           java-version: '17'
-          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+          # Only trusted same-repo PRs or main builds write a Gradle cache.
+          # Fork PRs read only; GitHub scopes each PR cache to refs/pull/N/merge.
+          cache-read-only: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
 
       - name: Verify community-only inputs
         shell: bash
@@ -132,7 +134,9 @@ jobs:
 
   unit-tests:
     name: JVM unit tests (reader + ui + core)
-    needs: policy
+    needs: [policy, apk]
+    # Run independent JVM diagnostics even when the prerequisite APK fails.
+    if: ${{ always() && needs.policy.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 80
     steps:

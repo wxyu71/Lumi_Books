@@ -51,6 +51,32 @@ Flow that completes without any emission. The landscape UI test now reports
 its observed selection, data and error on timeout instead of only saying
 `ComposeTimeoutException`.
 
+## CI #83: cold-Runner plugin resolution and cache handoff
+
+CI #83 proves that the OSS APK could successfully resolve/build Hilt 2.58,
+while the independent JDK 21 JVM Runner failed before any tests on the
+published `com.google.dagger:hilt-android-gradle-plugin:2.58` implementation.
+The failed job's Gradle summary showed `Entry not restored: no match found`
+and `Cache was read-only`. This is not evidence that version 2.58 is invalid;
+the transient failure is inconsistent across separate GitHub-hosted Runners.
+
+The APK job now writes the basic Gradle User Home cache on main and for
+**same-repository PRs only**. Fork PRs keep read-only access. The JVM job
+depends on completion of the APK job and restores the warmed Gradle cache
+read-only, while still collecting separate failure diagnostics if APK fails.
+The required gate continues to require both the APK and all JVM shards.
+Maven Central precedes Google for plugin resolution, matching the actual
+Hilt distribution host, without adding custom mirrors or changing versions.
+
+GitHub caches for PRs are scoped to `refs/pull/<number>/merge`; PR cache
+entries cannot become main-branch caches. The official Gradle setup Action
+documents cache save on job completion, cache restore at the start of the
+downstream job, and this exact producer/read-only-consumer pattern:
+https://github.com/gradle/actions/blob/main/docs/setup-gradle.md
+
+Do not add a second Gradle Home cache using `actions/cache` or setup-java.
+Review each run's cache restore/save keys and the Hilt resolution log before
+changing any dependency version or suppressing a test.
 ## Scoped dependency retries and secure caching
 
 The tools/ci_gradle_retry.sh wrapper allows at most three total attempts and
@@ -61,7 +87,8 @@ to obtain an accidental pass. Each attempt is logged separately and reported.
 The Gradle commands have a 21-minute per-attempt timeout and bounded jobs.
 
 The shared composite action pins SDK, NDK, CMake and the Gradle setup Action.
-Only trusted main writes the Gradle basic cache. PRs read only; no third-party
+Trusted main and same-repository PR builds may write the Gradle basic cache;
+external-fork PRs and JVM consumers are read-only; no third-party
 build scans, signing secrets, unsafe pull_request_target or configuration cache.
 Run the emulator and Macrobenchmark workflows separately, weekly or manually.
 
