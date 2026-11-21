@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Raw stream alias for the same packaged font file, without a second copy.
+         The reader uses R.font to construct a Typeface and R.raw to inspect the
+         OpenType fvar table as bytes. Both resolve to one bundled resource. -->
+    <item type="raw" name="source_serif4_regular_bytes">@font/source_serif4_regular</item>
+</resources>
