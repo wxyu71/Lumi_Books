@@ -35,5 +35,15 @@ class ArtifactSecurityContractTest(unittest.TestCase):
         self.assertIn(":app:lintRelease :app:lintDiagnostic", self.quality)
         self.assertNotIn("pull_request:", self.quality)
 
+    def test_visual_regression_exports_png_and_verifies_required_classes(self):
+        runner = (ROOT / "tools/ci_run_device_smoke.sh").read_text()
+        verifier = (ROOT / "tools/ci_verify_android_junit.py").read_text()
+        capture = (ROOT / "app/src/androidTest/java/com/huangder/lumibooks/ui/settings/AppIconScreenshotInstrumentedTest.kt").read_text()
+        self.assertIn("MediaStore.Images.Media.RELATIVE_PATH", capture)
+        self.assertIn("/sdcard/Pictures/LumiCI", runner)
+        self.assertIn("Screenshot PNGs were not exported", runner)
+        self.assertIn('"$test_classes"', runner)
+        self.assertIn("required_classes", verifier)
+
 if __name__ == "__main__":
     unittest.main()

@@ -181,12 +181,31 @@ jobs:
           java-version: '21'
           cache-read-only: 'true'
 
-      - name: Run blocking Android Lint
+      - name: Full Android Lint with frozen legacy-error fingerprint gate
         shell: bash
         run: |
           set -euo pipefail
           chmod +x gradlew
+          # The repository had 556 existing Lint errors when the full gate was
+          # introduced. Keep Gradle's default fail-on-error behavior; only
+          # accept its documented Lint-error exit after verifying that EVERY
+          # finding matches a frozen, location-specific legacy fingerprint.
+          # Any novel issue, corrupt/missing report or unrelated Gradle failure
+          # keeps this required job red.
+          rm -f app/build/oss/reports/lint-results-debug.xml
+          set +e
           bash tools/ci_gradle_retry.sh test-logs/quality/lint.log :app:lintDebug
+          lint_rc=$?
+          set -e
+          python3 tools/ci_verify_lint_debt.py \
+            app/build/oss/reports/lint-results-debug.xml \
+            tools/ci_lint_legacy_fingerprints.bin
+          if (( lint_rc != 0 )); then
+            grep -q 'Lint found errors in the project; aborting build' test-logs/quality/lint.log || {
+              echo "::error::Gradle Lint failed for a non-Lint reason; original exit $lint_rc" >&2
+              exit "$lint_rc"
+            }
+          fi
 
       - name: Compile diagnostic and assemble unsigned release variants
         if: ${{ always() && !cancelled() }}

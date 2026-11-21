@@ -1,6 +1,11 @@
 package com.huangder.lumibooks.ui.settings
 
+import android.content.ContentValues
+import android.content.Context
 import android.graphics.Bitmap
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -54,9 +59,10 @@ class AppIconScreenshotInstrumentedTest {
         composeRule.waitForIdle()
         composeRule.onNodeWithText(classicLabel).assertIsSelected()
         val after = composeRule.onRoot().captureToImage().asAndroidBitmap()
-        val dir = checkNotNull(context.getExternalFilesDir("ci-screenshots")).apply { mkdirs() }
-        writePng(before, File(dir, "icon-style-before.png"))
-        writePng(after, File(dir, "icon-style-after.png"))
+        // Instrumentation may uninstall the APK before the CI shell gets
+        // control back. MediaStore photos survive that app-data cleanup.
+        writePng(before, context, "icon-style-before.png")
+        writePng(after, context, "icon-style-after.png")
         assertEquals("Image width changed", before.width, after.width)
         assertEquals("Image height changed", before.height, after.height)
         var differences = 0
@@ -70,9 +76,28 @@ class AppIconScreenshotInstrumentedTest {
         after.recycle()
     }
 
-    private fun writePng(bitmap: Bitmap, destination: File) {
-        destination.outputStream().use { stream ->
-            check(bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream))
+    private fun writePng(bitmap: Bitmap, context: Context, name: String) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            // Android's scoped-storage API allows the test app to write its
+            // own generated images without external-storage permissions.
+            val metadata = ContentValues().apply {
+                put(MediaStore.Images.Media.DISPLAY_NAME, name)
+                put(MediaStore.Images.Media.MIME_TYPE, "image/png")
+                put(MediaStore.Images.Media.RELATIVE_PATH, "${Environment.DIRECTORY_PICTURES}/LumiCI")
+            }
+            val uri = requireNotNull(
+                context.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, metadata)
+            ) { "MediaStore could not create screenshot $name" }
+            checkNotNull(context.contentResolver.openOutputStream(uri)).use { stream ->
+                check(bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream))
+            }
+        } else {
+            // API 26 extended checks keep the screenshot assertion itself;
+            // only API 29+ is required to export persistent PNG artifacts.
+            val dir = checkNotNull(context.getExternalFilesDir("ci-screenshots")).apply { mkdirs() }
+            File(dir, name).outputStream().use { stream ->
+                check(bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream))
+            }
         }
     }
 }

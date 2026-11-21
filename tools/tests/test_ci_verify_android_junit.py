@@ -49,5 +49,19 @@ class InstrumentedJUnitVerifierTest(unittest.TestCase):
             )
             self.assertTrue(inspect_reports(Path(temp), 1)[3])
 
+    def test_missing_required_instrumented_class_is_fatal(self):
+        with tempfile.TemporaryDirectory() as temp:
+            (Path(temp) / "TEST-one.xml").write_text(
+                '<testsuite><testcase classname="example.Present" name="works"/></testsuite>',
+                encoding="utf-8"
+            )
+            cases, failures, _, errors = inspect_reports(
+                Path(temp), 1, ("example.Present", "example.Required")
+            )
+            self.assertEqual(1, cases)
+            self.assertEqual(0, failures)
+            self.assertIn("example.Required", " ".join(errors))
+            self.assertNotIn("example.Present", " ".join(errors))
+
 if __name__ == "__main__":
     unittest.main()

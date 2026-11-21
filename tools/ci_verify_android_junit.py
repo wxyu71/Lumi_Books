@@ -5,11 +5,12 @@ import os
 import sys
 import xml.etree.ElementTree as ET
 
-def inspect_reports(directory: Path, minimum: int) -> tuple[int, int, int, list[str]]:
+def inspect_reports(directory: Path, minimum: int, required_classes: tuple[str, ...] = ()) -> tuple[int, int, int, list[str]]:
     paths = sorted(directory.rglob("*.xml")) if directory.exists() else []
     # Android Gradle Test results contain TEST-*.xml. Never count unrelated files.
     paths = [p for p in paths if p.name.startswith("TEST-")]
     cases = failures = skipped = 0
+    observed_classes = set()
     errors = []
     for path in paths:
         try:
@@ -18,6 +19,7 @@ def inspect_reports(directory: Path, minimum: int) -> tuple[int, int, int, list[
             errors.append(f"{path}: invalid XML: {exc}")
             continue
         for item in root.iter("testcase"):
+            observed_classes.add(item.get("classname", ""))
             cases += 1
             for child in item:
                 if child.tag in {"failure", "error"}:
@@ -27,16 +29,20 @@ def inspect_reports(directory: Path, minimum: int) -> tuple[int, int, int, list[
                     skipped += 1
     if cases < minimum:
         errors.append(f"Android JUnit inventory too small: executed={cases}, minimum={minimum}, XML files={len(paths)}")
+    for expected in required_classes:
+        if expected not in observed_classes:
+            errors.append(f"Required instrumentation class did not execute: {expected}")
     if failures:
         errors.append(f"Android JUnit failures/errors: {failures}")
     return cases, failures, skipped, errors
 
 def main() -> int:
-    if len(sys.argv) != 3:
-        print("usage: ci_verify_android_junit.py <results-dir> <minimum-tests>", file=sys.stderr)
+    if len(sys.argv) != 4:
+        print("usage: ci_verify_android_junit.py <results-dir> <minimum-tests> <comma-separated-required-classes>", file=sys.stderr)
         return 2
     directory, minimum = Path(sys.argv[1]), int(sys.argv[2])
-    cases, failures, skipped, errors = inspect_reports(directory, minimum)
+    required = tuple(v.strip() for v in sys.argv[3].split(",") if v.strip())
+    cases, failures, skipped, errors = inspect_reports(directory, minimum, required)
     summary = f"Android instrumented JUnit: {cases} executed, {failures} failures, {skipped} skipped, minimum {minimum}"
     print(summary)
     for error in errors[:25]:

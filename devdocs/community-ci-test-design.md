@@ -172,3 +172,15 @@ rejects `skipped`, `failure` or `cancelled` for any mandatory stage.
 References: [Android Lint official documentation](https://developer.android.com/studio/write/lint),
 [Android Emulator Runner](https://github.com/ReactiveCircus/android-emulator-runner),
 [GitHub Actions job dependencies](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax).
+
+## Expanded CI #89 findings and correction (2026-11-21)
+
+[Run #89](https://github.com/wxyu71/Lumi_Books/actions/runs/44879743310) proved: Community policy **success**; debug APK, debug certificate and SHA256SUMS verification **success**; Reader 1,153, UI 795, Core 1,204 JVM test cases (**3,152 total, zero failures**); both API29 and API35 Google APIs emulator legs each executed **26 instrumented tests with zero failures**; `assembleDiagnostic` and `assembleRelease` **success**.
+
+It also exposed two real gaps:
+
+1. Full `:app:lintDebug` was not previously in the PR Gate. The first run found **556 pre-existing errors**, 989 warnings and 31 hints, so the strict raw Lint task failed. Instead of disabling full Lint, we keep running it and compare every Error/Fatal location to an immutable, checksummed snapshot: [`tools/ci_lint_legacy_debt.md`](../tools/ci_lint_legacy_debt.md). Any new issue, moved source location, increased duplicate count, missing/malformed report or unrelated Gradle failure **fails** the Required Gate. Existing debt is explicit and not claimed fixed. Full HTML/XML remains uploaded and the weekly full lint review remains available. Risk categories include NewApi, JavaScript interfaces, App Link URLs and format strings; prioritize those for remediation.
+2. The new `AppIconScreenshotInstrumentedTest` passed a real pixel-difference and UI-semantics assertion on API29 and API35 but the initial artifacts contained **no PNGs**: Gradle removed the app-specific external-files directory when instrumentation finished. Screenshots now write through Android 29+ MediaStore into public `Pictures/LumiCI`; the script downloads them before the emulator exits and **fails closed** if no PNG was exported. All required instrumented test *class names* must also appear in parsed JUnit XML; a total test count alone cannot conceal a skipped screenshot suite.
+
+Required checks remain policy, full APK/JVM verify, Lint/debt gate and release/diagnostic variant build, both emulator API matrix legs, and the final strict summary. API26/33/36 extended tests, full Release/Diagnostic lint, Macrobenchmark and real physical-device/a11y/privacy acceptance remain deliberately separate. A passing emulator is not evidence of a real device.
+

@@ -61,6 +61,14 @@ class WorkflowBuildAndTestContract(unittest.TestCase):
         self.assertIn("Lumi-Community-Emulator-API", device)
         self.assertIn("cache-read-only: 'true'", device)
 
+    def test_full_lint_keeps_new_errors_blocking(self):
+        self.assertIn("Full Android Lint with frozen legacy-error fingerprint gate", self.workflow)
+        self.assertIn(":app:lintDebug", self.workflow)
+        self.assertIn("python3 tools/ci_verify_lint_debt.py", self.workflow)
+        self.assertIn("tools/ci_lint_legacy_fingerprints.bin", self.workflow)
+        self.assertIn("Lint found errors in the project; aborting build", self.workflow)
+        self.assertNotIn("abortOnError = false", self.workflow)
+
     def test_actions_are_pinned_to_full_sha(self):
         import re
         external = re.findall(r"(?m)^\s*uses:\s+(?!\.\/)([^\s#]+)", self.workflow)
