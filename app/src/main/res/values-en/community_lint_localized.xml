@@ -10,4 +10,13 @@
     <string name="kindle_error_no_space">Not enough storage to prepare this Kindle book. Free some space and try again.</string>
     <string name="kindle_error_io">Unable to read or prepare this Kindle book. Check file access and try again.</string>
     <string name="kindle_error_conversion">Unable to prepare this Kindle book. Try opening it again or use an EPUB copy.</string>
+    <string name="motion_preference_fast">Fast</string>
+    <string name="format_markdown">Markdown</string>
+    <string name="markdown_source_updated">Markdown source updated</string>
+    <string name="markdown_source_updated_body">The original Markdown file has changed. If you update the reading content, notes that can no longer be relocated will be kept and marked as having changed source text.</string>
+    <string name="markdown_source_update">Update reading content</string>
+    <string name="markdown_keep_snapshot">Keep current version</string>
+    <string name="markdown_source_unavailable">The source is temporarily unavailable. You are reading a saved Markdown copy.</string>
+    <string name="markdown_original_changed">Original text changed</string>
+    <string name="markdown_update_failed">Update failed. Your current version and notes were preserved.</string>
 </resources>
