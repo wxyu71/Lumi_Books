@@ -27,11 +27,16 @@ internal class ReaderViewportPredictor {
         val bounds = if (Build.VERSION.SDK_INT >= 30 && activity != null) {
             activity.windowManager.currentWindowMetrics.bounds.let { ReaderViewport(it.width(), it.height()) }
         } else ReaderViewport(view.rootView.width.coerceAtLeast(width), view.rootView.height.coerceAtLeast(height))
-        val insets = if (Build.VERSION.SDK_INT >= 30) view.rootWindowInsets?.getInsetsIgnoringVisibility(
-            WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout()) else null
+        // The Insets getters are API 29+. Keep the access inside the same
+        // platform guard that obtains the API 30 window insets.
+        val (insetX, insetY) = if (Build.VERSION.SDK_INT >= 30) {
+            val insets = view.rootWindowInsets?.getInsetsIgnoringVisibility(
+                WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
+            ((insets?.left ?: 0) + (insets?.right ?: 0)) to
+                ((insets?.top ?: 0) + (insets?.bottom ?: 0))
+        } else 0 to 0
         return observeBounds(ReaderViewport(width, height), bounds, view.resources.displayMetrics.densityDpi,
-            (insets?.left ?: 0) + (insets?.right ?: 0), (insets?.top ?: 0) + (insets?.bottom ?: 0),
-            activity?.isInMultiWindowMode == true)
+            insetX, insetY, activity?.isInMultiWindowMode == true)
     }
 
     internal fun observeBounds(current: ReaderViewport, bounds: ReaderViewport, densityDpi: Int,

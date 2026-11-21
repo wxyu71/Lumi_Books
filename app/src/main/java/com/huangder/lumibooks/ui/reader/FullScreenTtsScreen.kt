@@ -499,7 +499,7 @@ private fun ListeningProgress(
     val scale by animateFloatAsState(if (draft == null) 1f else 1.15f,
         if (animated) spring(.65f, 450f) else snap(), label = "progress indicator")
     val description = stringResource(R.string.tts_full_progress)
-    BoxWithConstraints(Modifier.fillMaxWidth().height(36.dp)
+    Box(Modifier.fillMaxWidth().height(36.dp)
         .semantics {
             contentDescription = description
             progressBarRangeInfo = ProgressBarRangeInfo(draft ?: progress, 0f..1f)

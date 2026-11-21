@@ -98,7 +98,8 @@ internal fun Modifier.liquidGlassControlEdge(
     val lightWidth = ControlEdgeLightWidth.toPx()
     val reflectionWidth = ControlEdgeReflectionWidth.toPx()
     val outerPath = outline.edgePath()
-    val shader = if (!forceCanvas && controlEdgeUsesShader(Build.VERSION.SDK_INT, outline)) {
+    val shader = if (!forceCanvas && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+        controlEdgeUsesShader(Build.VERSION.SDK_INT, outline)) {
         createControlEdgeShader(
             (outline as Outline.Rounded).roundRect, palette,
             darkWidth, lightWidth, reflectionWidth

@@ -306,7 +306,8 @@
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
-                <data android:scheme="content" />
+                <!-- A pathPattern needs a host; file/content URI authorities vary. -->
+                <data android:scheme="content" android:host="*" />
                 <data android:scheme="file" />
                 <data android:mimeType="*/*" />
                 <data android:pathPattern=".*\\.azw" />
