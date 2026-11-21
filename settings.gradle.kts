@@ -9,6 +9,13 @@ pluginManagement {
                 includeGroup("com.google.dagger.hilt.android")
             }
         }
+        // Independent Google Cloud-hosted mirror, restricted to Hilt only.
+        maven(url = "https://maven-central.storage-download.googleapis.com/maven2") {
+            content {
+                includeGroup("com.google.dagger")
+                includeGroup("com.google.dagger.hilt.android")
+            }
+        }
         mavenCentral()
         google()
         gradlePluginPortal()
@@ -37,6 +44,10 @@ dependencyResolutionManagement {
             content {
                 includeGroup("com.google.dagger")
             }
+        }
+        // Fallback for Hilt runtime and annotation processor dependencies.
+        maven(url = "https://maven-central.storage-download.googleapis.com/maven2") {
+            content { includeGroup("com.google.dagger") }
         }
         mavenCentral()
     }

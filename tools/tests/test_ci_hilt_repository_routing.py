@@ -18,7 +18,8 @@ class HiltRepositoryRoutingTest(unittest.TestCase):
 
     def test_official_fallback_scoped_to_dagger_not_entire_dependency_graph(self):
         self.assertEqual(2, self.settings.count('maven(url = "https://repo1.maven.org/maven2")'))
-        self.assertEqual(2, self.settings.count('includeGroup("com.google.dagger")'))
+        self.assertEqual(4, self.settings.count('includeGroup("com.google.dagger")'))
+        self.assertEqual(2, self.settings.count('maven(url = "https://maven-central.storage-download.googleapis.com/maven2")'))
         self.assertIn('includeGroup("com.google.dagger.hilt.android")', self.settings)
         self.assertNotIn("allowInsecureProtocol", self.settings)
         self.assertNotIn("mavenLocal()", self.settings)

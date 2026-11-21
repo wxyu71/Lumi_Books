@@ -36,25 +36,25 @@ jobs:
           python3 tools/check_community_policy.py
           python3 tools/ci_test_inventory.py
           python3 tools/check_community_translations.py
-          bash -n tools/ci_gradle_retry.sh tools/ci_run_jvm_shards.sh
+          bash -n tools/ci_gradle_retry.sh tools/ci_run_jvm_shards.sh tools/ci_hilt_artifact_probe.sh
           python3 -m compileall -q tools
           python3 -m unittest discover -s tools/tests -p 'test_*.py' -v
 
-  apk:
-    name: OSS APK and checksum
+  verify:
+    name: OSS APK + JVM reader/ui/core (JDK 21)
     needs: policy
     runs-on: ubuntu-24.04
-    timeout-minutes: 50
+    timeout-minutes: 100
     steps:
       - name: Checkout sources
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - name: Set up Android Gradle toolchain (JDK 17)
+      - name: Set up Android Gradle toolchain (JDK 21)
         uses: ./.github/actions/setup-android-toolchain
         with:
-          java-version: '17'
+          java-version: '21'
           # Only trusted same-repo PRs or main builds write a Gradle cache.
           # Fork PRs read only; GitHub scopes each PR cache to refs/pull/N/merge.
           cache-read-only: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
@@ -69,10 +69,16 @@ jobs:
           python3 tools/check_community_policy.py
           chmod +x ./gradlew
 
+      - name: Probe Hilt Maven distribution endpoints
+        shell: bash
+        run: bash tools/ci_hilt_artifact_probe.sh
+
       - name: Assemble debug-signed community beta APKs (targeted dependency retry)
+        id: build_apk
         run: bash tools/ci_gradle_retry.sh test-logs/apk.log :app:assembleDebug
 
       - name: Verify APK metadata and create SHA-256 checksums
+        id: apk_metadata
         shell: bash
         run: |
           set -euo pipefail
@@ -123,6 +129,7 @@ jobs:
           retention-days: 14
 
       - name: Upload installable debug APKs
+        if: ${{ steps.apk_metadata.outcome == 'success' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: Lumi-Community-Beta-${{ github.run_number }}-${{ github.run_attempt }}
@@ -130,36 +137,6 @@ jobs:
           if-no-files-found: error
           compression-level: 0
           retention-days: 14
-
-
-  unit-tests:
-    name: JVM unit tests (reader + ui + core)
-    needs: [policy, apk]
-    # Run independent JVM diagnostics even when the prerequisite APK fails.
-    if: ${{ always() && needs.policy.result == 'success' }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 80
-    steps:
-      - name: Checkout sources
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - name: Set up Android Gradle toolchain (JDK 21)
-        uses: ./.github/actions/setup-android-toolchain
-        with:
-          java-version: '21'
-          cache-read-only: 'true'
-
-      - name: Verify community-only inputs
-        shell: bash
-        run: |
-          set -euo pipefail
-          test ! -d app/src/premium/java
-          grep -q 'val premiumEdition = false' app/build.gradle.kts
-          grep -q 'applicationId = "io.github.wxyu71.lumibooks"' app/build.gradle.kts
-          python3 tools/check_community_policy.py
-          chmod +x ./gradlew
 
       # One machine compiles Kotlin tests once and reuses outputs for three
       # individually bounded and verified test filters, keeping separate reports.
@@ -176,10 +153,11 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+
   ci-gate:
     name: Required CI summary
     if: always()
-    needs: [policy, apk, unit-tests]
+    needs: [policy, verify]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -187,8 +165,7 @@ jobs:
         shell: bash
         env:
           POLICY: ${{ needs.policy.result }}
-          APK: ${{ needs.apk.result }}
-          UNIT_TESTS: ${{ needs.unit-tests.result }}
+          VERIFY: ${{ needs.verify.result }}
         run: |
           set -euo pipefail
           {
@@ -196,7 +173,6 @@ jobs:
             echo "| Stage | Result |"
             echo "| --- | --- |"
             echo "| Community policy and test inventory | $POLICY |"
-            echo "| Android APK and SHA-256 | $APK |"
-            echo "| JVM runner with 3 verified shards | $UNIT_TESTS |"
+            echo "| OSS APK, SHA-256, Reader/UI/Core JVM | $VERIFY |"
           } >> "$GITHUB_STEP_SUMMARY"
-          [[ "$POLICY" == success && "$APK" == success && "$UNIT_TESTS" == success ]]
+          [[ "$POLICY" == success && "$VERIFY" == success ]]
