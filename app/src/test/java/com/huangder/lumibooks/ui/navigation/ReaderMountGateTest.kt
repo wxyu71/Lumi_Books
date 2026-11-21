@@ -2,7 +2,7 @@ package com.huangder.lumibooks.ui.navigation
 
 import android.app.Application
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.test.junit4.createComposeRule
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -22,7 +22,10 @@ class ReaderMountGateTest {
         compose.mainClock.autoAdvance = false
         compose.setContent {
             if (rememberReaderMountReady("book", windowReady.value)) {
-                remember { mounted += 1; 1 }
+                DisposableEffect(Unit) {
+                    mounted++
+                    onDispose { }
+                }
             }
         }
         compose.mainClock.advanceTimeBy(640)
@@ -40,7 +43,10 @@ class ReaderMountGateTest {
         var mounted = 0
         compose.setContent {
             if (rememberReaderMountReady("book", windowReady = true)) {
-                remember { mounted += 1; 1 }
+                DisposableEffect(Unit) {
+                    mounted++
+                    onDispose { }
+                }
             }
         }
         compose.runOnIdle { assertEquals(1, mounted) }
