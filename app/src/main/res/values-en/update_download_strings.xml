@@ -2,5 +2,5 @@
 <resources>
     <string name="app_update_download_channel">Open GitHub Releases</string>
     <string name="app_update_download_recommended">Recommended</string>
-    <string name="app_update_reinstall_warning">Each personal Beta uses a new temporary signing key. You cannot install it over an older Beta. Back up your reading data in the app, uninstall the old Beta, then install this one.</string>
+    <string name="app_update_signing_notice">Community Betas use one fixed signing key, so future versions can install over older signed releases. If you used an earlier debug or temporary-signed build, back up your data and uninstall it before switching.</string>
 </resources>

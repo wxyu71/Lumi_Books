@@ -2,5 +2,5 @@
 <resources>
     <string name="app_update_download_channel">前往 GitHub Releases</string>
     <string name="app_update_download_recommended">推荐</string>
-    <string name="app_update_reinstall_warning">此个人 Beta 每次使用不同的临时签名，不能覆盖安装旧版。升级前请先在应用内备份数据，再卸载旧版并安装新版。</string>
+    <string name="app_update_signing_notice">社区 Beta 使用固定签名；以后可以覆盖安装并保留数据。若此前安装的是 Debug 或旧临时签名测试版，首次切换请先备份数据，再卸载旧版。</string>
 </resources>

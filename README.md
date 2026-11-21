@@ -101,7 +101,7 @@ Lumi 是一款 Android 本地电子书阅读器。书籍和阅读数据默认保
 社区版 Beta 通过 [本 Fork 的 GitHub Releases](https://github.com/wxyu71/Lumi_Books/releases) 提供。仅下载标记为 **Pre-release**、附带社区签名 APK 和 `SHA256SUMS.txt` 的版本；发布前没有可用的正式 Beta 安装包。不要从原项目或第三方网盘下载并当作社区版本。
 
 
-**注意**：每次 Beta 使用临时签名，**不能直接覆盖安装旧版**。换版本前在应用内备份阅读数据，再卸载旧版并安装新 APK；卸载通常会清除本地私有数据。
+**签名与升级**：本 Fork 的 Beta 使用固定社区签名，以后相同签名且 `versionCode` 递增的版本可直接覆盖安装。若之前安装的是 Debug/临时签名测试包，首次切换需要先备份数据、卸载旧包再安装固定签名版。
 
 ## 社区 Beta 版说明
 

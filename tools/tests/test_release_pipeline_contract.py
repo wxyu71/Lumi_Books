@@ -1,4 +1,4 @@
-"""Personal Beta release must follow a successful main CI, without keystore setup."""
+"""Personal Beta release uses persistent signing without a separate release environment."""
 from pathlib import Path
 import unittest
 
@@ -21,21 +21,27 @@ class BetaPublicationContract(unittest.TestCase):
         self.assertNotIn("needs: full-ci", RELEASE)
         self.assertNotIn("workflow_dispatch:", RELEASE)
 
-    def test_no_signing_secret_or_long_term_key(self):
-        self.assertNotIn("secrets.", RELEASE)
-        self.assertNotIn("LUMI_BETA_KEYSTORE", RELEASE)
+    def test_stable_signing_uses_only_two_repository_secrets(self):
+        self.assertIn("secrets.LUMI_BETA_KEYSTORE_BASE64", RELEASE)
+        self.assertIn("secrets.LUMI_BETA_KEYSTORE_PASSWORD", RELEASE)
+        self.assertIn("--ks-key-alias lumi-community", RELEASE)
+        self.assertIn("--ks-type PKCS12", RELEASE)
+        self.assertIn("--ks-pass env:LUMI_BETA_KEYSTORE_PASSWORD", RELEASE)
+        self.assertIn("base64 --decode", RELEASE)
+        self.assertNotIn("openssl rand -hex", RELEASE)
+        self.assertNotIn("keytool -genkeypair", RELEASE)
+        self.assertNotIn("environment: beta-release", RELEASE)
+        self.assertNotIn("LUMI_BETA_CERT_SHA256", RELEASE)
         self.assertNotIn("LUMI_RELEASE_KEYSTORE_PATH", GRADLE)
         self.assertIn("permissions:\n  contents: read", PR)
         self.assertIn("contents: write", RELEASE)
-        self.assertIn("openssl rand -hex", RELEASE)
-        self.assertIn("keytool -genkeypair", RELEASE)
         self.assertIn("zipalign", RELEASE)
         self.assertIn("apksigner", RELEASE)
 
     def test_publication_validation_and_user_warning(self):
         for value in ("versionCode=", "versionName=", "SHA256SUMS.txt", "--prerelease",
                       "--target", "gh release create", "gh release view",
-                      "NOT an in-place APK update", "Back up your reading data"):
+                      "persistent Community Beta key", "back up data"):
             self.assertIn(value, RELEASE)
         self.assertNotIn("[skip ci]", RELEASE)
 

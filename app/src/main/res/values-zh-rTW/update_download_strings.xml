@@ -2,5 +2,5 @@
 <resources>
     <string name="app_update_download_channel">前往 GitHub Releases</string>
     <string name="app_update_download_recommended">推薦</string>
-    <string name="app_update_reinstall_warning">個人 Beta 每次使用不同的臨時簽名，無法直接覆蓋安裝舊版。請先在應用程式內備份閱讀資料，解除安裝舊版後再安裝新版。</string>
+    <string name="app_update_signing_notice">社群 Beta 使用固定簽章，後續版本可直接覆蓋安裝並保留資料。若先前安裝的是 Debug 或臨時簽章測試版，首次轉換前請備份資料並解除安裝舊版。</string>
 </resources>

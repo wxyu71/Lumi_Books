@@ -12,7 +12,7 @@
 ## 发布（简化的个人 Beta）
 
 - 只有 `main` 的 **新版**在正常 CI 成功后才能自动发布 Pre-release；操作方法见 [docs/development/release.md](docs/development/release.md)。
-- 无需 Release Secrets、长期密钥、Tag 人工操作或第二次完整 CI。发布时临时签名，**后续 APK 不支持直接覆盖升级**，下载前必须提示备份数据、卸载旧版。
+- 自动发布只需要预先配置的两项 Repository Secrets：`LUMI_BETA_KEYSTORE_BASE64`、`LUMI_BETA_KEYSTORE_PASSWORD`；不需要 Environment 审批、人工 Tag 或第二次完整 CI。**始终使用原固定签名密钥**，不可在 CI 中重新生成以免破坏覆盖升级；首次从 Debug/临时签名迁移须备份后重装。
 - 可以通过 GitHub 插件编辑并提交版本修改，正式合并需用户明确要求；若当前连接不能直接创建 Release，以已合并版本触发的 Actions 自动发布，不伪称已经发布。
 
 ## 文档维护

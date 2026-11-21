@@ -49,7 +49,7 @@ internal fun UpdateDownloadSheet(
                 onBack = onDismiss
             )
             Text(
-                text = stringResource(R.string.app_update_reinstall_warning),
+                text = stringResource(R.string.app_update_signing_notice),
                 color = AppColors.TextSecondary,
                 fontSize = AppType.BodySmall
             )

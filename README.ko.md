@@ -97,7 +97,7 @@ Lumi는 Android용 로컬 전자책 리더입니다. 책과 독서 데이터는 
 커뮤니티 Beta는 [이 포크의 GitHub Releases](https://github.com/wxyu71/Lumi_Books/releases)에 서명된 APK와 `SHA256SUMS.txt`를 포함하는 **Pre-release**로 공개됩니다. 공개 전에는 정식 Beta 다운로드가 없습니다. 원본 또는 외부 미러 APK를 커뮤니티 버전으로 사용하지 마세요.
 
 
-**주의:** Beta마다 임시 서명 키가 바뀌므로 이전 Beta 위에 설치할 수 없습니다. 먼저 앱에서 독서 데이터를 백업한 다음 구버전을 제거하고 새 APK를 설치하세요.
+**서명과 업그레이드:** 커뮤니티 Beta는 동일한 고정 서명 키를 사용하며 `versionCode`를 올리면 기존 Beta 위에 설치할 수 있습니다. 이전 Debug/임시 서명 빌드에서 처음 전환할 때는 데이터를 백업하고 기존 앱을 삭제한 후 설치하세요.
 
 ## 커뮤니티 Beta
 

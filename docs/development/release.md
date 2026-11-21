@@ -1,23 +1,57 @@
-# 发布个人 Beta（GitHub Pre-release）
+# 发布个人 Beta（固定签名、GitHub Pre-release）
 
-本仓库仅一人维护，不申请 Release Environment，不保管长期 keystore，也不人工推送 Tag。发布工作流是 `.github/workflows/android-release.yml`；下载页面是 [本 Fork 的 Releases](https://github.com/wxyu71/Lumi_Books/releases)。
+本仓库由一人维护。保持现有便捷发布方式：**新 Beta 版本更新到 `main` → 正常 Required CI 全绿 → 自动构建、签名并创建 GitHub Pre-release**。不需要人工 Tag、二次完整 CI 或额外发布审批 Environment；但要首次配置**固定签名**。工作流在 `.github/workflows/android-release.yml`，下载地址是 [本 Fork 的 Releases](https://github.com/wxyu71/Lumi_Books/releases)。
 
-## 操作步骤
+## 首次配置（只做一次）
 
-1. 在功能分支上修改 `gradle.properties`：`lumi.communityVersionName=X.Y.Z-beta.N`，`lumi.communityVersionCode` 递增；同时更新 `app/src/main/assets/changelog.md`。
-2. 将版本改动正常更新到 `main`（可合并已验证 PR，或由维护者直接推送）；`main` 的 Android CI 仍必须成功。不要按文件逐次 push，也不必额外创建 Tag。
-3. `main` 的 `Android Community Beta` 工作流全绿后，发布工作流自动检查**刚通过的精确提交 SHA 仍为 main HEAD**、版本格式及已有 Release。如果同版本已经发布就跳过。
-4. 对新增版本构建未签名的优化型 `:app:assembleRelease`，CI 当场生成临时签名密钥、签 APK、验证包名/版本/签名及 `SHA256SUMS.txt`，随后自动创建 `vX.Y.Z-beta.N` Tag 和 GitHub **Pre-release**。
-5. 下载 `Lumi-Community-vX.Y.Z-beta.N-universal.apk`，解压/下载校验文件并可执行 `sha256sum -c SHA256SUMS.txt`。如 Actions 失败，先修正代码和验证结果；不创建人工 Release 掩盖失败。
+在自己可信的电脑上准备 JDK，**在仓库之外**运行：
 
-## 重要限制：临时签名不支持覆盖更新
+```bash
+keytool -genkeypair \
+  -keystore lumi-community-release.p12 \
+  -storetype PKCS12 \
+  -alias lumi-community \
+  -keyalg RSA \
+  -keysize 3072 \
+  -validity 10000 \
+  -dname "CN=Lumi Community"
+```
 
-**每一个 Beta 使用不同签名证书。** Android 要求更新 APK 与已安装包具有匹配签名，所以本流程发布的下一版无法直接覆盖前一版。
+按提示设置密码。PKCS12 文件使用同一个存储/私钥密码；工作流中别名固定为 `lumi-community`。推荐使用 ASCII 密码，减少跨平台签名工具的编码问题。**不要在聊天、Issues、提交、PR 或 Actions 日志中共享私钥和密码。**
 
-在应用中先**备份阅读数据**（包含书籍和书签/笔记等必要内容），确认备份可用后，再卸载旧版并安装新版。卸载通常删除私有应用数据。应用内“检查更新”只提示新版本并打开本 Fork 的 GitHub Releases，**不承诺一键覆盖安装**。
+再把文件转为 Base64（这是编码，不是加密）：
 
-如果将来需要无损覆盖升级，再按需要改为可重复使用的签名身份；对单人个人测试没有必要现在维护四个 Secrets、证书指纹变量或复杂发布审批。
+```bash
+python3 -c "import base64; from pathlib import Path; print(base64.b64encode(Path('lumi-community-release.p12').read_bytes()).decode())"
+```
 
-## 权限和故障处理
+在 [仓库 Actions Secrets 设置](https://github.com/wxyu71/Lumi_Books/settings/secrets/actions) 新建两个 **Repository secrets**：
 
-发布只接受本仓库 `main` 上成功的 `push` CI，不能由外部 PR 直接启动。GitHub Actions 发布 Job 使用 `contents: write` 创建 Tag/Release，普通 CI 仍是只读权限。不使用 `[skip ci]`、GitHub Pages、原作者镜像或者第三方网盘。
+| Secret | 值 |
+| --- | --- |
+| `LUMI_BETA_KEYSTORE_BASE64` | 上一条命令的完整 Base64 内容 |
+| `LUMI_BETA_KEYSTORE_PASSWORD` | 创建 PKCS12 时输入的密码 |
+
+**不要上传 `.p12` 到仓库**，不用配置 `beta-release` Environment、单独的 alias Secret 或证书指纹变量。CI 只在成功的 `main` 发布任务中解码临时密钥文件，使用 `zipalign` / `apksigner` 签名，验证 APK 和 SHA-256 后发布。
+
+将原始 `lumi-community-release.p12` 文件及其密码至少分别安全备份一份。**以后要重用这份原密钥，而不是重新运行 `keytool` 生成“同名密钥”。**
+
+如需检查证书公钥指纹（非机密；无需上传成变量）：
+
+```bash
+keytool -list -v -keystore lumi-community-release.p12 -storetype PKCS12 -alias lumi-community
+```
+
+## 每次发布
+
+1. 在功能分支或 `main` 中更新 `gradle.properties` 的 `lumi.communityVersionName=X.Y.Z-beta.N`，并严格递增 `lumi.communityVersionCode`；同步更新 `app/src/main/assets/changelog.md`。
+2. 正常推送或合并到 `main`；`Android Community Beta` 的完整 Required CI 全绿后自动触发发布 Job。
+3. 发布 Job 验证该成功的 SHA 仍是 `main` HEAD，且该版本未曾发布。它构建优化后的 OSS Release APK，使用**上面配置的同一签名密钥**，自动创建 `vX.Y.Z-beta.N` Tag 和 GitHub Pre-release。
+4. 在 [Releases](https://github.com/wxyu71/Lumi_Books/releases) 下载 `Lumi-Community-vX.Y.Z-beta.N-universal.apk` 和 `SHA256SUMS.txt`；可用 `sha256sum -c SHA256SUMS.txt` 校验。
+5. 下一次发布仍用相同密钥、相同 `applicationId` 和更高 `versionCode`，通常能在 Android 上直接覆盖安装旧 Community Release Beta，保留本地应用数据。
+
+**一次性迁移注意**：如果手机已安装先前用 Debug 密钥或临时密钥签发的测试包，它**不能**直接覆盖升级到这个新固定密钥版本。第一次迁移前先备份书籍、笔记及设置，再卸载旧包安装新包；之后固定签名的版本即可正常覆盖升级。
+
+## 缺少 Secret 或 CI 失败
+
+任何一个 Secret 缺失、密码错误、签名不成功或 APK 信息不匹配，发布任务会失败，**不会发布未签名或临时签名的安装包**。普通 PR CI 不读取密钥且继续保持只读权限。如首次设置晚于某轮成功的 `main` CI，需要在配置后对**尚未发布的新版**正常触发一次 `main` CI；不使用空提交绕过版本控制，也不要手工创建未验证 Release。

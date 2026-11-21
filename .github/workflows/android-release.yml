@@ -82,14 +82,20 @@ jobs:
           chmod +x ./gradlew
           ./gradlew --no-daemon :app:assembleRelease
 
-      - name: Sign with an ephemeral personal-preview identity and verify
+      - name: Sign with the stable Community Beta identity and verify
         if: steps.version.outputs.publish == 'true'
         shell: bash
         env:
           VERSION: ${{ steps.version.outputs.version }}
           VERSION_CODE: ${{ steps.version.outputs.code }}
+          LUMI_BETA_KEYSTORE_BASE64: ${{ secrets.LUMI_BETA_KEYSTORE_BASE64 }}
+          LUMI_BETA_KEYSTORE_PASSWORD: ${{ secrets.LUMI_BETA_KEYSTORE_PASSWORD }}
         run: |
           set -euo pipefail
+          [[ -n "$LUMI_BETA_KEYSTORE_BASE64" && -n "$LUMI_BETA_KEYSTORE_PASSWORD" ]] || {
+            echo "Configure both LUMI_BETA_KEYSTORE_BASE64 and LUMI_BETA_KEYSTORE_PASSWORD in repository Actions secrets" >&2
+            exit 1
+          }
           sdk="${ANDROID_SDK_ROOT:-$ANDROID_HOME}/build-tools/37.0.0"
           shopt -s nullglob
           apks=(app/build/oss/outputs/apk/release/*universal*.apk)
@@ -104,22 +110,21 @@ jobs:
             echo "APK package or version does not match source" >&2; exit 1;
           }
           umask 077
-          pass="$(openssl rand -hex 24)"
-          store="$RUNNER_TEMP/lumi-personal-beta.jks"
+          store="$RUNNER_TEMP/lumi-community-release.p12"
           trap 'rm -f "$store" "$RUNNER_TEMP/lumi-aligned.apk"' EXIT
-          keytool -genkeypair -noprompt -keystore "$store" \
-            -alias lumi-preview -keyalg RSA -keysize 3072 -validity 3650 \
-            -storepass "$pass" -keypass "$pass" \
-            -dname "CN=Lumi Community Personal Preview"
+          printf '%s' "$LUMI_BETA_KEYSTORE_BASE64" | base64 --decode > "$store"
+          [[ -s "$store" ]] || { echo "Empty signing keystore" >&2; exit 1; }
           "$sdk/zipalign" -f -p 4 "$apk" "$RUNNER_TEMP/lumi-aligned.apk"
           mkdir -p dist
           name="Lumi-Community-v$VERSION-universal.apk"
-          "$sdk/apksigner" sign --ks "$store" --ks-key-alias lumi-preview \
-            --ks-pass "pass:$pass" --key-pass "pass:$pass" \
+          "$sdk/apksigner" sign --ks "$store" --ks-type PKCS12 \
+            --ks-key-alias lumi-community \
+            --ks-pass env:LUMI_BETA_KEYSTORE_PASSWORD \
+            --key-pass env:LUMI_BETA_KEYSTORE_PASSWORD \
             --out "dist/$name" "$RUNNER_TEMP/lumi-aligned.apk"
           "$sdk/apksigner" verify --verbose --print-certs "dist/$name"
           (cd dist && sha256sum "$name" > SHA256SUMS.txt && sha256sum --check SHA256SUMS.txt)
-          echo "Personal Beta $VERSION: unsigned release build signed once for this distribution; the next Beta is NOT an in-place APK update." >> "$GITHUB_STEP_SUMMARY"
+          echo "Personal Beta $VERSION: APK signed with the persistent Community Beta key; later releases can upgrade in place when package ID and versionCode are compatible." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Create the Pre-release and version tag automatically
         if: steps.version.outputs.publish == 'true'
@@ -139,11 +144,11 @@ jobs:
           cat > "$RUNNER_TEMP/beta-notes.md" <<'NOTES'
           Lumi Community — non-official personal-use Beta built from public OSS sources.
 
-          This Beta APK is signed with a newly generated temporary key, not the original author's key.
-          IMPORTANT: Future Beta APKs use a different key and CANNOT be installed over this app.
-          Back up your reading data inside the app before uninstalling an older Beta;
-          uninstalling normally removes its private app data. Then install the new Beta.
-          This is intended for personal testing, not an automatically upgradable app distribution.
+          This APK uses the same stable Community Beta signing key as future releases.
+          Newer Betas can normally install over older Betas when signed by this key
+          and shipped with a higher versionCode. It is not signed by the upstream author.
+          Builds using a debug or previously temporary signing key are NOT compatible:
+          back up data before uninstalling those builds and installing this release.
 
           Verify the downloadable APK using SHA256SUMS.txt.
           NOTES
