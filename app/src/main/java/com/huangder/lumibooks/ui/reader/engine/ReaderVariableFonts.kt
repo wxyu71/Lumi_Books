@@ -61,6 +61,19 @@ private inline fun readVariableWeightRange(
 private data class WeightAxis(val range: ClosedFloatingPointRange<Float>?)
 private val axisCache = LruCache<String, WeightAxis>(32)
 
+/**
+ * Android 26-28 can stream a compiled font resource, although openRawResource's
+ * @RawRes annotation only documents the conventional raw/ directory.
+ *
+ * This exception is deliberately limited to this one real font-file read. The
+ * API 29+ path uses Font.Builder(Resources, @FontRes), as intended.
+ */
+@android.annotation.SuppressLint("ResourceType")
+private fun legacyBundledSerifFontBuffer(context: Context): ByteBuffer =
+    context.resources.openRawResource(R.font.source_serif4_regular).use {
+        ByteBuffer.wrap(it.readBytes())
+    }
+
 internal fun readerVariableWeightRange(context: Context, fontType: String,
     customFontPath: String?): ClosedFloatingPointRange<Float>? {
     if (fontType.startsWith("custom") && customFontPath != null) {
@@ -71,9 +84,13 @@ internal fun readerVariableWeightRange(context: Context, fontType: String,
     synchronized(axisCache) { axisCache.get(key)?.let { return it.range } }
     val range = runCatching {
     when {
-        // Android Resources can stream font resources directly; no invalid @raw alias needed.
-        fontType == "serif" -> context.resources.openRawResource(R.font.source_serif4_regular).use {
-            variableWeightRange(ByteBuffer.wrap(it.readBytes()))
+        fontType == "serif" -> {
+            val fontBuffer = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                Font.Builder(context.resources, R.font.source_serif4_regular).build().buffer
+            } else {
+                legacyBundledSerifFontBuffer(context)
+            }
+            variableWeightRange(fontBuffer)
         }
         fontType in listOf("system", "sans_serif", "monospace") && Build.VERSION.SDK_INT >= 31 -> {
             val name = if (fontType == "monospace") "monospace" else "sans-serif"
