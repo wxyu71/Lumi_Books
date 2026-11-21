@@ -101,6 +101,10 @@ fun DiagnosticPage(
     diagnosticLogger: DiagnosticLogger
 ) {
     val context = LocalContext.current
+    val diagnosticShareText = stringResource(R.string.diagnostic_share)
+    val diagnosticMissingDescriptionText = stringResource(R.string.diagnostic_missing_description)
+    val diagnosticRecentDescriptionText = stringResource(R.string.diagnostic_recent_description)
+    val diagnosticPreviousCrashText = stringResource(R.string.diagnostic_previous_crash)
     val scope = rememberCoroutineScope()
     val restoredSession = remember { diagnosticLogger.activeSession() }
     var issueType by remember { mutableStateOf(restoredSession?.issueType ?: DiagnosticIssueType.OTHER) }
@@ -134,7 +138,7 @@ fun DiagnosticPage(
                 putExtra(Intent.EXTRA_STREAM, uri)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 clipData = android.content.ClipData.newRawUri("diagnostic", uri)
-            }, context.getString(R.string.diagnostic_share)))
+            }, diagnosticShareText))
         }.onFailure { Toast.makeText(context, it.message ?: "Share failed", Toast.LENGTH_LONG).show() }
     }
 
@@ -166,7 +170,7 @@ fun DiagnosticPage(
                         sessionId = sessionId,
                         issueType = issueType,
                         userDescription = description.trim().ifEmpty {
-                            context.getString(R.string.diagnostic_missing_description)
+                            diagnosticMissingDescriptionText
                         },
                         screenshotUris = screenshotUris,
                         includePreviousCrash = diagnosticLogger.hasPreviousCrash()
@@ -218,12 +222,12 @@ fun DiagnosticPage(
             onGenerate = { showPreview = true },
             onGenerateRecent = {
                 issueType = DiagnosticIssueType.OTHER
-                if (description.trim().isEmpty()) description = context.getString(R.string.diagnostic_recent_description)
+                if (description.trim().isEmpty()) description = diagnosticRecentDescriptionText
                 showPreview = true
             },
             onGeneratePrevious = {
                 issueType = DiagnosticIssueType.OTHER
-                description = context.getString(R.string.diagnostic_previous_crash)
+                description = diagnosticPreviousCrashText
                 showPreview = true
             },
             onShare = { generatedFile?.let(::share) },
