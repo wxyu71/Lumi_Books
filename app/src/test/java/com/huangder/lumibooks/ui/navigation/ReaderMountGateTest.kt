@@ -22,7 +22,7 @@ class ReaderMountGateTest {
         compose.mainClock.autoAdvance = false
         compose.setContent {
             if (rememberReaderMountReady("book", windowReady.value)) {
-                remember { mounted++; true }
+                remember { mounted += 1; 1 }
             }
         }
         compose.mainClock.advanceTimeBy(640)
@@ -40,7 +40,7 @@ class ReaderMountGateTest {
         var mounted = 0
         compose.setContent {
             if (rememberReaderMountReady("book", windowReady = true)) {
-                remember { mounted++; true }
+                remember { mounted += 1; 1 }
             }
         }
         compose.runOnIdle { assertEquals(1, mounted) }
