@@ -19,4 +19,10 @@
     <string name="markdown_source_unavailable">The source is temporarily unavailable. You are reading a saved Markdown copy.</string>
     <string name="markdown_original_changed">Original text changed</string>
     <string name="markdown_update_failed">Update failed. Your current version and notes were preserved.</string>
+    <string name="icon_style_lumi_chan">LUMI-chan</string>
+    <string name="chapter_preface_title">Preface</string>
+    <string name="reader_txt_toc_rule">TXT table of contents rule</string>
+    <string name="startup_diagnostic_title">Startup splash diagnostic log</string>
+    <string name="startup_diagnostic_help">Startup logging is enabled in this build and records startup on the device automatically, without a separate capture step. After installing over the app, finish any welcome flow and dismiss the splash animation, then close the app and open it from the home screen icon. After the flash appears, return promptly, export the most recent hour of logs and share it with the developer. Logs are never uploaded automatically. A screen recording is needed to verify the system launch screen.</string>
+    <string name="startup_diagnostic_export">Export startup splash logs</string>
 </resources>
