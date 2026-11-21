@@ -377,4 +377,26 @@
     <string name="diagnostic_step_one_desc">問題の種類と症状を入力して記録を始めます。この画面を離れて問題を再現できます。</string>
     <string name="diagnostic_step_two">ステップ 2</string>
     <string name="diagnostic_step_two_desc">問題を再現したら戻って診断パッケージを作成します。再現できないときは最近のログを直接エクスポートできます。</string>
+    <string name="replacement_help_title">正規表現置換ガイド</string>
+    <string name="replacement_help_tab_tutorial">チュートリアル</string>
+    <string name="replacement_help_tab_ai">AI プロンプト</string>
+    <string name="replacement_help_ai_screenshot_title">ステップ 1：置換したい部分を撮影</string>
+    <string name="replacement_help_ai_screenshot_body">読書画面のスクリーンショットを撮り、削除または置換したい文字と前後数行を含めてください。同じ種類の文字に異なる表記がある場合は、複数の画像を用意してください。\n\n画像を利用中の AI に送り、たとえば「広告の案内だけを削除して本文は残す」または「小明と小铭をどちらも阿明に置換する」のように目的を説明します。文字が判読できるようにしてください。撮影しにくい場合は原文を直接貼り付けてもかまいません。</string>
+    <string name="replacement_help_ai_copy_title">ステップ 2：プロンプトをコピーして画像と一緒に送る</string>
+    <string name="replacement_help_ai_copy_body">下のボタンでプロンプト全体をコピーし、スクリーンショットと置換の目的を画像対応 AI に送ります。プロンプトには Lumi の正規表現構文、置換形式、制限が含まれ、AI は画像内の文字に合わせてルールを作成できます。画面上の折り返しは実際の改行とは限りません。判読しにくい部分は AI に原文の確認を依頼してください。</string>
+    <string name="replacement_help_ai_copy">プロンプト全体をコピー</string>
+    <string name="replacement_help_ai_copied">コピーしました。AI に送信できます</string>
+    <string name="replacement_help_ai_prompt_title">AI に送るプロンプト</string>
+    <string name="replacement_help_ai_apply_title">AI の結果を Lumi に貼り付ける</string>
+    <string name="replacement_help_ai_apply_body">置換・クリーンアップ → ルールを追加 → 「正規表現」に戻ります。AI が出力した検索式を「検索」、置換文字を「置換後」にそれぞれ貼り付けてください。コードブロックの囲みや説明はコピーしません。一致した内容を削除する場合は「置換後」を空欄にします。\n\n現在はこの 2 つの入力欄に貼り付けるため、ファイルのインポートは不要です。現在の章のプレビューを確認してチェックマークで保存し、本とルールのスイッチを有効にしてください。結果が異なる場合は原文、エラー、期待する結果を AI に伝えてルールを修正させてください。</string>
+    <string name="replacement_help_intro_title">基本：同じ種類の文字を探して一括処理する</string>
+    <string name="replacement_help_intro_body">通常の置換は「小明」を「阿明」に変えるなど固定文字列向けです。正規表現による置換では一致パターンを使用し、「小明」と「小铭」の両方や「本章未完」で始まる行全体など、類似の文字を検索できます。\n\n通常置換と正規表現ルールはすべての本で共通のルールライブラリに保存されるため、本を替えても再入力は不要です。新しい本やルールは初期状態で無効です。本ごとに使用するルールと実行順序を選べます。ルールの内容を変更・削除すると、そのルールを使うすべての本に影響します。\n\nクリーンアップは有効にした本の画面上の本文だけを変更し、元のファイルは書き換えません。本ごとのスイッチやルールを無効にすれば元の本文に戻せます。</string>
+    <string name="replacement_help_steps_title">初めての設定：5 ステップ</string>
+    <string name="replacement_help_steps_body">1. 置換・クリーンアップに戻り「ルールを追加」をタップします。\n2. 「正規表現」を選び、下の例の検索式だけを「検索」に入力します。引用符、コードブロックの囲み、/…/g は入力しません。\n3. 「置換後」を入力します。一致部分を削除する場合は完全に空欄にし、「空欄」という文字を入力しないでください。ルール名は任意です。\n4. 「現在の章のプレビュー」で一致数と置換前後の文章を確認します。表示は最初の一致付近だけで、本全体の一致数を示すものではありません。\n5. 右上のチェックマークで保存し、「この本で有効」と該当ルールのスイッチをオンにします。\n\n作成・編集画面の右上にある i アイコンからこの説明を開き、戻って編集を続けられます。</string>
+    <string name="replacement_help_symbols_title">よく使う記号一覧</string>
+    <string name="replacement_help_symbols_body">.　任意の 1 文字。通常は改行を除きます\n[明铭]　「明」または「铭」の 1 文字\n[0-9] または \\d　半角数字 1 桁。全角数字には [０-９] を使用\n[一二三四五六七八九十百千万]+　指定した漢数字の 1 文字以上\n\\s　スペース、タブ、改行などの空白文字\n[ \\t]　半角スペースまたはタブだけ。行をまたぎません\n\\S　空白以外の文字\n*　直前の項目の 0 回以上の繰り返し\n+　1 回以上の繰り返し\n?　0 回または 1 回（省略可能）\n{2,4}　2～4 回の繰り返し。{2} はちょうど 2 回\nA|B　A または B に一致\n(…)　置換に使用するグループを作成\n^ / $　文章の開始／終了。(?m) を付けると行頭／行末にも一致\n\nたとえば [0-9]+ は 1、25、108 に一致します。角括弧は 1 文字を選び、丸括弧は文字列をグループ化します。</string>
+    <string name="replacement_help_escape_title">記号そのものを検索する方法</string>
+    <string name="replacement_help_escape_body">「検索」では . * + ? ( ) [ ] { } ^ $ | とバックスラッシュ自体が特別な意味を持ちます。文字そのものに一致させるには、通常は直前にバックスラッシュを付けます。\n\n例：\\. はピリオド、\\( は開き丸括弧、\\[ は開き角括弧、\\\\ はバックスラッシュ 1 個に一致します。入力欄には \\d と直接入力し、プログラムのソースコードのような \\\\d にはしないでください。\n\n句読点も含む固定文字列を削除するだけなら、「通常」モードの方が簡単でエスケープは不要です。中国語の括弧（ ）や書名括弧《 》はそのまま入力できます。</string>
+    <string name="replacement_help_examples_title">そのまま入力できる例</string>
+    <string name="replacement_help_examples_body">以下の例ではすべて「正規表現」を選択します。式を長押しして選択・コピーし、本の内容に合わせて調整してください。「空欄」と記載された箇所には何も入力しません。</string>
 </resources>

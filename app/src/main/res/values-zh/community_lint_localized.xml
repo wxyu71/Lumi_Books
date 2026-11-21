@@ -312,4 +312,26 @@
     <string name="epub_script_missing_kept">当前章节未能启动原排版阅读脚本。</string>
     <string name="epub_script_error_kept">原排版脚本执行失败，可重试加载当前页。</string>
     <string name="epub_document_error_kept">当前章节加载失败，未更改排版模式。</string>
+    <string name="replacement_help_title">正则替换使用指南</string>
+    <string name="replacement_help_tab_tutorial">教程</string>
+    <string name="replacement_help_tab_ai">AI 提示词</string>
+    <string name="replacement_help_ai_screenshot_title">第 1 步：截取想要替换的片段</string>
+    <string name="replacement_help_ai_screenshot_body">在阅读页截图，保留想要删除或替换的文字，以及前后几行正文。如果同一类内容有不同写法，准备多张截图。\n\n把截图发给你使用的 AI，并补充一句目标，例如：“删除截图中的广告提示，保留其他正文”，或“把小明、小铭都改成阿明”。截图中的文字要清楚；不方便截图时，也可以直接粘贴原文。</string>
+    <string name="replacement_help_ai_copy_title">第 2 步：复制提示词，和截图一起发给 AI</string>
+    <string name="replacement_help_ai_copy_body">点击下方按钮复制完整提示词，将它与截图、替换目标一同发送给支持看图的 AI。提示词已包含 Lumi 的正则语法、替换格式和限制，AI 会按截图里的文字样式生成规则。截图自动折行不一定是实际换行；识别不清楚时，让 AI 先确认原文。</string>
+    <string name="replacement_help_ai_copy">复制完整提示词</string>
+    <string name="replacement_help_ai_copied">已复制，可发送给 AI</string>
+    <string name="replacement_help_ai_prompt_title">发送给 AI 的提示词</string>
+    <string name="replacement_help_ai_apply_title">拿到结果后，粘贴回 Lumi</string>
+    <string name="replacement_help_ai_apply_body">回到替换净化 → 添加规则 → 选择“正则”。将 AI 输出的查找表达式和替换内容分别复制到“查找”“替换为”，不要复制代码框的围栏和说明。删除规则的“替换为”保持空白。\n\n当前通过这两个输入框粘贴规则，无需导入文件。核对当前章节预览后，点击勾保存，再开启本书和规则开关。如果匹配不对，把原文、错误提示和期望结果补充给 AI，让它调整。</string>
+    <string name="replacement_help_intro_title">先理解：查找一类文字，再统一处理</string>
+    <string name="replacement_help_intro_body">普通替换适合固定文字，例如把“小明”改成“阿明”。正则替换则用一段“匹配规则”找出相似内容，例如同时找到“小明”和“小铭”，或找到以“本章未完”开头的整行。\n\n普通和正则规则都保存在全书共用的规则库中，换书后无需重新输入。新书和新规则默认关闭，每本书单独选择要开启的规则、设置执行顺序。修改或删除规则内容会影响所有使用它的书。\n\n净化只改变启用它的书在阅读时显示的正文，不会改写原文件。关闭“在本书启用”或某条规则，就可以恢复对应原文。</string>
+    <string name="replacement_help_steps_title">第一次使用，按这 5 步来</string>
+    <string name="replacement_help_steps_body">1. 返回替换净化，点击“添加规则”。\n2. 选择“正则”，将下面示例的查找式填入“查找”。只填表达式本身，不要加引号、代码框符号或 /…/g。\n3. 填写“替换为”。留空表示删除匹配内容，不要真的输入“留空”两个字。名称可不填。\n4. 查看“当前章节预览”，核对匹配处数和替换前后的文字。这里只展示第一处附近的变化，不代表整本书只有这一处。\n5. 点击右上角的勾保存，并打开“在本书启用”和该条规则的开关。\n\n可从新建或编辑页右上角的 i 打开本教程，返回后继续填写。</string>
+    <string name="replacement_help_symbols_title">常用符号速查</string>
+    <string name="replacement_help_symbols_body">.　任意一个字符，默认不包括换行\n[明铭]　匹配“明”或“铭”中的一个字\n[0-9] 或 \\d　一个半角数字；全角数字可用 [０-９]\n[一二三四五六七八九十百千万]+　一个或多个列出的中文数字字符\n\\s　空白字符，包含空格、制表符和换行\n[ \\t]　只匹配半角空格或制表符，不跨行\n\\S　非空白字符\n*　前面的内容重复 0 次或多次\n+　重复 1 次或多次\n?　出现 0 次或 1 次\n{2,4}　重复 2 至 4 次；{2} 表示恰好 2 次\nA|B　匹配 A 或 B\n(…)　把内容分为一组，可在替换时取用\n^ / $　文本片段的开头 / 结尾；加 (?m) 后也匹配行首 / 行尾\n\n例如 [0-9]+ 可以找到 1、25、108。方括号表示“选一个字符”，圆括号表示“把一段内容分组”，两者作用不同。</string>
+    <string name="replacement_help_escape_title">符号本身怎么查找？</string>
+    <string name="replacement_help_escape_body">在“查找”中，. * + ? ( ) [ ] { } ^ $ | 和反斜杠本身有特殊含义。要匹配原样符号，通常在前面加一个反斜杠。\n\n例如：\\. 查找句点，\\( 查找左圆括号，\\[ 查找左方括号，\\\\ 查找一个反斜杠。输入框里直接写 \\d，不要像编程代码那样写成 \\\\d。\n\n若只想删除一个固定短语（包括其中的标点），选择“普通”模式更方便，无需转义。中文括号“（ ）”和书名号“《 》”可直接填写。</string>
+    <string name="replacement_help_examples_title">可以照着填写的例子</string>
+    <string name="replacement_help_examples_body">以下示例都选择“正则”模式。长按表达式可选中复制，再按自己的书籍内容修改。示例中的“留空”表示不输入任何内容。</string>
 </resources>
