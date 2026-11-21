@@ -63,7 +63,7 @@ class WorkflowBuildAndTestContract(unittest.TestCase):
 
     def test_actions_are_pinned_to_full_sha(self):
         import re
-        external = re.findall(r"(?m)^\s*uses: (?!\.\/)([^\s]+)$", self.workflow)
+        external = re.findall(r"(?m)^\s*uses:\s+(?!\.\/)([^\s#]+)", self.workflow)
         self.assertTrue(external)
         for item in external:
             self.assertRegex(item, r"^[^@]+@[0-9a-f]{40}$")
