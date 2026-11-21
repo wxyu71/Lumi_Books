@@ -9,11 +9,15 @@ log="$1"
 shift
 mkdir -p "$(dirname "$log")"
 : > "$log"
+# Failed resolution metadata may be cached even when Maven Central recovers.
+# A retry MUST ask Gradle to refresh that negative cache; repeating the same
+# command simply fails against the same locally cached "not found" result.
+retry_flags=()
 for attempt in 1 2 3; do
   attempt_log="$log.attempt$attempt.log"
-  echo "Gradle attempt $attempt/3: $*" | tee -a "$log"
+  echo "Gradle attempt $attempt/3: ${retry_flags[*]} $*" | tee -a "$log"
   set +e
-  timeout --signal=TERM --kill-after=30s 21m ./gradlew --no-daemon --console=plain --stacktrace "$@" \
+  timeout --signal=TERM --kill-after=30s 21m ./gradlew --no-daemon --console=plain --stacktrace "${retry_flags[@]}" "$@" \
     2>&1 | tee "$attempt_log"
   gradle_rc=$?
   set -e
@@ -24,8 +28,9 @@ for attempt in 1 2 3; do
     exit "$gradle_rc"
   fi
   if (( attempt < 3 )) && python3 tools/ci_dependency_failure.py "$attempt_log"; then
-    echo "::warning::Gradle plugin/dependency resolution failed; retrying attempt $attempt/2" | tee -a "$log"
-    sleep "$((attempt * 5))"
+    echo "::warning::Verified published plugin or transient network resolution failed; retrying with --refresh-dependencies (retry $attempt/2)" | tee -a "$log"
+    retry_flags=(--refresh-dependencies --info)
+    sleep "$((attempt * 15))"
   else
     echo "Gradle exited $gradle_rc; no retry for compiler/test/build failures" | tee -a "$log"
     exit "$gradle_rc"

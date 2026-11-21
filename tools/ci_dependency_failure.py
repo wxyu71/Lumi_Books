@@ -19,10 +19,19 @@ def is_retryable_resolution_failure(log: str) -> bool:
         log, re.IGNORECASE,
     ):
         return False
-    # A missing plugin-marker message alone is not a proven transient outage.
-    # CI #81 retried the identical unresolved marker three times to no avail.
-    # Only explicit network failures qualify for a bounded retry.
-    return bool(NETWORK_MARKERS.search(log))
+    # Hilt 2.58's implementation AND marker have verifiable Maven Central
+    # coordinates. This precise "not found" failure is allowed a limited
+    # refresh-dependencies retry because Gradle caches failed lookups.
+    # Never generalize this exception to arbitrary versions/plugins.
+    published_hilt = (
+        "Plugin [id: 'com.google.dagger.hilt.android', version: '2.58'" in log
+        and "not found in any of the following sources" in log
+        and (
+            "com.google.dagger:hilt-android-gradle-plugin:2.58" in log
+            or "com.google.dagger.hilt.android.gradle.plugin:2.58" in log
+        )
+    )
+    return published_hilt or bool(NETWORK_MARKERS.search(log))
 
 def main() -> int:
     if len(sys.argv) != 2:

@@ -7,11 +7,17 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from ci_dependency_failure import is_retryable_resolution_failure
 
 class CiDependencyFailureTest(unittest.TestCase):
-    def test_missing_hilt_marker_is_not_automatically_retryable(self):
-        log = """Plugin [id: 'com.google.dagger.hilt.android', version: '2.58', apply: false] was not found
+    def test_published_hilt_258_may_be_rechecked_with_fresh_metadata(self):
+        log = """Plugin [id: 'com.google.dagger.hilt.android', version: '2.58', apply: false] was not found in any of the following sources:
         Plugin Repositories (could not resolve plugin artifact 'com.google.dagger.hilt.android:com.google.dagger.hilt.android.gradle.plugin:2.58')"""
-        self.assertFalse(is_retryable_resolution_failure(log))
+        self.assertTrue(is_retryable_resolution_failure(log))
         self.assertTrue(is_retryable_resolution_failure(log + "\nCould not GET https://repo.maven.apache.org/"))
+        self.assertTrue(is_retryable_resolution_failure(
+            "Plugin [id: 'com.google.dagger.hilt.android', version: '2.58', "
+            "artifact: 'com.google.dagger:hilt-android-gradle-plugin:2.58', apply: false] "
+            "was not found in any of the following sources: "
+            "could not resolve plugin artifact 'com.google.dagger:hilt-android-gradle-plugin:2.58'"
+        ))
 
     def test_network_errors(self):
         for detail in ("Could not GET 'https://repo.maven.apache.org/maven2'",
@@ -30,6 +36,17 @@ class CiDependencyFailureTest(unittest.TestCase):
     def test_generic_misconfiguration_is_not_retryable(self):
         self.assertFalse(is_retryable_resolution_failure("Plugin [id: 'not.a.real.plugin'] was not found"))
         self.assertFalse(is_retryable_resolution_failure("Could not find method android() for arguments"))
+        self.assertFalse(is_retryable_resolution_failure(
+            "Plugin [id: 'com.google.dagger.hilt.android', version: '2.59', "
+            "artifact: 'com.google.dagger:hilt-android-gradle-plugin:2.59'] "
+            "was not found in any of the following sources:"
+        ))
+        self.assertFalse(is_retryable_resolution_failure(
+            "Plugin [id: 'com.google.dagger.hilt.android', version: '2.58', "
+            "artifact: 'com.google.dagger:hilt-android-gradle-plugin:2.58'] "
+            "was not found in any of the following sources:\n"
+            "Compilation error. See log for more details"
+        ))
         self.assertFalse(is_retryable_resolution_failure(""))
 
 if __name__ == "__main__":

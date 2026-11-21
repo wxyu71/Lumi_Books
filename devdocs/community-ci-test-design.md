@@ -77,11 +77,51 @@ https://github.com/gradle/actions/blob/main/docs/setup-gradle.md
 Do not add a second Gradle Home cache using `actions/cache` or setup-java.
 Review each run's cache restore/save keys and the Hilt resolution log before
 changing any dependency version or suppressing a test.
+## CI #84 cold-cache resolution follow-up
+
+The first trusted-PR APK job can itself start with an empty cache. Run #84
+failed to resolve the already published Hilt 2.58 implementation during
+that initial APK build; the Gradle setup action still saved its partial
+cache at job completion. Cache handoff alone cannot fix a cold-cache
+repository lookup failure.
+
+Gradle's dependency resolution metadata cache stores missing artifacts,
+including repository misses. A retry that repeats the same command can
+return the cached miss in seconds; CI #81 showed this exact fast-repeat
+pattern. Gradle documents `--refresh-dependencies` to re-query metadata
+and validate artifacts against configured repositories. The retry wrapper
+now adds `--refresh-dependencies --info` **only after** the classifier
+positively identifies a transient network error or the pinned, known
+published Hilt 2.58 marker/implementation miss. A maximum of three
+attempts with bounded backoff remains; Kotlin compiler failures, failed
+JUnit assertions, timeouts, OOM and arbitrary missing plugins remain fatal.
+
+Evidence: https://docs.gradle.org/current/userguide/dependency_caching.html
+and https://central.sonatype.com/artifact/com.google.dagger/hilt-android-gradle-plugin .
+Inspect attempt-specific logs and cache save/restore summaries; a green
+build is never inferred from a successful retry alone.
+## CI #84: landscape statistics UI regression
+
+JUnit confirmed 1 failed UI test in 791 UI cases; reader and core shards
+passed. The explicit failure state after tapping Month was:
+`scope=MONTH, loaded=false, comparison=false, error=null`.
+This confirms the tab state changed, but the asynchronous insights
+recomposition/collection had not completed at the assertion.
+
+The Compose test now calls `assertIsSelected()` and `waitForIdle()`
+before polling the independent `StateFlow` for data, matching its existing
+passing theme/portrait test. Historical period navigation also synchronizes
+the Compose clock before awaiting data and now retains detailed state
+diagnostics if loading fails. This preserves every original interaction,
+data-loaded assertion and screenshot capture; no timeout increase or skip.
+
+Official reference: https://developer.android.com/develop/ui/compose/testing/synchronization
 ## Scoped dependency retries and secure caching
 
 The tools/ci_gradle_retry.sh wrapper allows at most three total attempts and
-only when tools/ci_dependency_failure.py positively detects plugin/dependency
-resolution or transient network errors. Kotlin compiler errors, test failures,
+only when tools/ci_dependency_failure.py positively detects the pinned,
+published Hilt 2.58 plugin resolution miss or transient network errors.
+Retries bypass stale missing-module metadata via --refresh-dependencies. Kotlin compiler errors, test failures,
 timeouts, OOM and cancellations are terminal; no tests are ignored or retried
 to obtain an accidental pass. Each attempt is logged separately and reported.
 The Gradle commands have a 21-minute per-attempt timeout and bounded jobs.

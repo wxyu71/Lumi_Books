@@ -143,6 +143,11 @@ class ReadingInsightsScreenTest {
         // Verify the actual user-facing tab semantics, not a direct model call.
         val monthTab = compose.onNodeWithText(context.getString(R.string.tab_month))
         monthTab.performClick()
+        // waitUntil polls the external StateFlow, but does not guarantee a
+        // Compose recomposition. Flush the tab semantics and test clock first,
+        // as the working portrait/theme test does.
+        monthTab.assertIsSelected()
+        compose.waitForIdle()
         try {
             compose.waitUntil(10_000) {
                 model.uiState.value.selection.scope == StatisticsScope.MONTH &&
@@ -157,11 +162,24 @@ class ReadingInsightsScreenTest {
                 error
             )
         }
-        monthTab.assertIsSelected()
         compose.onNodeWithContentDescription(context.getString(R.string.insights_previous_period)).performClick()
+        compose.waitForIdle()
         val previous = ReadingInsightsFixtures.today.minusMonths(1)
-        compose.waitUntil(10_000) { model.uiState.value.selection.year == previous.year &&
-            model.uiState.value.selection.month0 == previous.monthValue - 1 && model.uiState.value.insights != null }
+        try {
+            compose.waitUntil(10_000) {
+                model.uiState.value.selection.year == previous.year &&
+                    model.uiState.value.selection.month0 == previous.monthValue - 1 &&
+                    model.uiState.value.insights != null
+            }
+        } catch (error: androidx.compose.ui.test.ComposeTimeoutException) {
+            val state = model.uiState.value
+            throw AssertionError(
+                "Previous month failed: scope=${state.selection.scope}, year=${state.selection.year}, " +
+                    "month0=${state.selection.month0}, loaded=${state.insights != null}, " +
+                    "comparison=${state.comparison != null}, error=${state.error}",
+                error
+            )
+        }
         compose.onNodeWithText(periodLabel(StatisticsPeriod.month(previous.year, previous.monthValue - 1))).assertIsDisplayed()
         compose.runOnIdle {
             val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
