@@ -1,8 +1,8 @@
-name: Android device smoke and manual benchmark
+name: Extended Android emulator matrix (non-blocking) + manual benchmark
 
 on:
   schedule:
-    # Nightly emulator use is expensive; run one weekly diagnostic on default main.
+    # PR gate runs API 29 + 35; broader API range runs weekly on main.
     - cron: '47 5 * * 0'
   workflow_dispatch:
     inputs:
@@ -21,19 +21,23 @@ concurrency:
 
 jobs:
   device:
-    name: Emulator API 35 UI smoke
+    name: Extended emulator API ${{ matrix.api }}
     runs-on: ubuntu-24.04
     timeout-minutes: 100
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [26, 33, 36]
     steps:
       - name: Checkout sources
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - name: Set up Android Gradle toolchain (JDK 17)
+      - name: Set up Android Gradle toolchain (JDK 21)
         uses: ./.github/actions/setup-android-toolchain
         with:
-          java-version: '17'
+          java-version: '21'
           cache-read-only: 'true'
 
       - name: Verify community policy
@@ -54,7 +58,7 @@ jobs:
       - name: Run targeted Android UI tests (and optional Macrobenchmark)
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
-          api-level: 35
+          api-level: ${{ matrix.api }}
           arch: x86_64
           target: google_apis
           profile: pixel_6
@@ -63,10 +67,11 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: |
             set -euo pipefail
-            timeout --signal=TERM --kill-after=30s 35m \
-              ./gradlew --no-daemon --console=plain --stacktrace :app:connectedDebugAndroidTest \
-              -Pandroid.testInstrumentationRunnerArguments.class=com.huangder.lumibooks.data.local.dao.FolderDaoTest,com.huangder.lumibooks.ui.components.LiquidGlassButtonInteractionInstrumentedTest
-            if [[ "${{ inputs.run_macrobenchmarks }}" == "true" ]]; then
+            export LUMI_DEVICE_EXTENDED=1
+            bash tools/ci_run_device_smoke.sh
+            # Benchmarks are only run manually on the newest API to avoid
+            # distorting CI results with cross-API emulator performance.
+            if [[ "${{ inputs.run_macrobenchmarks }}" == "true" && "${{ matrix.api }}" == "36" ]]; then
               timeout --signal=TERM --kill-after=30s 40m \
                 ./gradlew --no-daemon --console=plain --stacktrace :benchmark:connectedBenchmarkAndroidTest \
                 -Pandroid.testInstrumentationRunnerArguments.class=com.huangder.lumibooks.benchmark.ReaderMacrobenchmark
@@ -76,8 +81,9 @@ jobs:
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: Lumi-Community-Device-${{ github.run_number }}-${{ github.run_attempt }}
+          name: Lumi-Community-Extended-API${{ matrix.api }}-${{ github.run_number }}-${{ github.run_attempt }}
           path: |
+            test-logs/device/
             app/build/oss/reports/androidTests/
             app/build/oss/outputs/androidTest-results/
             benchmark/build/reports/androidTests/

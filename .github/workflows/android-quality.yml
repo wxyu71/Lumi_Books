@@ -1,4 +1,4 @@
-name: Weekly Android quality baseline
+name: Weekly release/diagnostic Lint sweep (non-blocking)
 
 on:
   schedule:
@@ -16,7 +16,7 @@ jobs:
   lint:
     name: Android Lint (baseline monitoring)
     runs-on: ubuntu-24.04
-    timeout-minutes: 50
+    timeout-minutes: 75
     steps:
       - name: Checkout public community source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -25,15 +25,15 @@ jobs:
       - name: Prepare Android toolchain
         uses: ./.github/actions/setup-android-toolchain
         with:
-          java-version: '17'
+          java-version: '21'
           cache-read-only: 'true'
       - name: Run official Android Lint without skipping findings
         shell: bash
         run: |
           set -euo pipefail
           chmod +x ./gradlew
-          timeout --signal=TERM --kill-after=30s 32m \
-            ./gradlew --no-daemon --console=plain --stacktrace :app:lintDebug
+          timeout --signal=TERM --kill-after=30s 52m \
+            ./gradlew --no-daemon --console=plain --stacktrace :app:lintRelease :app:lintDiagnostic
       - name: Upload Lint HTML, XML and text reports
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

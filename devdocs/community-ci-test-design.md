@@ -105,3 +105,70 @@ Draft status until full CI and separate hardware-level UX validation finish.
 An observed Maven 404 may be a transient CDN event or an artifact distribution
 issue, and the mirror may also lag: compare HTTP status per endpoint rather
 than blindly upgrading dependencies or disabling tests.
+
+## Expanded mandatory verification — instrumentation, lint, variants and release isolation
+
+Added after the successful #87 baseline (3,148 JVM test cases, zero failures).
+The new gate preserves that JVM suite **without reducing package coverage**.
+Android-specific checks run only after the APK+JVM job passes so shared
+Gradle caches can be read by subsequent CI runners. An APK failure does not
+skip JVM diagnostics inside the combined verification job.
+
+| Check | Scope | Blocking on PR? | Evidence |
+| --- | --- | --- | --- |
+| Community policy + source/test inventory | Privacy, locale, workflow/Gradle/self-test contracts | **Yes** | Tool logs |
+| APK + 3 JVM shards (JDK21) | Debug signing, version, SHA-256, 3,148+ tests | **Yes** | APK, signature file, checksums, per-shard JUnit |
+| Static Lint + variants | `:app:lintDebug`, `:app:assembleDiagnostic`, `:app:assembleRelease` | **Yes** | Lint HTML/XML, mappings, Gradle task logs |
+| Android emulator API29 + API35 | Room folder/migration integration, Compose controls, icon-style snapshot diff | **Yes**, both matrix children | Device JUnit XML, logcat and PNGs |
+| API26/33/36 expanded devices | More migrations, welcome, preferences, baseline visual interaction | No; weekly/manual | Instrumentation XML, device screenshots, logcat |
+| Release/diagnostic Android Lint | `:app:lintRelease :app:lintDiagnostic` | No; weekly/manual | Lint HTML/XML |
+| Reader Macrobenchmark | Separate benchmark instrumentation on latest API | No; explicit manual option | Perf trace/artifacts |
+| Real physical devices / manual UX | API levels, OEMs, Liquid Glass optics, accessibility, privacy network checks | Human release blocker, **not falsely represented as automated** | Acceptance checklist |
+
+### Device-result integrity
+
+`tools/ci_run_device_smoke.sh` runs explicit instrumentation class names
+on hardware-accelerated emulators. The main API29/35 gate requires at least
+20 reported JUnit testcases (including real Room schema migration tests)
+and zero failure/error nodes; the extended suite raises the minimum.
+`tools/ci_verify_android_junit.py` rejects missing TEST-*.xml, malformed XML,
+zero tests and failed assertions. A Python regression suite proves these
+failure modes. Each device matrix leg retains its own report, Gradle log,
+Android logcat, and available screenshot PNGs. Device evidence remains
+explicitly distinct from Robolectric JUnit reports.
+
+### Screenshot regression contract
+
+`AppIconScreenshotInstrumentedTest` renders the actual App Icon options UI,
+takes before/after PNGs on the emulator, changes the selected icon style
+through the UI, validates semantic selection and asserts significant
+pixel differences. PNGs are saved to app external storage and pulled
+for diagnosis. This checks a real interactive visual regression but is
+**not** a full golden-image baseline: anti-aliased text, GPU RenderNodes
+and OEM drivers are not yet certified against golden screenshots. The
+existing reader pixel geometry instrumentation remains in the codebase
+and can be promoted separately after stable device benchmarks.
+
+### Security and build-variant gates
+
+PR APKs must pass `aapt` identity/version verification, `apksigner verify`
+and Debug certificate inspection, followed by SHA256SUMS generation and
+round-trip verification. Only validated debug APKs are uploaded; Release
+and Diagnostic APKs are built but *never distributed or signed* from
+this PR workflow. Trusted main/same-repository PR may write Gradle basic
+cache; fork PR caches are strictly read-only. Workflows have read-only
+`GITHUB_TOKEN` and no release secrets. All external actions use pinned SHA.
+
+### Failure handling
+
+An APK failure keeps the required verification job red but the three
+JVM shard runner is still invoked (`always && !cancelled`) for independent
+diagnostics; JUnit and log artifacts always upload. A Lint failure does
+not suppress the subsequent release/diagnostic build check. Each emulator
+matrix leg runs with `fail-fast: false` so both APIs report independently.
+The final gate depends on policy, verify, quality and device-smoke and
+rejects `skipped`, `failure` or `cancelled` for any mandatory stage.
+
+References: [Android Lint official documentation](https://developer.android.com/studio/write/lint),
+[Android Emulator Runner](https://github.com/ReactiveCircus/android-emulator-runner),
+[GitHub Actions job dependencies](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax).
