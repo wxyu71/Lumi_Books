@@ -1,7 +1,14 @@
 pluginManagement {
     repositories {
-        // Hilt 2.58 marker and implementation are published to Maven Central.
-        // Android Gradle Plugin continues to resolve from Google's repository.
+        // Official Maven Central alternative endpoint. The canonical CDN
+        // reported HTTP GET "Resource missing" for the released Hilt 2.58 POM
+        // on multiple CI runs; keep the alternate scope limited to Dagger.
+        maven(url = "https://repo1.maven.org/maven2") {
+            content {
+                includeGroup("com.google.dagger")
+                includeGroup("com.google.dagger.hilt.android")
+            }
+        }
         mavenCentral()
         google()
         gradlePluginPortal()
@@ -24,6 +31,13 @@ dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         google()
+        // App Hilt/Compiler coordinates must use the same fallback as the
+        // plugin. Keep this alternative limited to the Dagger group.
+        maven(url = "https://repo1.maven.org/maven2") {
+            content {
+                includeGroup("com.google.dagger")
+            }
+        }
         mavenCentral()
     }
 }

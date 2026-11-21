@@ -116,6 +116,35 @@ diagnostics if loading fails. This preserves every original interaction,
 data-loaded assertion and screenshot capture; no timeout increase or skip.
 
 Official reference: https://developer.android.com/develop/ui/compose/testing/synchronization
+## CI #85: verified repository 404 despite forced Gradle refresh
+
+The APK job in [run #85](https://github.com/wxyu71/Lumi_Books/actions/runs/44872310637)
+ran all three bounded attempts, including `--refresh-dependencies --info`.
+Verbose Gradle output records `Resource missing. [HTTP GET:
+https://repo.maven.apache.org/maven2/com/google/dagger/hilt-android-gradle-plugin/2.58/hilt-android-gradle-plugin-2.58.pom]`.
+This proves that a cache miss/negative metadata alone is not the full issue:
+the Maven Central canonical endpoint returned an absent POM even when forced
+to recheck. It does not establish that the artifact was never published;
+Dagger 2.58 is an official release and Maven Central indexes the artifact.
+
+Official Dagger release notes state that Dagger 2.59's **Hilt Gradle plugin
+requires AGP 9**. Lumi remains pinned to AGP 8.13.2 / Kotlin 2.3.10 /
+Hilt 2.58 to avoid that unsupported cross-major change.
+Sources: https://github.com/google/dagger/releases/tag/dagger-2.59 ,
+https://github.com/google/dagger/releases/tag/dagger-2.58 .
+
+Before changing versions, try the second **official HTTPS Maven Central**
+endpoint `https://repo1.maven.org/maven2`, which Sonatype documents as
+supported alongside `repo.maven.apache.org`:
+https://central.sonatype.org/faq/ssl/ .
+Both plugin and project dependency resolution use this endpoint with a
+`content.includeGroup` filter restricted to Dagger; Google's Android Maven
+and Gradle Plugin Portal remain intact, without arbitrary third-party
+mirrors or blanket dependency substitution.
+
+This is a controlled alternate-endpoint experiment, not a claimed fix.
+Check the next run's `--info` resolution URL and JUnit XML before treating
+it as successful. Keep the required gate strict and the PR Draft.
 ## Scoped dependency retries and secure caching
 
 The tools/ci_gradle_retry.sh wrapper allows at most three total attempts and
