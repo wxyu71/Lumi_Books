@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import com.huangder.lumibooks.R
-import com.huangder.lumibooks.data.local.DataStoreManager
+import kotlinx.coroutines.flow.flowOf
 import com.huangder.lumibooks.domain.model.AppFontSize
 import com.huangder.lumibooks.ui.theme.*
 import com.huangder.lumibooks.ui.components.LocalLiquidGlassBackdrop
@@ -40,7 +40,10 @@ class ReadingInsightsScreenTest {
     @Test @Config(sdk=[31])
     fun glassStatisticsNeverSamplesTheNavigationLayerContainingIt() {
         val context = RuntimeEnvironment.getApplication()
-        val model = StatisticsViewModel(ReadingInsightsFixtures.repository, ReadingInsightsFixtures.library, DataStoreManager(context))
+        val model = StatisticsViewModel.forTesting(
+            ReadingInsightsFixtures.repository, ReadingInsightsFixtures.library,
+            flowOf(30), flowOf(ReadingInsightsFixtures.today)
+        )
         var parentSamples = 0
         val parent = object : Backdrop {
             override val isCoordinatesDependent = false
@@ -78,7 +81,10 @@ class ReadingInsightsScreenTest {
     // supported blur path for software screenshots and verify refraction on-device.
     @Test @Config(sdk=[31]) fun overviewWorksAcrossThemesAndLargeText() {
         val context=RuntimeEnvironment.getApplication()
-        val model=StatisticsViewModel(ReadingInsightsFixtures.repository,ReadingInsightsFixtures.library,DataStoreManager(context))
+        val model=StatisticsViewModel.forTesting(
+            ReadingInsightsFixtures.repository, ReadingInsightsFixtures.library,
+            flowOf(30), flowOf(ReadingInsightsFixtures.today)
+        )
         var theme by mutableStateOf("lumi")
         var dark by mutableStateOf(false)
         var eInk by mutableStateOf(false)
@@ -119,7 +125,10 @@ class ReadingInsightsScreenTest {
     @Config(qualifiers="en-w960dp-h480dp-mdpi")
     fun landscapeStatisticsCanNavigateToAnHistoricalPeriod() {
         val context = RuntimeEnvironment.getApplication()
-        val model = StatisticsViewModel(ReadingInsightsFixtures.repository, ReadingInsightsFixtures.library, DataStoreManager(context))
+        val model = StatisticsViewModel.forTesting(
+            ReadingInsightsFixtures.repository, ReadingInsightsFixtures.library,
+            flowOf(30), flowOf(ReadingInsightsFixtures.today)
+        )
         lateinit var view: View
         compose.setContent {
             view = LocalView.current

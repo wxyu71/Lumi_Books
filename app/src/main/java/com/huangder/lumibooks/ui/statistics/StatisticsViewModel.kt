@@ -23,13 +23,31 @@ internal data class StatisticsUiState(
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
-internal class StatisticsViewModel @Inject constructor(
+internal class StatisticsViewModel private constructor(
     private val readingRepository: ReadingRepository,
     private val bookRepository: BookRepository,
-    private val dataStoreManager: DataStoreManager
+    private val dailyGoals: Flow<Int>,
+    private val dates: Flow<LocalDate>
 ) : ViewModel() {
+    // Production observes persistent settings and today's date. UI tests use
+    // deterministic sources instead of sharing the Robolectric DataStore singleton.
+    @Inject constructor(
+        readingRepository: ReadingRepository,
+        bookRepository: BookRepository,
+        dataStoreManager: DataStoreManager
+    ) : this(readingRepository, bookRepository, dataStoreManager.dailyGoal, localDateChanges())
+
+    companion object {
+        internal fun forTesting(
+            readingRepository: ReadingRepository,
+            bookRepository: BookRepository,
+            dailyGoals: Flow<Int>,
+            dates: Flow<LocalDate>
+        ): StatisticsViewModel = StatisticsViewModel(readingRepository, bookRepository, dailyGoals, dates)
+    }
+
     private val selection = MutableStateFlow(StatisticsSelection())
-    val uiState: StateFlow<StatisticsUiState> = combine(selection, localDateChanges(), dataStoreManager.dailyGoal) { selected, today, goal ->
+    val uiState: StateFlow<StatisticsUiState> = combine(selection, dates, dailyGoals) { selected, today, goal ->
         Triple(selected, today, goal)
     }.flatMapLatest { (selected, today, goal) ->
         val pairs = comparisonPeriods(selected, today)

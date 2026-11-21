@@ -46,6 +46,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -546,6 +547,8 @@ private fun MenuActionsPanel(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 48.dp, max = maxListHeight)
+                // Stable LazyColumn semantics for accessibility and tests.
+                .testTag("book-context-actions-list")
                 .scrollEdgeFade(listState),
             contentPadding = PaddingValues(listPadding),
             verticalArrangement = Arrangement.spacedBy(itemSpacing)

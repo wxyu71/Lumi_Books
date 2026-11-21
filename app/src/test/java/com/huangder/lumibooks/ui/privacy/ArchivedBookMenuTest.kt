@@ -45,7 +45,11 @@ class ArchivedBookMenuTest {
         compose.waitForIdle()
         // The action panel is revealed after the spring + delayed entrance.
         compose.runOnIdle { assertTrue("Archive menu never entered", state.actionsAlpha.value > 0.01f) }
-        compose.onNodeWithText(context.getString(R.string.archive_book)).performScrollTo().performClick()
+        // Lazy lists do not compose offscreen actions; use ScrollToNode first,
+        // as in the official Now in Android bookmarks UI tests.
+        compose.onNodeWithTag("book-context-actions-list")
+            .performScrollToNode(hasText(context.getString(R.string.archive_book)))
+        compose.onNodeWithText(context.getString(R.string.archive_book)).performClick()
         compose.runOnIdle { assertEquals(book, archived) }
         compose.mainClock.advanceTimeBy(1_000)
         compose.runOnIdle { assertEquals(ContextMenuPhase.Idle, state.phase) }
