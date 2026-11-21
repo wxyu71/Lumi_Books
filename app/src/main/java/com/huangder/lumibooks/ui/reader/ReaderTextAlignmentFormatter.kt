@@ -30,7 +30,7 @@ internal fun ReaderTextAlignment.readerJustificationMode(
     else -> Layout.JUSTIFICATION_MODE_INTER_CHARACTER
 }
 
-internal fun ReaderTextAlignment.readerBreakStrategy(): Int = Layout.BREAK_STRATEGY_SIMPLE
+internal fun ReaderTextAlignment.readerBreakStrategy(): Int = com.huangder.lumibooks.util.AndroidLineBreakCompat.SIMPLE
 
 /**
  * 本章开头第一个标题段落的结束偏移（含段落换行）；本章没有可识别的标题时返回 0。

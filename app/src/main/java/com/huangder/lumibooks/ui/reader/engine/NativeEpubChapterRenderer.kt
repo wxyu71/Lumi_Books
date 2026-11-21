@@ -260,8 +260,8 @@ internal object NativeEpubChapterRenderer {
                     val layout = StaticLayout.Builder.obtain(text, 0, text.length, paint(st), width)
                         .setAlignment(alignment).setTextDirection(if (st.direction == "rtl") TextDirectionHeuristics.RTL else TextDirectionHeuristics.LTR)
                         .setIncludePad(false).setLineSpacing(0f, config.lineHeightOverride ?: st.lineHeight)
-                        .setBreakStrategy(Layout.BREAK_STRATEGY_HIGH_QUALITY)
-                        .setJustificationMode(if (st.align == "justify") Layout.JUSTIFICATION_MODE_INTER_WORD else Layout.JUSTIFICATION_MODE_NONE).build()
+                        .setBreakStrategy(com.huangder.lumibooks.util.AndroidLineBreakCompat.HIGH_QUALITY)
+                        .setJustificationMode(if (st.align == "justify") com.huangder.lumibooks.util.AndroidLineBreakCompat.JUSTIFICATION_INTER_WORD else com.huangder.lumibooks.util.AndroidLineBreakCompat.JUSTIFICATION_NONE).build()
                     y += max(previousMargin, st.marginTop * scale)
                     var first = 0
                     while (first < layout.lineCount) {
