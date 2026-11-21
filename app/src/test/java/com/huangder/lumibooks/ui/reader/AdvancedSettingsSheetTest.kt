@@ -3,6 +3,10 @@ package com.huangder.lumibooks.ui.reader
 import android.app.Application
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
+import android.view.View
+import android.view.ViewGroup
+import android.widget.TextView
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.geometry.Offset
@@ -186,7 +190,9 @@ class AdvancedSettingsSheetTest {
         val previewImage = if (withImage) {
             BitmapDrawable(context.resources, Bitmap.createBitmap(24, 24, Bitmap.Config.ARGB_8888))
         } else null
+        lateinit var rootView: View
         compose.setContent {
+            rootView = LocalView.current
             AdvancedSettingsSheet(
                 visible = true,
                 previewText = if (withImage) "" else "A preview paragraph with enough words to fill several lines.",
@@ -234,15 +240,32 @@ class AdvancedSettingsSheetTest {
             .performSemanticsAction(SemanticsActions.SetProgress) { it(-2f) }
         compose.runOnIdle { assertEquals(-2f, letterSpacing.floatValue, 0.01f) }
         if (withImage) {
-            val textPreview = compose.onNodeWithText(context.getString(R.string.preview_text).take(18), substring = true)
+            val previewSnippet = context.getString(R.string.preview_text).take(18)
             val imagePreview = compose.onNodeWithTag("reader-image-adjustment-preview")
-            textPreview.assertIsDisplayed()
+            // The spacing sliders scrolled the long sheet; the preview is still
+            // reachable but not necessarily inside the current viewport.
+            compose.runOnIdle {
+                assertTrue("Native text preview must show fallback content", containsNativePreview(rootView, previewSnippet))
+            }
             imagePreview.assertDoesNotExist()
             openTab(R.string.reader_settings_tab_appearance)
             compose.onNodeWithText(context.getString(R.string.reader_image_adjustment))
                 .performScrollTo().performClick()
             imagePreview.performScrollTo().assertIsDisplayed()
-            textPreview.assertIsDisplayed()
+            compose.runOnIdle {
+                assertTrue("Native text preview must show fallback content", containsNativePreview(rootView, previewSnippet))
+            }
         }
+    }
+
+    /** AndroidView wraps a native TextView: Compose onNodeWithText cannot see its text. */
+    private fun containsNativePreview(view: View, expected: String): Boolean {
+        if (view is TextView && view.isShown && view.text.toString().contains(expected)) return true
+        if (view is ViewGroup) {
+            for (index in 0 until view.childCount) {
+                if (containsNativePreview(view.getChildAt(index), expected)) return true
+            }
+        }
+        return false
     }
 }

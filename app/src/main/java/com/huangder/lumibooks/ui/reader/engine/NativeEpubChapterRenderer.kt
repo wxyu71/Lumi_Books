@@ -187,12 +187,20 @@ internal object NativeEpubChapterRenderer {
             val embedded = config.embeddedTypefaces
                 .filter { it.family.equals(style.family, ignoreCase = true) }
                 .minByOrNull { (if (it.italic == style.italic) 0 else 1000) + abs(it.weight - style.weight) }
-            typeface = embedded?.let { Typeface.create(it.typeface, style.weight, style.italic) }
-                ?: Typeface.create(
-                    if (style.family == "serif") config.typeface else Typeface.create(style.family, Typeface.NORMAL),
-                    style.weight,
-                    style.italic
-                )
+            val baseTypeface = embedded?.typeface
+                ?: if (style.family == "serif") config.typeface else Typeface.create(style.family, Typeface.NORMAL)
+            typeface = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                Typeface.create(baseTypeface, style.weight, style.italic)
+            } else {
+                // API 26/27 support the four coarse styles, not exact OpenType weights.
+                val oldStyle = when {
+                    style.weight >= 600 && style.italic -> Typeface.BOLD_ITALIC
+                    style.weight >= 600 -> Typeface.BOLD
+                    style.italic -> Typeface.ITALIC
+                    else -> Typeface.NORMAL
+                }
+                Typeface.create(baseTypeface, oldStyle)
+            }
             letterSpacing = style.letterSpacing / style.size
             isUnderlineText = style.underline
         }
@@ -256,8 +264,8 @@ internal object NativeEpubChapterRenderer {
                     val layout = StaticLayout.Builder.obtain(text, 0, text.length, paint(st), width)
                         .setAlignment(alignment).setTextDirection(if (st.direction == "rtl") TextDirectionHeuristics.RTL else TextDirectionHeuristics.LTR)
                         .setIncludePad(false).setLineSpacing(0f, config.lineHeightOverride ?: st.lineHeight)
-                        .setBreakStrategy(Layout.BREAK_STRATEGY_HIGH_QUALITY)
-                        .setJustificationMode(if (st.align == "justify") Layout.JUSTIFICATION_MODE_INTER_WORD else Layout.JUSTIFICATION_MODE_NONE).build()
+                        .setBreakStrategy(com.huangder.lumibooks.util.AndroidLineBreakCompat.HIGH_QUALITY)
+                        .setJustificationMode(if (st.align == "justify") com.huangder.lumibooks.util.AndroidLineBreakCompat.JUSTIFICATION_INTER_WORD else com.huangder.lumibooks.util.AndroidLineBreakCompat.JUSTIFICATION_NONE).build()
                     y += max(previousMargin, st.marginTop * scale)
                     var first = 0
                     while (first < layout.lineCount) {

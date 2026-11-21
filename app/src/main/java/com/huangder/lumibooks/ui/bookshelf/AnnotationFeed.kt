@@ -99,7 +99,9 @@ internal fun buildAnnotationFeed(
     notes: List<Note>,
     bookmarks: List<Bookmark>
 ): List<AnnotationFeedEntry> {
-    val booksById = books.associateBy { it.id }
+    // The all-annotations feed is outside the password-protected hidden library.
+    // Exclude hidden books before search, filters and UI rows can observe their marks.
+    val booksById = books.filterNot { it.isHidden }.associateBy { it.id }
     val noteEntries = notes.asSequence()
         .filterNot { it.isInkStroke }
         .mapNotNull { note -> booksById[note.bookId]?.let { AnnotationFeedEntry.NoteEntry(it, note) } }

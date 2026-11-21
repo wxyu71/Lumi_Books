@@ -20,6 +20,19 @@ import org.robolectric.annotation.Config
 class GlassSnapshotLifecycleTest {
     @get:Rule val compose = createComposeRule()
 
+    /** LaunchedEffect waits for a Compose frame on each snapshot invalidation.
+     * waitUntil polls wall time but does not synthesize those frame callbacks.
+     * Drive the real effect deterministically without skipping frame ownership.
+     */
+    private fun pumpSnapshotRefresh(frames: Int = 1) {
+        compose.waitForIdle()
+        repeat(frames) {
+            compose.mainClock.advanceTimeByFrame()
+            compose.waitForIdle()
+        }
+    }
+
+
     @Test fun qualityChangesRefreshSnapshotWithoutChangingThePageIdentity() {
         val quality = mutableStateOf(com.huangder.lumibooks.domain.model.LiquidGlassSamplingQuality.CLEAR)
         var captures = 0
@@ -32,9 +45,14 @@ class GlassSnapshotLifecycleTest {
                 }
             }
         }
-        compose.waitUntil { result.ready }
+        // The provider deliberately waits for a Compose frame before capturing.
+        // Explicitly pump that frame in Robolectric rather than polling a clock
+        // that may not have a physical vsync source.
+        compose.mainClock.advanceTimeByFrame()
+        compose.waitUntil(5_000) { result.ready }
         val first = result.backdrop!!
         compose.runOnIdle { quality.value = com.huangder.lumibooks.domain.model.LiquidGlassSamplingQuality.BALANCED }
+        pumpSnapshotRefresh()
         compose.waitUntil { result.backdrop !== first }
         compose.runOnIdle {
             assertEquals(2, captures)
@@ -56,7 +74,11 @@ class GlassSnapshotLifecycleTest {
             }
             Box {}
         }
-        compose.waitUntil { result.ready }
+        // The provider deliberately waits for a Compose frame before capturing.
+        // Explicitly pump that frame in Robolectric rather than polling a clock
+        // that may not have a physical vsync source.
+        compose.mainClock.advanceTimeByFrame()
+        compose.waitUntil(5_000) { result.ready }
         val first = result.backdrop!!
         compose.runOnIdle { frozen.value = true }
         compose.waitForIdle()
@@ -69,6 +91,7 @@ class GlassSnapshotLifecycleTest {
         compose.waitForIdle()
         compose.runOnIdle { assertSame(first, result.backdrop) }
         compose.runOnIdle { frozen.value = false }
+        pumpSnapshotRefresh()
         compose.waitUntil { result.backdrop !== first }
         val second = compose.runOnIdle { result.backdrop!! }
         compose.runOnIdle {
@@ -84,6 +107,7 @@ class GlassSnapshotLifecycleTest {
             assertFalse(second.isClosed)
             frozen.value = false
         }
+        pumpSnapshotRefresh()
         compose.waitUntil { result.backdrop !== second }
         val third = compose.runOnIdle { result.backdrop!! }
         compose.runOnIdle {
@@ -117,9 +141,15 @@ class GlassSnapshotLifecycleTest {
                 }
             }
         }
-        compose.waitUntil { result.ready }
+        // The provider deliberately waits for a Compose frame before capturing.
+        // Explicitly pump that frame in Robolectric rather than polling a clock
+        // that may not have a physical vsync source.
+        compose.mainClock.advanceTimeByFrame()
+        compose.waitUntil(5_000) { result.ready }
         val previous = result.backdrop!!
         compose.runOnIdle { page.value = 2 }
+        // First frame fails and second retries while retaining the old lease.
+        pumpSnapshotRefresh(frames = 2)
         compose.waitUntil { retryStarted.isCompleted }
         compose.runOnIdle {
             assertSame(previous, result.backdrop)

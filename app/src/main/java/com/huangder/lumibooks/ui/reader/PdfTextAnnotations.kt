@@ -433,6 +433,8 @@ internal fun PdfTextAnnotationOverlays(
     onJump: (Note) -> Unit, pageCount: Int
 ) {
     val context = LocalContext.current
+    val pdfPageFormat = androidx.compose.ui.res.stringResource(R.string.pdf_page_number)
+    val pdfPageLocale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0] ?: java.util.Locale.ROOT
     val state = controller.menuState()
     val actions = remember(controller) { PdfSelectionActions() }
     SideEffect {
@@ -441,7 +443,7 @@ internal fun PdfTextAnnotationOverlays(
     }
     fun excerpt(text: String, note: String, page: Int) {
         val book = viewModel.uiState.value.book ?: return
-        actions.excerpt(book, text, note, context.getString(R.string.pdf_page_number, page + 1))
+        actions.excerpt(book, text, note, String.format(pdfPageLocale, pdfPageFormat, page + 1))
         controller.showNotes = false
         controller.clear()
     }

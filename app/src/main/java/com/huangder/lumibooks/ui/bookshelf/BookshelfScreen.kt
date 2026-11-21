@@ -229,6 +229,11 @@ fun BookshelfScreen(
     val folderTransitionAlpha = remember { Animatable(1f) }
     val folderTransitionOffset = remember { Animatable(0f) }
     val context = LocalContext.current
+    val folderMoveSuccessFormat = stringResource(R.string.folder_move_success)
+    val libraryRootTitle = stringResource(R.string.library_root)
+    val virtualFolderTitle = stringResource(R.string.folder_storage_virtual)
+    val authorizedFolderFormat = stringResource(R.string.folder_storage_authorized)
+    val textLocale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0] ?: java.util.Locale.ROOT
     val haptic = LocalHapticFeedback.current
     val contextMenuState = rememberBookContextMenuState()
     var coverFlowMenuVisible by remember { mutableStateOf(false) }
@@ -812,14 +817,14 @@ fun BookshelfScreen(
             } else {
                 moveTargetBook = null
             }
-            onMessage(context.getString(R.string.folder_move_success, request.bookIds.size, request.targetName))
+            onMessage(String.format(textLocale, folderMoveSuccessFormat, request.bookIds.size, request.targetName))
         }
     }
 
     fun requestBookMove(bookIds: Set<String>, targetFolderId: String?, isBatch: Boolean) {
         val targetName = targetFolderId
             ?.let { id -> uiState.folders.firstOrNull { it.id == id }?.name }
-            ?: context.getString(R.string.library_root)
+            ?: libraryRootTitle
         val request = PendingCrossStorageBookMove(bookIds, targetFolderId, isBatch, targetName)
         if (viewModel.requiresCrossStorageMoveConfirmation(bookIds, targetFolderId)) {
             pendingCrossStorageMove = request
@@ -1607,10 +1612,10 @@ fun BookshelfScreen(
                     }
                 },
                 storageChoices = buildList {
-                    add(context.getString(R.string.folder_storage_virtual) to "")
+                    add(virtualFolderTitle to "")
                     uiState.authorizedBookDirectories.forEach { uri ->
                         add(
-                            context.getString(R.string.folder_storage_authorized, uri.substringAfterLast('/')) to uri
+                            String.format(textLocale, authorizedFolderFormat, uri.substringAfterLast('/')) to uri
                         )
                     }
                 },

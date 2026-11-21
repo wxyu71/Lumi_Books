@@ -141,7 +141,7 @@ object QuoteExcerptFormatter {
             .setAlignment(Layout.Alignment.ALIGN_NORMAL)
             .setIncludePad(true)
             .setLineSpacing(0f, lineSpacingMultiplier)
-            .setBreakStrategy(Layout.BREAK_STRATEGY_HIGH_QUALITY)
+            .setBreakStrategy(com.huangder.lumibooks.util.AndroidLineBreakCompat.HIGH_QUALITY)
             .setHyphenationFrequency(Layout.HYPHENATION_FREQUENCY_NONE)
             .build()
     }

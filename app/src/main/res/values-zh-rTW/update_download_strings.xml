@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_update_download_channel">選擇下載管道</string>
+    <string name="app_update_download_channel">前往 GitHub Releases</string>
     <string name="app_update_download_recommended">推薦</string>
-    <string name="app_update_download_baidu">百度網盤</string>
-    <string name="app_update_download_lanzou">藍奏雲</string>
-    <string name="app_update_download_code">提取碼 %1$s</string>
+    <string name="app_update_signing_notice">社群 Beta 使用固定簽章，後續版本可直接覆蓋安裝並保留資料。若先前安裝的是 Debug 或臨時簽章測試版，首次轉換前請備份資料並解除安裝舊版。</string>
 </resources>

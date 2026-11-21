@@ -183,8 +183,16 @@ internal class ReaderTextPainter {
                         if (shapedContext != context) {
                             val localStart = context.first - start
                             val count = context.last + 1 - context.first
-                            paint.getTextRunAdvances(lineChars, localStart, count, localStart, count,
-                                rtl, shapedAdvances, localStart)
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                paint.getTextRunAdvances(lineChars, localStart, count, localStart, count,
+                                    rtl, shapedAdvances, localStart)
+                            } else {
+                                // API 26–28 lacks this shaped-run overload. Preserve per-character
+                                // advances for cursor positioning using the available measuring API.
+                                val widths = FloatArray(count)
+                                paint.getTextWidths(lineChars, localStart, count, widths)
+                                widths.copyInto(shapedAdvances, destinationOffset = localStart)
+                            }
                             shapedContext = context
                         }
                         while (next <= context.last && shapedAdvances[next - start] == 0f) {

@@ -504,6 +504,14 @@ fun FloatingSubtitleSettingsDetail(viewModel: SettingsViewModel) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val configuration = LocalConfiguration.current
+    // Capture configuration-aware strings before callback lambdas are created.
+    val floatingFontSizeTitle = stringResource(R.string.floating_subtitle_font_size)
+    val floatingXTitle = stringResource(R.string.floating_subtitle_x_position)
+    val floatingYTitle = stringResource(R.string.floating_subtitle_y_position)
+    val floatingBackgroundTitle = stringResource(R.string.floating_subtitle_background_opacity)
+    val floatingCornerTitle = stringResource(R.string.floating_subtitle_corner_radius)
+    val floatingWidthTitle = stringResource(R.string.floating_subtitle_width)
+    val floatingHeightTitle = stringResource(R.string.floating_subtitle_height)
     var hasOverlayPermission by remember { mutableStateOf(Settings.canDrawOverlays(context)) }
     var showPermissionDialog by rememberSaveable { mutableStateOf(!Settings.canDrawOverlays(context)) }
     var showColorDialog by rememberSaveable { mutableStateOf(false) }
@@ -637,7 +645,7 @@ fun FloatingSubtitleSettingsDetail(viewModel: SettingsViewModel) {
             onValueClick = {
                 valueEditor = FloatingSubtitleValueEditor(
                     field = FloatingSubtitleValueField.FONT_SIZE,
-                    title = context.getString(R.string.floating_subtitle_font_size),
+                    title = floatingFontSizeTitle,
                     value = settings.fontSizeSp,
                     range = FloatingSubtitleSettings.MIN_FONT_SIZE_SP..FloatingSubtitleSettings.MAX_FONT_SIZE_SP,
                     unit = "sp"
@@ -659,7 +667,7 @@ fun FloatingSubtitleSettingsDetail(viewModel: SettingsViewModel) {
             onValueClick = {
                 valueEditor = FloatingSubtitleValueEditor(
                     field = FloatingSubtitleValueField.X_POSITION,
-                    title = context.getString(R.string.floating_subtitle_x_position),
+                    title = floatingXTitle,
                     value = settings.xFraction * 100f,
                     range = 0f..100f,
                     unit = "%"
@@ -678,7 +686,7 @@ fun FloatingSubtitleSettingsDetail(viewModel: SettingsViewModel) {
             onValueClick = {
                 valueEditor = FloatingSubtitleValueEditor(
                     field = FloatingSubtitleValueField.Y_POSITION,
-                    title = context.getString(R.string.floating_subtitle_y_position),
+                    title = floatingYTitle,
                     value = settings.yFraction * 100f,
                     range = 0f..100f,
                     unit = "%"
@@ -715,7 +723,7 @@ fun FloatingSubtitleSettingsDetail(viewModel: SettingsViewModel) {
             onValueClick = {
                 valueEditor = FloatingSubtitleValueEditor(
                     field = FloatingSubtitleValueField.BACKGROUND_OPACITY,
-                    title = context.getString(R.string.floating_subtitle_background_opacity),
+                    title = floatingBackgroundTitle,
                     value = settings.backgroundOpacity * 100f,
                     range = 0f..100f,
                     unit = "%"
@@ -734,7 +742,7 @@ fun FloatingSubtitleSettingsDetail(viewModel: SettingsViewModel) {
             onValueClick = {
                 valueEditor = FloatingSubtitleValueEditor(
                     field = FloatingSubtitleValueField.CORNER_RADIUS,
-                    title = context.getString(R.string.floating_subtitle_corner_radius),
+                    title = floatingCornerTitle,
                     value = settings.cornerRadiusDp,
                     range = FloatingSubtitleSettings.MIN_CORNER_RADIUS_DP..FloatingSubtitleSettings.MAX_CORNER_RADIUS_DP,
                     unit = "dp"
@@ -762,7 +770,7 @@ fun FloatingSubtitleSettingsDetail(viewModel: SettingsViewModel) {
             onValueClick = {
                 valueEditor = FloatingSubtitleValueEditor(
                     field = FloatingSubtitleValueField.WIDTH,
-                    title = context.getString(R.string.floating_subtitle_width),
+                    title = floatingWidthTitle,
                     value = visibleWidthDp,
                     range = FloatingSubtitleSettings.MIN_WIDTH_DP..maxWidthDp,
                     unit = "dp"
@@ -783,7 +791,7 @@ fun FloatingSubtitleSettingsDetail(viewModel: SettingsViewModel) {
             onValueClick = {
                 valueEditor = FloatingSubtitleValueEditor(
                     field = FloatingSubtitleValueField.HEIGHT,
-                    title = context.getString(R.string.floating_subtitle_height),
+                    title = floatingHeightTitle,
                     value = settings.heightDp,
                     range = FloatingSubtitleSettings.MIN_HEIGHT_DP..FloatingSubtitleSettings.MAX_HEIGHT_DP,
                     unit = "dp"
@@ -864,12 +872,17 @@ private fun TxtTocRulesManagerRow(viewModel: SettingsViewModel) {
     var dialogVisible by remember { mutableStateOf(false) }
     var pendingExport by remember { mutableStateOf<String?>(null) }
     var compatNoticeVisible by remember { mutableStateOf(false) }
+    val importResultTemplate = stringResource(R.string.txt_toc_import_result)
+    val importUnknownText = stringResource(R.string.txt_toc_import_unknown_format)
+    val compatPresetTemplate = stringResource(R.string.txt_toc_compat_preset_result)
+    val compatClearedText = stringResource(R.string.txt_toc_compat_cleared)
+    val textLocale = LocalConfiguration.current.locales[0] ?: java.util.Locale.ROOT
     val runImport: (String) -> Unit = { payload ->
         viewModel.importTxtTocRules(payload) { result ->
             val message = result.fold(
                 onSuccess = { imported ->
-                    context.getString(
-                        R.string.txt_toc_import_result,
+                    String.format(
+                        textLocale, importResultTemplate,
                         imported.lumiRules.size,
                         imported.thirdPartyRules.size,
                         imported.skipped,
@@ -877,7 +890,7 @@ private fun TxtTocRulesManagerRow(viewModel: SettingsViewModel) {
                     )
                 },
                 onFailure = { error ->
-                    error.message ?: context.getString(R.string.txt_toc_import_unknown_format)
+                    error.message ?: importUnknownText
                 }
             )
             Toast.makeText(context, message, Toast.LENGTH_LONG).show()
@@ -982,10 +995,10 @@ private fun TxtTocRulesManagerRow(viewModel: SettingsViewModel) {
                                 val message = result.fold(
                                     onSuccess = { count ->
                                         if (count > 0 && !noticeAcknowledged) compatNoticeVisible = true
-                                        context.getString(R.string.txt_toc_compat_preset_result, count)
+                                        String.format(textLocale, compatPresetTemplate, count)
                                     },
                                     onFailure = { error ->
-                                        error.message ?: context.getString(R.string.txt_toc_import_unknown_format)
+                                        error.message ?: importUnknownText
                                     }
                                 )
                                 Toast.makeText(context, message, Toast.LENGTH_LONG).show()
@@ -995,7 +1008,7 @@ private fun TxtTocRulesManagerRow(viewModel: SettingsViewModel) {
                             viewModel.clearTxtTocThirdPartyRules()
                             Toast.makeText(
                                 context,
-                                context.getString(R.string.txt_toc_compat_cleared),
+                                compatClearedText,
                                 Toast.LENGTH_SHORT
                             ).show()
                         }) { Text(stringResource(R.string.txt_toc_compat_clear)) }
@@ -2553,6 +2566,9 @@ fun AboutDetail(viewModel: SettingsViewModel) {
     val uiState by viewModel.uiState.collectAsState()
     val update = uiState.updateCheck
     val sectionHorizontalPadding = AppSpace.page
+    val privacyPolicyTitle = stringResource(R.string.privacy_policy)
+    val termsOfServiceTitle = stringResource(R.string.terms_of_service)
+    val openSourceLicensesTitle = stringResource(R.string.open_source_licenses)
 
     fun openDoc(title: String, file: String) {
         context.startActivity(
@@ -2601,7 +2617,7 @@ fun AboutDetail(viewModel: SettingsViewModel) {
 
     LumiAboutHeader(
         unlocked = uiState.lumiEasterEggUnlocked,
-        currentVersion = "Filmy",
+        currentVersion = com.huangder.lumibooks.BuildConfig.VERSION_NAME,
         isCheckingUpdate = update.isChecking,
         onCheckUpdate = { viewModel.checkUpdate(isAutoCheck = false) },
         onUnlock = viewModel::unlockLumiEasterEgg
@@ -2616,21 +2632,10 @@ fun AboutDetail(viewModel: SettingsViewModel) {
             context.startActivity(Intent(context, DetailActivity::class.java).putExtra("category", "changelog"))
         }
         SettingsDivider()
-        ActionRow(label = stringResource(R.string.official_qq_group)) {
-            val opened = runCatching {
-                context.startActivity(
-                    Intent(Intent.ACTION_VIEW, Uri.parse("https://qm.qq.com/q/pq77woweNG"))
-                )
-            }.isSuccess
-            if (!opened) {
-                Toast.makeText(context, R.string.network_error, Toast.LENGTH_LONG).show()
-            }
-        }
-        SettingsDivider()
         ActionRow(label = stringResource(R.string.github_discussions)) {
             val opened = runCatching {
                 context.startActivity(
-                    Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/huangder/Lumi_Books/discussions"))
+                    Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/wxyu71/Lumi_Books/discussions"))
                 )
             }.isSuccess
             if (!opened) {
@@ -2641,7 +2646,7 @@ fun AboutDetail(viewModel: SettingsViewModel) {
         ActionRow(label = stringResource(R.string.github_repository)) {
             val opened = runCatching {
                 context.startActivity(
-                    Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/huangder/Lumi_Books"))
+                    Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/wxyu71/Lumi_Books"))
                 )
             }.isSuccess
             if (!opened) {
@@ -2655,15 +2660,15 @@ fun AboutDetail(viewModel: SettingsViewModel) {
     // ── 法律条款 Card ──
     DetailCard(horizontalPadding = sectionHorizontalPadding) {
         ActionRow(label = stringResource(R.string.privacy_policy)) {
-            openDoc(context.getString(R.string.privacy_policy), "privacy.html")
+            openDoc(privacyPolicyTitle, "community-privacy.html")
         }
         SettingsDivider()
         ActionRow(label = stringResource(R.string.terms_of_service)) {
-            openDoc(context.getString(R.string.terms_of_service), "terms.html")
+            openDoc(termsOfServiceTitle, "community-terms.html")
         }
         SettingsDivider()
         ActionRow(label = stringResource(R.string.open_source_licenses)) {
-            openDoc(context.getString(R.string.open_source_licenses), "licenses.html")
+            openDoc(openSourceLicensesTitle, "licenses.html")
         }
     }
 }

@@ -164,9 +164,7 @@ internal fun welcomePages(
 ): List<WelcomePage> = buildList {
     if (shouldShowLanguageSetup) add(WelcomePage.LANGUAGE_SETUP)
     add(WelcomePage.INTRODUCTION)
-    // Everyone sees the release updates; only fresh installs choose an appearance.
-    add(WelcomePage.FEATURES)
-    add(WelcomePage.SUPPORT)
+    // Community edition: agreement is immediate; there is no mandatory promotional tour.
 }
 
 private data class WelcomeLanguageOption(
@@ -312,7 +310,7 @@ fun WelcomeScreen(
                 isNewInstallation = isNewInstallation,
                 animateWordmark = !introWordmarkPlayed,
                 onWordmarkPlayed = { introWordmarkPlayed = true },
-                onContinue = { currentPage = pages[(pages.indexOf(WelcomePage.INTRODUCTION) + 1).coerceAtMost(pages.lastIndex)] }
+                onContinue = onFinished
             )
 
             WelcomePage.FEATURES -> WelcomeFeatureStoriesPage(
@@ -659,7 +657,7 @@ private fun WelcomeIntroductionPage(
                 )
                 Spacer(modifier = Modifier.height(18.dp))
                 LumiDawnButton(
-                    text = stringResource(R.string.welcome_start_using),
+                    text = stringResource(R.string.community_agree_continue),
                     onClick = onContinue,
                     style = com.huangder.lumibooks.ui.brand.LumiDawnButtonStyle.Frosted,
                     modifier = Modifier.fillMaxWidth()

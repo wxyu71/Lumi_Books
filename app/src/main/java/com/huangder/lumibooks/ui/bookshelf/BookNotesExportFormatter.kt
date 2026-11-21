@@ -72,6 +72,94 @@ internal object BookNotesExportFormatter {
         }
     }.trimEnd() + "\n"
 
+
+    /** Human-readable local export. Preserve selected text verbatim, but escape Markdown syntax. */
+    fun formatMarkdown(
+        bookTitle: String,
+        notes: List<Note>,
+        bookmarks: List<BookmarkExportItem>,
+        chapterTitles: Map<Int, String>,
+        labels: BookNotesExportLabels
+    ): String = buildString {
+        appendLine("# ${markdownEscape(bookTitle)}")
+        appendLine()
+        appendLine("## ${markdownEscape(labels.highlightSection)}")
+        notes.filter { !it.isNoteEntry }.forEach { note ->
+            appendLine()
+            appendQuote(note.selectedText)
+            appendLine()
+            appendLine("- **${markdownEscape(labels.chapter)}：** ${markdownEscape(chapterTitle(note.chapterIndex, chapterTitles, labels))}")
+            appendMarkdownTags(note.tags, labels.tags)
+        }
+        appendLine()
+        appendLine("## ${markdownEscape(labels.noteSection)}")
+        notes.filter { it.isNoteEntry }.forEach { note ->
+            appendLine()
+            appendQuote(note.selectedText)
+            appendLine()
+            if (note.note.isNotBlank()) {
+                appendLine("**${markdownEscape(labels.userNote)}**")
+                appendLine()
+                appendLine(markdownEscape(note.note.trim()))
+                appendLine()
+            }
+            appendLine("- **${markdownEscape(labels.chapter)}：** ${markdownEscape(chapterTitle(note.chapterIndex, chapterTitles, labels))}")
+            appendMarkdownTags(note.tags, labels.tags)
+        }
+        appendLine()
+        appendLine("## ${markdownEscape(labels.bookmarkSection)}")
+        bookmarks.forEach { item ->
+            appendLine()
+            appendQuote(pageExcerpt(item.pageText, item.bookmark.title, labels.pageUnavailable))
+            appendLine()
+            if (item.bookmark.remark.isNotBlank()) {
+                appendLine("**${markdownEscape(labels.bookmarkRemark)}：** ${markdownEscape(item.bookmark.remark.trim())}")
+                appendLine()
+            }
+            appendLine("- **${markdownEscape(labels.chapter)}：** ${markdownEscape(item.chapterTitle)}")
+            appendMarkdownTags(item.bookmark.tags, labels.tags)
+        }
+    }.trimEnd() + "\n"
+
+    private fun StringBuilder.appendQuote(text: String) {
+        val normalized = text.trim().replace("\r\n", "\n").replace('\r', '\n')
+        normalized.lineSequence().forEach { line -> appendLine("> ${markdownEscape(line)}") }
+    }
+
+    private fun StringBuilder.appendMarkdownTags(tags: List<String>, name: String) {
+        if (tags.isNotEmpty()) {
+            appendLine("- **${markdownEscape(name)}：** ${tags.joinToString("、", transform = ::markdownEscape)}")
+        }
+    }
+
+    /** Escape Markdown syntax without changing a reader's actual line breaks or prose.
+     * In particular, an annotation beginning with "- " or "1. " must not turn into
+     * an unintended list inside a blockquote or a multiline note.
+     */
+    private fun markdownEscape(text: String): String = text
+        .replace("\r\n", "\n")
+        .replace('\r', '\n')
+        .split('\n')
+        .joinToString("\n") { line ->
+            val indent = line.indexOfFirst { it != ' ' }.let { if (it < 0) line.length else it }
+            val rest = line.drop(indent)
+            val numbered = Regex("""^\d+[.)](?=\s)""").find(rest)
+            val firstMarker = indent <= 3 &&
+                (rest.startsWith("- ") || rest.startsWith("+ ") || rest.startsWith("* "))
+            val markerIndex = when {
+                indent > 3 -> -1
+                numbered != null -> indent + numbered.value.length - 1
+                firstMarker -> indent
+                else -> -1
+            }
+            buildString {
+                line.forEachIndexed { index, ch ->
+                    if (index == markerIndex || ch == '\\' || ch in "`*_[]<>#|!") append('\\')
+                    append(ch)
+                }
+            }
+        }
+
     private fun StringBuilder.appendTags(tags: List<String>, label: String) {
         if (tags.isNotEmpty()) appendLine("【$label】${tags.joinToString("、")}")
     }
@@ -99,12 +187,12 @@ internal object BookNotesExportFormatter {
             flattenedPage.takeLastCodePoints(EXCERPT_CODE_POINTS)
     }
 
-    fun suggestedFileName(bookTitle: String, fileSuffix: String): String {
+    fun suggestedFileName(bookTitle: String, fileSuffix: String, extension: String = "txt"): String {
         val safeTitle = bookTitle
             .replace(Regex("[\\\\/:*?\"<>|]"), "_")
             .trim()
             .ifBlank { "LumiBooks" }
-        return "$safeTitle-$fileSuffix.txt"
+        return "$safeTitle-$fileSuffix.$extension"
     }
 
     private fun chapterTitle(

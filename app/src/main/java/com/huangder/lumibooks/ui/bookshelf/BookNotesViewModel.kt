@@ -125,7 +125,7 @@ class BookNotesViewModel @Inject constructor(
         viewModelScope.launch { readingRepository.deleteAnnotationTag(name) }
     }
 
-    fun prepareExport(onComplete: (Result<BookNotesExportDocument>) -> Unit) {
+    fun prepareExport(format: NotesExportFormat = NotesExportFormat.TXT, onComplete: (Result<BookNotesExportDocument>) -> Unit) {
         val snapshot = _uiState.value
         val book = snapshot.book ?: run {
             onComplete(Result.failure(IllegalStateException("Book is not loaded")))
@@ -139,7 +139,8 @@ class BookNotesViewModel @Inject constructor(
                 val document = exportBuilder.build(
                     book = book,
                     bookmarks = snapshot.bookmarks,
-                    notes = snapshot.notes
+                    notes = snapshot.notes,
+                    format = format
                 )
                 onComplete(Result.success(document))
             } catch (cancelled: CancellationException) {

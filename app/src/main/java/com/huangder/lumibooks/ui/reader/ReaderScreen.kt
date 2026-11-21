@@ -1409,6 +1409,11 @@ private fun ReaderScreenContent(
     }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val themeImportSuccessFormat = stringResource(R.string.theme_bundle_import_success)
+    val themeMissingBackgroundFormat = stringResource(R.string.theme_bundle_missing_background_fallback)
+    val themeImportFailureFormat = stringResource(R.string.theme_bundle_import_failed)
+    val chapterFallbackFormat = stringResource(R.string.reader_chapter_fallback)
+    val readerResourceLocale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0] ?: java.util.Locale.ROOT
     LaunchedEffect(uiState.markdownSourceMessage) {
         uiState.markdownSourceMessage?.let { Toast.makeText(context, it, Toast.LENGTH_LONG).show() }
         viewModel.dismissMarkdownSourceMessage()
@@ -1439,14 +1444,14 @@ private fun ReaderScreenContent(
                     onSuccess = { report ->
                         Toast.makeText(
                             context,
-                            context.getString(R.string.theme_bundle_import_success, report.importedCount),
+                            String.format(readerResourceLocale, themeImportSuccessFormat, report.importedCount),
                             Toast.LENGTH_LONG
                         ).show()
                         if (report.missingBackgroundImages.isNotEmpty()) {
                             Toast.makeText(
                                 context,
-                                context.getString(
-                                    R.string.theme_bundle_missing_background_fallback,
+                                String.format(
+                                    readerResourceLocale, themeMissingBackgroundFormat,
                                     report.missingBackgroundImages.joinToString("、")
                                 ),
                                 Toast.LENGTH_LONG
@@ -1454,7 +1459,7 @@ private fun ReaderScreenContent(
                         }
                         null
                     },
-                    onFailure = { error -> context.getString(R.string.theme_bundle_import_failed, error.message ?: "invalid file") }
+                    onFailure = { error -> String.format(readerResourceLocale, themeImportFailureFormat, error.message ?: "invalid file") }
                 )
                 message?.let { Toast.makeText(context, it, Toast.LENGTH_LONG).show() }
             }
@@ -5567,10 +5572,7 @@ private fun ReaderScreenContent(
                     .getOrNull(request.targetChapterIndex)
                     .orEmpty()
                     .ifBlank {
-                        context.getString(
-                            R.string.reader_chapter_fallback,
-                            request.targetChapterIndex + 1
-                        )
+                        String.format(readerResourceLocale, chapterFallbackFormat, request.targetChapterIndex + 1)
                     },
                 stage = epubNavigationStage,
                 backgroundColor = composeBgColor,
@@ -6687,6 +6689,31 @@ private fun openExternalBookLink(context: Context, href: String): Boolean {
     }.isSuccess
 }
 
+/** Concrete JavaScript bridge for the legacy local PDF viewer. */
+private class LegacyReaderJavascriptBridge(private val viewModel: ReaderViewModel) {
+    @android.webkit.JavascriptInterface
+    fun onPageChanged(page: Int, total: Int) = viewModel.onPageChanged(page, total)
+
+    @android.webkit.JavascriptInterface
+    fun onCenterTap() = viewModel.toggleMenu()
+
+    @android.webkit.JavascriptInterface
+    fun onPaginationComplete() = viewModel.onPaginationDone()
+
+    @android.webkit.JavascriptInterface
+    fun onPageFlip(dir: Int) { /* No native action for an in-chapter flip. */ }
+
+    @android.webkit.JavascriptInterface
+    fun onChapterFlipReady(dir: Int) {
+        if (dir > 0) viewModel.nextChapter() else viewModel.previousChapter()
+    }
+}
+
+private fun WebView.installLegacyReaderJavascriptBridge(bridge: LegacyReaderJavascriptBridge) {
+    // Keep the concrete annotated bridge type visible to Lint at the call site.
+    addJavascriptInterface(bridge, "AndroidBridge")
+}
+
 /**
  * 旧 WebView 路径（PDF 格式保留使用）。
  * 简化版：单 WebView，无跨章 conveyor。
@@ -6706,25 +6733,8 @@ private fun LegacyWebViewContent(
     var prevTheme by remember { mutableStateOf(uiState.readerTheme) }
     val webViewRef = remember { mutableStateOf<WebView?>(null) }
 
-    // JS bridge for PDF (simplified)
-    val bridge = remember {
-        object {
-            @android.webkit.JavascriptInterface
-            fun onPageChanged(page: Int, total: Int) {
-                viewModel.onPageChanged(page, total)
-            }
-            @android.webkit.JavascriptInterface
-            fun onCenterTap() { viewModel.toggleMenu() }
-            @android.webkit.JavascriptInterface
-            fun onPaginationComplete() { viewModel.onPaginationDone() }
-            @android.webkit.JavascriptInterface
-            fun onPageFlip(dir: Int) {}
-            @android.webkit.JavascriptInterface
-            fun onChapterFlipReady(dir: Int) {
-                if (dir > 0) viewModel.nextChapter() else viewModel.previousChapter()
-            }
-        }
-    }
+    // A concrete, method-annotated type lets WebView expose only the intended methods.
+    val bridge: LegacyReaderJavascriptBridge = remember(viewModel) { LegacyReaderJavascriptBridge(viewModel) }
 
     AndroidView(
         factory = { ctx ->
@@ -6736,7 +6746,7 @@ private fun LegacyWebViewContent(
                     builtInZoomControls = false
                     displayZoomControls = false
                 }
-                addJavascriptInterface(bridge, "AndroidBridge")
+                installLegacyReaderJavascriptBridge(bridge)
                 val bgJs = when (uiState.readerTheme) {
                     "night" -> "#1a1a1a"; "sepia" -> "#f5e6d3"; "green" -> "#e8f5e9"; else -> "#ffffff"
                 }
@@ -13347,7 +13357,7 @@ internal fun HighlightNoteItem(
                             .padding(vertical = 6.dp)
                     )
                     Text(
-                        java.text.SimpleDateFormat("MM/dd", java.util.Locale.getDefault()).format(java.util.Date(item.createdAt)),
+                        java.text.SimpleDateFormat("MM/dd", (androidx.compose.ui.platform.LocalConfiguration.current.locales[0] ?: java.util.Locale.ROOT)).format(java.util.Date(item.createdAt)),
                         fontSize = AppType.Caption,
                         color = AccentColor
                     )

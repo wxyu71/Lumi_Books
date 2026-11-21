@@ -405,7 +405,7 @@ internal fun periodLabel(period: StatisticsPeriod): String {
     }
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) { (0..6).forEach { day ->
-            Text(firstDayOfWeek.plus(day.toLong()).getDisplayName(TextStyle.NARROW, Locale.getDefault()),
+            Text(firstDayOfWeek.plus(day.toLong()).getDisplayName(TextStyle.NARROW, (androidx.compose.ui.platform.LocalConfiguration.current.locales[0] ?: Locale.ROOT)),
                 color = AppColors.TextSecondary, modifier = Modifier.weight(1f), fontSize = AppType.Caption2,
                 textAlign = TextAlign.Center, fontWeight = FontWeight.Medium)
         } }
@@ -598,7 +598,7 @@ internal fun periodLabel(period: StatisticsPeriod): String {
                             if (show) Text(
                                 when {
                                     monthly -> insightsDate(day, "LLL")
-                                    days.size <= 7 -> day.dayOfWeek.getDisplayName(TextStyle.NARROW, Locale.getDefault())
+                                    days.size <= 7 -> day.dayOfWeek.getDisplayName(TextStyle.NARROW, (androidx.compose.ui.platform.LocalConfiguration.current.locales[0] ?: Locale.ROOT))
                                     else -> day.dayOfMonth.toString()
                                 }, color = if (current) accent else AppColors.TextSecondary, fontSize = AppType.Caption2,
                                 fontWeight = if (current) FontWeight.Bold else FontWeight.Normal, maxLines = 1, softWrap = false,

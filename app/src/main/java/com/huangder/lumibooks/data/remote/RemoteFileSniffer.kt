@@ -28,7 +28,7 @@ object RemoteFileSniffer {
     }
 
     private fun looksLikeHtml(head: ByteArray): Boolean {
-        val text = head.toString(Charsets.UTF_8).trimStart('﻿', ' ', '\n', '\r', '\t').lowercase()
+        val text = head.toString(Charsets.UTF_8).trimStart('\uFEFF', ' ', '\n', '\r', '\t').lowercase()
         return text.startsWith("<!doctype html") || text.startsWith("<html")
     }
 

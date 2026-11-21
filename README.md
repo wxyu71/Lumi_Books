@@ -4,21 +4,23 @@
 
 <img src="docs/media/lumi2.webp" alt="Lumi" width="120">
 
-# Lumi
+# Lumi Community
 
 <h3 align="center">一款 Android 本地电子书阅读器</h3>
 
-[下载最新版](https://github.com/huangder/Lumi_Books/releases) | [功能介绍](https://huangder.top/features.html) | [更新日志](https://huangder.top/changelog.html) | [隐私政策](https://huangder.top/privacy.html) | [赞助](https://huangder.top/sponsor.html)
+[社区 Beta 构建](https://github.com/wxyu71/Lumi_Books/actions/workflows/android-beta.yml) | [社区仓库](https://github.com/wxyu71/Lumi_Books) | [文档](docs/README.md) | [上游项目](https://github.com/huangder/Lumi_Books)
 
-[![Version](https://img.shields.io/badge/version-2.3.11-coral)](https://github.com/huangder/Lumi_Books/releases)
+[![Version](https://img.shields.io/badge/version-2.3.12--beta.1-coral)](https://github.com/wxyu71/Lumi_Books/releases)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
 [![Android](https://img.shields.io/badge/Android-8.0%2B-blue)](https://developer.android.com)
 
 **中文** · [English](README.en.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
 
-**用户版** · [开发者版](README.dev.md)
+**用户版** · [开发指南](docs/development/build.md)
 
 </div>
+
+> **社区 Beta 分支（非官方版）**：本 Fork 提供独立安装的 Lumi Community，使用公开源码构建，不包含官方私有 Premium 功能或会员服务。当前目标版本：**2.3.12-beta.1**。公开 Beta 下载统一使用 [本 Fork 的 GitHub Releases](https://github.com/wxyu71/Lumi_Books/releases)；未发布时只有用于验证的 CI Debug Artifact。发布说明见 [COMMUNITY.md](COMMUNITY.md)。此项目与原作者的官方版本分别维护。
 
 Lumi 是一款 Android 本地电子书阅读器。书籍和阅读数据默认保存在手机上，基础功能免费、开源、无广告。
 
@@ -61,11 +63,11 @@ Lumi 是一款 Android 本地电子书阅读器。书籍和阅读数据默认保
 - 退出书籍后可继续听书，并通过悬浮字幕查看朗读内容。
 - 支持耳机线控和锁屏媒体控件。
 
-### 统计与小组件
+### 阅读统计
 
 - 阅读时长、每日目标，以及周、月、年的趋势和热力图。
 - 连续阅读天数、标注数量、个人书评与评分。
-- 桌面小组件可显示继续阅读的书籍，也可展示摘录。
+- 本社区 Beta 不注册上游桌面小组件。
 
 ### 同步与备份
 
@@ -96,30 +98,14 @@ Lumi 是一款 Android 本地电子书阅读器。书籍和阅读数据默认保
 
 ## 下载
 
-从 [GitHub Releases](https://github.com/huangder/Lumi_Books/releases) 下载最新 APK。
+社区版 Beta 通过 [本 Fork 的 GitHub Releases](https://github.com/wxyu71/Lumi_Books/releases) 提供。仅下载标记为 **Pre-release**、附带社区签名 APK 和 `SHA256SUMS.txt` 的版本；发布前没有可用的正式 Beta 安装包。不要从原项目或第三方网盘下载并当作社区版本。
 
-备用下载：[百度网盘](https://pan.baidu.com/s/1vDdFsoqQuuZlntUTUjssZw?pwd=lumi)（密码 lumi） · [蓝奏云](https://wwaug.lanzoub.com/b0xxfmxvi)（密码 lumi）
 
-## 版本说明
+**签名与升级**：本 Fork 的 Beta 使用固定社区签名，以后相同签名且 `versionCode` 递增的版本可直接覆盖安装。若之前安装的是 Debug/临时签名测试包，首次切换需要先备份数据、卸载旧包再安装固定签名版。
 
-Lumi 分为开源版和官方版：
+## 社区 Beta 版说明
 
-- **开源版**（本仓库构建）：提供全部阅读功能和基础摘录样式，不含会员入口、阅读报告和标签管理。
-- **官方版**：在开源版之上提供可选的 Premium 功能，包括阅读报告、高级摘录模板和标签管理。阅读报告和高级摘录可以预览，导出需要解锁；官方版提供 5 天试用。
-
-更新记录见 [更新日志页](https://huangder.top/changelog.html)，应用内也可以查看。
-
-## 支持 Lumi
-
-如果 Lumi 对你有帮助，可以通过 [赞助页](https://huangder.top/sponsor.html) 支持开发者，也可以使用 GitHub 页面右侧的 **Sponsor** 按钮。赞助完全自愿，不影响任何功能和问题处理。
-
-## Star History
-
-<p align="center">
-  <a href="https://star-history.com/#huangder/Lumi_Books&Date">
-    <img src="https://api.star-history.com/svg?repos=huangder/Lumi_Books&type=Date" alt="Star History Chart" width="600">
-  </a>
-</p>
+如果愿意支持上游原作者 Huangder，可访问[原作者赞助页](https://huangder.top/sponsor.html)。这不是社区版付款要求。
 
 ## 许可证
 
@@ -129,6 +115,7 @@ Lumi 原创代码采用 [Apache License 2.0](LICENSE) 开源。第三方依赖�
 
 ## 链接
 
-- 官网：[huangder.top](https://huangder.top)
-- GitHub：[github.com/huangder/Lumi_Books](https://github.com/huangder/Lumi_Books)
-- 邮箱：huangder0104@126.com
+- 社区仓库：[wxyu71/Lumi_Books](https://github.com/wxyu71/Lumi_Books)
+- 原作者网站：[huangder.top](https://huangder.top)
+- 上游项目：[huangder/Lumi_Books](https://github.com/huangder/Lumi_Books)
+- 原作者邮箱：huangder0104@126.com

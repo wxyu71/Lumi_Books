@@ -124,6 +124,8 @@ internal fun AnnotationFeedScreen(
     val isLiquidGlass = LocalAppTheme.current == "liquid_glass"
     val excerptDark = LocalIsDarkTheme.current
     val context = LocalContext.current
+    val chapterNumberFormat = stringResource(R.string.chapter_number)
+    val chapterLocale = LocalConfiguration.current.locales[0] ?: java.util.Locale.ROOT
     val scope = rememberCoroutineScope()
     val glassBackdrop = rememberLayerBackdrop()
     val segmentedControlBackdrop = rememberLayerBackdrop()
@@ -156,9 +158,9 @@ internal fun AnnotationFeedScreen(
             runCatching {
                 val request = when (entry) {
                     is AnnotationFeedEntry.NoteEntry -> ExcerptRequest.fromNote(entry.book, entry.note,
-                        context.getString(R.string.chapter_number, entry.note.chapterIndex + 1))
+                        String.format(chapterLocale, chapterNumberFormat, entry.note.chapterIndex + 1))
                     is AnnotationFeedEntry.BookmarkEntry -> ExcerptRequest.fromBookmark(entry.book, entry.bookmark,
-                        context.getString(R.string.chapter_number, entry.bookmark.chapterIndex + 1))
+                        String.format(chapterLocale, chapterNumberFormat, entry.bookmark.chapterIndex + 1))
                 }
                 ExcerptLauncher.open(context, viewModel.excerptTheme(entry.book.id, request, excerptDark))
             }.onFailure { Toast.makeText(context, R.string.excerpt_failed, Toast.LENGTH_SHORT).show() }

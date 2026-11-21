@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.gradle.api.tasks.testing.Test
 
 plugins {
     id("com.android.application")
@@ -14,9 +15,8 @@ val releaseStartupTrace = providers.gradleProperty("lumiStartupTrace")
     .map { it.toBooleanStrict() }
     .orElse(false)
 
-// The optional private checkout supplies the official edition. A public clone builds on its own.
-val forceOss = providers.gradleProperty("lumi.oss").map { it.toBooleanStrict() }.orElse(false)
-val premiumEdition = !forceOss.get() && file("src/premium/java").isDirectory
+// Community fork: always compile the OSS source set. Never bundle the private official edition.
+val premiumEdition = false
 // KSP/Hilt outputs must not survive a switch to a source set with fewer declarations.
 // Concurrent verification in this checkout needs separate generated resources and classes.
 val buildTag = providers.gradleProperty("lumi.buildTag").orNull
@@ -41,11 +41,11 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.huangder.lumibooks"
+        applicationId = "io.github.wxyu71.lumibooks"
         minSdk = 26
         targetSdk = 37
-        versionCode = 18
-        versionName = "2.3.11"
+        versionCode = providers.gradleProperty("lumi.communityVersionCode").get().toInt()
+        versionName = providers.gradleProperty("lumi.communityVersionName").get()
 
         buildConfigField("boolean", "DIAGNOSTIC_BUILD", "false")
         buildConfigField("boolean", "STARTUP_TRACE_ENABLED", "false")
@@ -78,6 +78,7 @@ android {
         }
         create("diagnostic") {
             initWith(getByName("release"))
+            signingConfig = null
             versionNameSuffix = "-diagnostic"
             isDebuggable = true
             isMinifyEnabled = false
@@ -271,3 +272,39 @@ dependencies {
     baselineProfile(project(":benchmark"))
 }
 
+
+// Keep local IDE runs unchanged; CI partitions the existing JVM tests by package.
+// Each test class belongs to exactly one shard: reader, other UI, or core/data.
+// This is the SAME testDebugUnitTest suite, not a smaller or duplicate subset.
+val communityTestShard = providers.gradleProperty("lumi.testShard").orNull
+require(communityTestShard == null || communityTestShard in setOf("reader", "ui", "core")) {
+    "lumi.testShard must be reader, ui or core"
+}
+tasks.withType<Test>().configureEach {
+    if (name == "testDebugUnitTest") {
+        communityTestShard?.let { shard ->
+            filter {
+                when (shard) {
+                    "reader" -> includeTestsMatching("com.huangder.lumibooks.ui.reader.*")
+                    "ui" -> {
+                        includeTestsMatching("com.huangder.lumibooks.ui.*")
+                        excludeTestsMatching("com.huangder.lumibooks.ui.reader.*")
+                    }
+                    "core" -> excludeTestsMatching("com.huangder.lumibooks.ui.*")
+                }
+            }
+        }
+        if (System.getenv("CI") == "true") {
+            // A single fork at a time protects the hosted runner from Gradle + Robolectric OOM.
+            // A bounded worker lifetime prevents one test's static state leaking indefinitely.
+            maxParallelForks = 1
+            forkEvery = 100
+            maxHeapSize = "1536m"
+            // STARTED is essential: the last emitted test identifies a stalled class.
+            testLogging {
+                events("started", "passed", "skipped", "failed")
+                showStandardStreams = false
+            }
+        }
+    }
+}

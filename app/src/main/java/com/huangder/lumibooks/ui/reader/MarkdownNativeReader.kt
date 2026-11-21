@@ -1337,7 +1337,7 @@ internal class MarkdownNativeSurface(context: Context, private val source: Markd
             includeFontPadding = block.kind == "heading"
             letterSpacing = engine.style.letterSpacing
             setLineSpacing(0f, c.lineHeight)
-            breakStrategy = android.text.Layout.BREAK_STRATEGY_SIMPLE
+            breakStrategy = com.huangder.lumibooks.util.AndroidLineBreakCompat.SIMPLE
             textAlignment = when (if (block.kind == "heading") ReaderTextAlignment.NATURAL else c.alignment) {
                 com.huangder.lumibooks.domain.model.ReaderTextAlignment.CENTER -> View.TEXT_ALIGNMENT_CENTER
                 com.huangder.lumibooks.domain.model.ReaderTextAlignment.RIGHT -> View.TEXT_ALIGNMENT_VIEW_END

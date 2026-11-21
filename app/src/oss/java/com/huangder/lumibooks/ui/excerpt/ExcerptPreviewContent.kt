@@ -85,6 +85,7 @@ internal fun ExcerptPreviewContent(
     presentation: ExcerptPresentation = ExcerptPresentation.FULLSCREEN,
 ) {
     val context = LocalContext.current
+    val shareChooserTitle = stringResource(R.string.excerpt_share)
     val scope = rememberCoroutineScope()
     val currentSelection by rememberUpdatedState(selection)
     val currentRequest by rememberUpdatedState(request)
@@ -130,7 +131,7 @@ internal fun ExcerptPreviewContent(
                         putExtra(Intent.EXTRA_STREAM, uri)
                         clipData = ClipData.newUri(context.contentResolver, "excerpt", uri)
                         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    }, context.getString(R.string.excerpt_share)))
+                    }, shareChooserTitle))
                     else Toast.makeText(context, R.string.excerpt_saved, Toast.LENGTH_SHORT).show()
                 }
             } catch (error: CancellationException) {

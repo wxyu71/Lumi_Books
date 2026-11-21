@@ -85,6 +85,64 @@ class BookNotesExportFormatterTest {
         )
     }
 
+
+    @Test
+    fun markdownExportPreservesChaptersNotesAndTagsAndEscapesMarkup() {
+        val highlight = note("A *highlight*\nsecond line", "", 0).copy(tags = listOf("思考"))
+        val memo = note("原句", "我的 [笔记]", 1)
+        val bookmark = Bookmark(bookId = "book", chapterIndex = 2, position = 0f, title = "第二页", createdAt = 0)
+        val output = BookNotesExportFormatter.formatMarkdown(
+            "书 *题*",
+            listOf(highlight, memo),
+            listOf(BookmarkExportItem(bookmark, "尾声", null)),
+            mapOf(0 to "开篇", 1 to "中段"),
+            labels
+        )
+        assertTrue(output.startsWith("# 书 \\*题\\*"))
+        assertTrue(output.contains("> A \\*highlight\\*\n> second line"))
+        assertTrue(output.contains("**用户所写笔记内容**"))
+        assertTrue(output.contains("我的 \\[笔记\\]"))
+        assertTrue(output.contains("思考"))
+        assertTrue(output.contains("尾声"))
+        assertTrue(output.contains("第二页"))
+        assertEquals("书_名-书签与笔记.md", BookNotesExportFormatter.suggestedFileName("书/名", labels.fileSuffix, "md"))
+    }
+
+    @Test
+    fun markdownEscapesUntrustedAnnotationsWithoutDroppingUnicode() {
+        val highlight = note("Emoji 😀 <tag>\nsecond line", "", 0)
+            .copy(tags = listOf("Tag|One"))
+        val output = BookNotesExportFormatter.formatMarkdown(
+            "Title#One",
+            listOf(highlight),
+            emptyList(),
+            emptyMap(),
+            labels
+        )
+        assertTrue(output.contains("# Title\\#One"))
+        assertTrue(output.contains("> Emoji 😀 \\<tag\\>"))
+        assertTrue(output.contains("> second line"))
+        assertTrue(output.contains("Tag\\|One"))
+    }
+
+    @Test
+    fun markdownExportKeepsLiteralNumberedAndBulletLines() {
+        val note = note("原文", "- 这不是列表\n1. 也不是列表\n+ 加号条目", 0)
+        val output = BookNotesExportFormatter.formatMarkdown(
+            "书", listOf(note), emptyList(), emptyMap(), labels
+        )
+        assertTrue(output.contains("\\- 这不是列表\n1\\. 也不是列表\n\\+ 加号条目"))
+    }
+
+    @Test
+    fun markdownBlockquoteDoesNotCreateAccidentalNestedList() {
+        val highlight = note("首句\n- 这是引用中的普通原文\n10) 普通行", "", 0)
+        val output = BookNotesExportFormatter.formatMarkdown(
+            "书", listOf(highlight), emptyList(), emptyMap(), labels
+        )
+        assertTrue(output.contains("> 首句\n> \\- 这是引用中的普通原文\n> 10\\) 普通行"))
+    }
+
     private fun note(
         selectedText: String,
         noteText: String,

@@ -132,7 +132,7 @@ class PageContentView(context: Context) : FrameLayout(context) {
             // Keep the visible page on the same line-height model so its last line fits.
             setFallbackLineSpacing(false)
         }
-        breakStrategy = android.text.Layout.BREAK_STRATEGY_SIMPLE
+        breakStrategy = com.huangder.lumibooks.util.AndroidLineBreakCompat.SIMPLE
         hyphenationFrequency = android.text.Layout.HYPHENATION_FREQUENCY_NONE
         setTextColor(0xFF333333.toInt())
         setTextSize(TypedValue.COMPLEX_UNIT_PX, 56f)
@@ -383,7 +383,7 @@ class PageContentView(context: Context) : FrameLayout(context) {
         if (textView.breakStrategy != strategy) textView.breakStrategy = strategy
         if (textView.hyphenationFrequency != hyphenation) textView.hyphenationFrequency = hyphenation
         if (textView.justificationMode != Layout.JUSTIFICATION_MODE_NONE) {
-            textView.justificationMode = Layout.JUSTIFICATION_MODE_NONE
+            textView.justificationMode = com.huangder.lumibooks.util.AndroidLineBreakCompat.JUSTIFICATION_NONE
         }
         (textView as? RoundedHighlightTextView)?.readerJustificationMode = justification
         justifiedView.readerBreakStrategy = strategy

@@ -11,8 +11,8 @@ internal enum class BundledPolicy(
     @StringRes val title: Int,
     val url: String
 ) {
-    TERMS(4, "terms.html", R.string.terms_of_service, "https://huangder.top/terms.html"),
-    PRIVACY(5, "privacy.html", R.string.privacy_policy, "https://huangder.top/privacy.html");
+    TERMS(6, "community-terms.html", R.string.terms_of_service, "https://github.com/wxyu71/Lumi_Books/blob/main/app/src/main/assets/html/community-terms.html"),
+    PRIVACY(6, "community-privacy.html", R.string.privacy_policy, "https://github.com/wxyu71/Lumi_Books/blob/main/app/src/main/assets/html/community-privacy.html");
 
     fun open(context: Context, version: Int = this.version) {
         if (version == this.version) {

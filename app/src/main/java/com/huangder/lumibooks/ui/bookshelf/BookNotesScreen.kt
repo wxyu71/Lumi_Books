@@ -117,6 +117,8 @@ fun BookNotesScreen(
     val isLiquidGlass = LocalAppTheme.current == "liquid_glass"
     val excerptDark = LocalIsDarkTheme.current
     val context = LocalContext.current
+    val chapterNumberFormat = stringResource(R.string.chapter_number)
+    val resourceLocale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0] ?: java.util.Locale.ROOT
     val scope = rememberCoroutineScope()
     val glassBackdrop = rememberLayerBackdrop()
     val segmentedControlBackdrop = rememberLayerBackdrop()
@@ -125,6 +127,7 @@ fun BookNotesScreen(
         mutableIntStateOf(initialTab.coerceIn(0, 3))
     }
     var pendingExportText by remember { mutableStateOf<String?>(null) }
+    var showExportFormat by remember { mutableStateOf(false) }
     var editingBookmarkRemark by remember { mutableStateOf<Bookmark?>(null) }
     var bookmarkRemarkText by remember { mutableStateOf("") }
     var bookmarkRemarkTags by remember { mutableStateOf<List<String>>(emptyList()) }
@@ -145,9 +148,8 @@ fun BookNotesScreen(
         viewModel.deleteTag(tag)
     }
 
-    val createDocumentLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("text/plain")
-    ) { uri ->
+    // Both formats use Android SAF; nothing is written until the user chooses a destination.
+    val savePendingDocument: (android.net.Uri?) -> Unit = { uri ->
         val exportText = pendingExportText
         pendingExportText = null
         if (uri != null && exportText != null) {
@@ -156,17 +158,39 @@ fun BookNotesScreen(
                     runCatching {
                         val output = context.contentResolver.openOutputStream(uri)
                             ?: throw IOException("Unable to open export destination")
-                        output.bufferedWriter(Charsets.UTF_8).use { writer ->
-                            writer.write(exportText)
-                        }
+                        output.bufferedWriter(Charsets.UTF_8).use { writer -> writer.write(exportText) }
                     }
                 }
-                Toast.makeText(
-                    context,
-                    if (result.isSuccess) R.string.export_bookmarks_success
-                    else R.string.export_bookmarks_failed,
-                    Toast.LENGTH_SHORT
-                ).show()
+                Toast.makeText(context,
+                    if (result.isSuccess) R.string.export_bookmarks_success else R.string.export_bookmarks_failed,
+                    Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+    val createDocumentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument(NotesExportFormat.TXT.mimeType),
+        onResult = savePendingDocument
+    )
+    val createMarkdownLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument(NotesExportFormat.MARKDOWN.mimeType),
+        onResult = savePendingDocument
+    )
+    val requestExport: (NotesExportFormat) -> Unit = { format ->
+        showExportFormat = false
+        viewModel.prepareExport(format) { result ->
+            result.onSuccess { document ->
+                pendingExportText = document.text
+                runCatching {
+                    when (format) {
+                        NotesExportFormat.TXT -> createDocumentLauncher.launch(document.fileName)
+                        NotesExportFormat.MARKDOWN -> createMarkdownLauncher.launch(document.fileName)
+                    }
+                }.onFailure {
+                    pendingExportText = null
+                    Toast.makeText(context, R.string.export_bookmarks_failed, Toast.LENGTH_SHORT).show()
+                }
+            }.onFailure {
+                Toast.makeText(context, R.string.export_bookmarks_failed, Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -176,7 +200,7 @@ fun BookNotesScreen(
             scope.launch {
                 runCatching {
                     ExcerptLauncher.open(context, viewModel.excerptTheme(ExcerptRequest.fromNote(book, note,
-                        context.getString(R.string.chapter_number, note.chapterIndex + 1)), excerptDark))
+                        String.format(resourceLocale, chapterNumberFormat, note.chapterIndex + 1)), excerptDark))
                 }.onFailure { Toast.makeText(context, R.string.excerpt_failed, Toast.LENGTH_SHORT).show() }
             }
         }
@@ -186,7 +210,7 @@ fun BookNotesScreen(
             scope.launch {
                 runCatching {
                     ExcerptLauncher.open(context, viewModel.excerptTheme(ExcerptRequest.fromBookmark(book, bookmark,
-                        context.getString(R.string.chapter_number, bookmark.chapterIndex + 1)), excerptDark))
+                        String.format(resourceLocale, chapterNumberFormat, bookmark.chapterIndex + 1)), excerptDark))
                 }.onFailure { Toast.makeText(context, R.string.excerpt_failed, Toast.LENGTH_SHORT).show() }
             }
         }
@@ -316,29 +340,7 @@ fun BookNotesScreen(
                     book = uiState.book,
                     notes = uiState.notes,
                     bookmarks = uiState.bookmarks,
-                    onExportTxt = {
-                        viewModel.prepareExport { result ->
-                            result.onSuccess { document ->
-                                pendingExportText = document.text
-                                runCatching {
-                                    createDocumentLauncher.launch(document.fileName)
-                                }.onFailure {
-                                    pendingExportText = null
-                                    Toast.makeText(
-                                        context,
-                                        R.string.export_bookmarks_failed,
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }
-                            }.onFailure {
-                                Toast.makeText(
-                                    context,
-                                    R.string.export_bookmarks_failed,
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
-                        }
-                    }
+                    onExportTxt = { showExportFormat = true }
                 ),
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
@@ -346,6 +348,31 @@ fun BookNotesScreen(
                     .padding(end = AppSpace.lg, bottom = AppSpace.lg)
             )
         }
+        if (showExportFormat) com.huangder.lumibooks.ui.components.LiquidGlassAlertDialog(
+            onDismissRequest = { showExportFormat = false },
+            titleText = stringResource(R.string.community_export_choice_title),
+            text = {
+                Text(stringResource(R.string.community_export_choice_hint),
+                    fontSize = AppType.BodySmall, color = AppColors.TextSecondary)
+            },
+            actions = listOf(
+                com.huangder.lumibooks.ui.components.AppDialogAction(
+                    text = stringResource(R.string.community_export_txt),
+                    onClick = { requestExport(NotesExportFormat.TXT) },
+                    enabled = !uiState.isExporting
+                ),
+                com.huangder.lumibooks.ui.components.AppDialogAction(
+                    text = stringResource(R.string.community_export_md),
+                    onClick = { requestExport(NotesExportFormat.MARKDOWN) },
+                    enabled = !uiState.isExporting
+                ),
+                com.huangder.lumibooks.ui.components.AppDialogAction(
+                    text = stringResource(R.string.cancel),
+                    onClick = { showExportFormat = false },
+                    role = com.huangder.lumibooks.ui.components.AppDialogActionRole.Cancel
+                )
+            )
+        )
         NoteInputSheet(
             visible = editingBookmarkRemark != null,
             glassBackdrop = glassBackdrop.takeIf { isLiquidGlass },

@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import com.huangder.lumibooks.R
-import com.huangder.lumibooks.data.local.DataStoreManager
+import kotlinx.coroutines.flow.flowOf
 import com.huangder.lumibooks.domain.model.AppFontSize
 import com.huangder.lumibooks.ui.theme.*
 import com.huangder.lumibooks.ui.components.LocalLiquidGlassBackdrop
@@ -40,7 +40,10 @@ class ReadingInsightsScreenTest {
     @Test @Config(sdk=[31])
     fun glassStatisticsNeverSamplesTheNavigationLayerContainingIt() {
         val context = RuntimeEnvironment.getApplication()
-        val model = StatisticsViewModel(ReadingInsightsFixtures.repository, ReadingInsightsFixtures.library, DataStoreManager(context))
+        val model = StatisticsViewModel.forTesting(
+            ReadingInsightsFixtures.repository, ReadingInsightsFixtures.library,
+            flowOf(30), flowOf(ReadingInsightsFixtures.today)
+        )
         var parentSamples = 0
         val parent = object : Backdrop {
             override val isCoordinatesDependent = false
@@ -78,7 +81,10 @@ class ReadingInsightsScreenTest {
     // supported blur path for software screenshots and verify refraction on-device.
     @Test @Config(sdk=[31]) fun overviewWorksAcrossThemesAndLargeText() {
         val context=RuntimeEnvironment.getApplication()
-        val model=StatisticsViewModel(ReadingInsightsFixtures.repository,ReadingInsightsFixtures.library,DataStoreManager(context))
+        val model=StatisticsViewModel.forTesting(
+            ReadingInsightsFixtures.repository, ReadingInsightsFixtures.library,
+            flowOf(30), flowOf(ReadingInsightsFixtures.today)
+        )
         var theme by mutableStateOf("lumi")
         var dark by mutableStateOf(false)
         var eInk by mutableStateOf(false)
@@ -119,7 +125,10 @@ class ReadingInsightsScreenTest {
     @Config(qualifiers="en-w960dp-h480dp-mdpi")
     fun landscapeStatisticsCanNavigateToAnHistoricalPeriod() {
         val context = RuntimeEnvironment.getApplication()
-        val model = StatisticsViewModel(ReadingInsightsFixtures.repository, ReadingInsightsFixtures.library, DataStoreManager(context))
+        val model = StatisticsViewModel.forTesting(
+            ReadingInsightsFixtures.repository, ReadingInsightsFixtures.library,
+            flowOf(30), flowOf(ReadingInsightsFixtures.today)
+        )
         lateinit var view: View
         compose.setContent {
             view = LocalView.current
@@ -127,13 +136,50 @@ class ReadingInsightsScreenTest {
                 StatisticsScreen(viewModel=model)
             }
         }
+        // Flush the initial stateIn/WhileSubscribed collection before reading
+        // the async view-model state (landscape can delay the first composition).
+        compose.waitForIdle()
         compose.waitUntil(10_000) { model.uiState.value.insights != null }
-        compose.onNodeWithText(context.getString(R.string.tab_month)).performClick()
-        compose.waitUntil(10_000) { model.uiState.value.selection.scope == StatisticsScope.MONTH && model.uiState.value.insights != null }
+        // Verify the actual user-facing tab semantics, not a direct model call.
+        val monthTab = compose.onNodeWithText(context.getString(R.string.tab_month))
+        monthTab.performClick()
+        // waitUntil polls the external StateFlow, but does not guarantee a
+        // Compose recomposition. Flush the tab semantics and test clock first,
+        // as the working portrait/theme test does.
+        monthTab.assertIsSelected()
+        compose.waitForIdle()
+        try {
+            compose.waitUntil(10_000) {
+                model.uiState.value.selection.scope == StatisticsScope.MONTH &&
+                    model.uiState.value.insights != null
+            }
+        } catch (error: androidx.compose.ui.test.ComposeTimeoutException) {
+            val state = model.uiState.value
+            throw AssertionError(
+                "Month tab failed: scope=${state.selection.scope}, " +
+                    "loaded=${state.insights != null}, comparison=${state.comparison != null}, " +
+                    "error=${state.error}",
+                error
+            )
+        }
         compose.onNodeWithContentDescription(context.getString(R.string.insights_previous_period)).performClick()
+        compose.waitForIdle()
         val previous = ReadingInsightsFixtures.today.minusMonths(1)
-        compose.waitUntil(10_000) { model.uiState.value.selection.year == previous.year &&
-            model.uiState.value.selection.month0 == previous.monthValue - 1 && model.uiState.value.insights != null }
+        try {
+            compose.waitUntil(10_000) {
+                model.uiState.value.selection.year == previous.year &&
+                    model.uiState.value.selection.month0 == previous.monthValue - 1 &&
+                    model.uiState.value.insights != null
+            }
+        } catch (error: androidx.compose.ui.test.ComposeTimeoutException) {
+            val state = model.uiState.value
+            throw AssertionError(
+                "Previous month failed: scope=${state.selection.scope}, year=${state.selection.year}, " +
+                    "month0=${state.selection.month0}, loaded=${state.insights != null}, " +
+                    "comparison=${state.comparison != null}, error=${state.error}",
+                error
+            )
+        }
         compose.onNodeWithText(periodLabel(StatisticsPeriod.month(previous.year, previous.monthValue - 1))).assertIsDisplayed()
         compose.runOnIdle {
             val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)

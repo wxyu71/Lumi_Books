@@ -12,6 +12,7 @@ import com.huangder.lumibooks.ui.components.LiquidGlassMenuHost
 import com.huangder.lumibooks.ui.theme.EBookReaderTheme
 import com.huangder.lumibooks.ui.theme.MotionPreference
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -36,8 +37,19 @@ class ArchivedBookMenuTest {
             }
         }
         compose.runOnIdle { state.onLongPressConfirmed(book, Rect(20f, 30f, 110f, 170f), {}) }
-        compose.mainClock.advanceTimeBy(1_000)
-        compose.onNodeWithText(context.getString(R.string.archive_book)).performScrollTo().performClick()
+        // Allow the launch from rememberCoroutineScope to start before advancing
+        // the virtual clock, then ensure the menu is actually composed.
+        compose.waitForIdle()
+        compose.mainClock.advanceTimeBy(2_000)
+        compose.mainClock.advanceTimeByFrame()
+        compose.waitForIdle()
+        // The action panel is revealed after the spring + delayed entrance.
+        compose.runOnIdle { assertTrue("Archive menu never entered", state.actionsAlpha.value > 0.01f) }
+        // Lazy lists do not compose offscreen actions; use ScrollToNode first,
+        // as in the official Now in Android bookmarks UI tests.
+        compose.onNodeWithTag("book-context-actions-list")
+            .performScrollToNode(hasText(context.getString(R.string.archive_book)))
+        compose.onNodeWithText(context.getString(R.string.archive_book)).performClick()
         compose.runOnIdle { assertEquals(book, archived) }
         compose.mainClock.advanceTimeBy(1_000)
         compose.runOnIdle { assertEquals(ContextMenuPhase.Idle, state.phase) }

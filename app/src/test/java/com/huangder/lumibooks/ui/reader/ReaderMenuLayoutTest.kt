@@ -55,7 +55,7 @@ class ReaderMenuLayoutTest {
                 val context = LocalContext.current
                 listOf(R.string.reader_notes, R.string.reader_search, R.string.reader_theme,
                     R.string.tts_listen, R.string.reader_bookmark, R.string.more_options,
-                    R.string.reader_toc).forEach { labels[it] = context.getString(it) }
+                    R.string.reader_toc).forEach { labels[it] = androidx.compose.ui.res.stringResource(it) }
                 Box(Modifier.fillMaxSize()) {
                     // Only the measured viewport changes: Configuration intentionally stays square.
                     BoxWithConstraints(Modifier.size(viewport).testTag("viewport")) {

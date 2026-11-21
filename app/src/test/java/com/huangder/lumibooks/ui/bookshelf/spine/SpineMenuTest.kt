@@ -52,7 +52,7 @@ class SpineMenuTest {
 
         compose.mainClock.autoAdvance = false
         compose.setContent {
-            infoLabel = LocalContext.current.getString(R.string.coverflow_info)
+            infoLabel = androidx.compose.ui.res.stringResource(R.string.coverflow_info)
             EBookReaderTheme(appTheme = "lumi", darkTheme = false) {
                 SpineBookshelf(
                     params = SpineShelfParams(

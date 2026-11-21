@@ -181,7 +181,7 @@ internal object ExcerptRenderer {
                         else {
                             // Android's normal paragraph layout preserves whole words and shaped scripts.
                             val lines = StaticLayout.Builder.obtain(run.text, 0, run.text.length, paint, 620)
-                                .setBreakStrategy(Layout.BREAK_STRATEGY_HIGH_QUALITY).build()
+                                .setBreakStrategy(com.huangder.lumibooks.util.AndroidLineBreakCompat.HIGH_QUALITY).build()
                             repeat(lines.lineCount) { line ->
                                 run.text.substring(lines.getLineStart(line), lines.getLineEnd(line)).trim()
                                     .takeIf { it.isNotEmpty() }?.let { place(it, true) }

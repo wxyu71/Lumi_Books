@@ -754,7 +754,7 @@ private fun StatsStoryArt(p: Float, colors: LumiDawnColors, palette: StoryPalett
     val fade = loopFadeOut(p)
     val count = loopWindow(p, 0.04f, 0.42f)
     val minutes = (756 * count).toInt()
-    val locale = Locale.getDefault()
+    val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0] ?: Locale.ROOT
     val dayNames = remember(locale) {
         DayOfWeek.entries.map { it.getDisplayName(TextStyle.NARROW, locale) }
     }

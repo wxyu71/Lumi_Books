@@ -92,7 +92,7 @@ class LumiDawnRenderTest {
         }
         val greeting = if (newInstall) R.string.welcome_title else R.string.welcome_update_title
         compose.onNodeWithText(context.getString(greeting)).assertIsDisplayed()
-        val button = compose.onNodeWithText(context.getString(R.string.welcome_start_using)).assertIsDisplayed()
+        val button = compose.onNodeWithText(context.getString(R.string.community_agree_continue)).assertIsDisplayed()
         assertTrue(button.fetchSemanticsNode().boundsInRoot.bottom <= view.height)
         save("02-intro-${if (newInstall) "new" else "update"}-${if (dark) "dark" else "light"}$suffix")
     }

@@ -131,13 +131,7 @@ fun SettingsScreen(
 
     AdaptiveSettingsOverview(
         onBack = onNavigateBack,
-        actions = {
-            LiquidGlassIconButton(
-                imageVector = AppIcons.ChatCircle,
-                contentDescription = stringResource(R.string.notice_history_title),
-                onClick = { context.startActivity(DetailActivity.createIntent(context, NOTICE_HISTORY_CATEGORY)) }
-            )
-        },
+        actions = {}, // Community edition does not surface legacy remote/donor notices.
         overview = {
             Spacer(Modifier.height(AppSpace.sm))
 
@@ -206,8 +200,6 @@ fun SettingsScreen(
                 DisclosureChevron()
             }
 
-                com.huangder.lumibooks.edition.EditionMembershipEntry()
-
                 CategoryItem(AppIcons.Tile.Folders, stringResource(R.string.authorized_folders_title), tileColor = SettingsTileColors.Blue) {
                     context.startActivity(Intent(context, AuthorizedFoldersActivity::class.java))
                 }
@@ -254,14 +246,7 @@ fun SettingsScreen(
                     CategoryItem(AppIcons.Tile.About, stringResource(R.string.category_about), grouped = true, tileColor = SettingsTileColors.Gray) {
                         context.startActivity(Intent(context, DetailActivity::class.java).putExtra("category", "about"))
                     }
-                    SettingsTileDivider()
-                    CategoryItem(AppIcons.Tile.Sponsor, stringResource(R.string.category_sponsor), grouped = true, tileColor = SettingsTileColors.Pink) {
-                        context.startActivity(Intent(context, SponsorActivity::class.java))
-                    }
-                    SettingsTileDivider()
-                    CategoryItem(AppIcons.Tile.Feedback, stringResource(R.string.category_feedback), grouped = true, tileColor = SettingsTileColors.Red) {
-                        context.startActivity(Intent(context, FeedbackActivity::class.java))
-                    }
+
                 }
         }
     )

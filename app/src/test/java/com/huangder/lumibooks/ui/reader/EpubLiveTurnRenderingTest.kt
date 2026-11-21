@@ -493,8 +493,10 @@ class EpubLiveTurnRenderingTest {
     }
 
     @Test fun crossChapterTurnKeepsLogicalRoles() {
-        host.markPreloadLoading(EpubPageTurnHost.PreloadSlot.NEXT, EpubPageTarget(1, 0), 3)
-        host.markPreloadReady(EpubPageTurnHost.PreloadSlot.NEXT, EpubPageTarget(1, 0), 3, 0, 1, host.nextWebView)
+        // The last page of chapter zero is the only state where chapter 1/0
+        // is the immediate next target. Preparing a non-adjacent target must
+        // not redirect an ordinary turn away from chapter zero's page 2.
+        prepareCrossChapterTurn()
         event(MotionEvent.ACTION_DOWN, 200f, 0)
         event(MotionEvent.ACTION_MOVE, 120f, 180)
         val bitmap = frame()
@@ -915,7 +917,7 @@ class EpubLiveTurnRenderingTest {
         assertFalse(host.hasPreparedPage(slot, lastPage))
     }
 
-    @Test fun scrollingChapterFadeDrawsIntermediateOpacityBeforeCommitting() {
+    @Test fun scrollingChapterTransitionKeepsPagesOpaqueUntilCommitting() {
         host.setNativePagingEnabled(false)
         prepareCrossChapterTurn()
         host.setPageBackgroundColor(Color.WHITE)
@@ -935,17 +937,15 @@ class EpubLiveTurnRenderingTest {
         fun pixel() = frame().let { bitmap -> bitmap.getPixel(200, 400).also { bitmap.recycle() } }
         assertEquals(Color.RED, pixel())
         SystemClock.sleep(90)
-        val fadingOut = pixel()
-        assertEquals(255, Color.red(fadingOut))
-        assertTrue(Color.green(fadingOut) in 1..254)
-        assertEquals(Color.green(fadingOut), Color.blue(fadingOut))
+        // Scrolling transitions are opaque vertical slides, not a fade to
+        // white; publisher pages must not become translucent while moving.
+        val outgoingPixel = pixel()
+        assertEquals(Color.RED, outgoingPixel)
         assertEquals(0, commits)
         assertEquals(EpubPageTarget(0, 2), host.currentPageTarget())
         SystemClock.sleep(180)
-        val fadingIn = pixel()
-        assertEquals(255, Color.blue(fadingIn))
-        assertTrue(Color.red(fadingIn) in 1..254)
-        assertEquals(Color.red(fadingIn), Color.green(fadingIn))
+        val incomingPixel = pixel()
+        assertEquals(Color.BLUE, incomingPixel)
         SystemClock.sleep(90)
         assertEquals(Color.BLUE, pixel())
         assertEquals(0, commits)
@@ -981,17 +981,23 @@ class EpubLiveTurnRenderingTest {
         }
         assertEquals(Color.RED, uniformPixel())
         SystemClock.sleep(200)
+        // Stationary chapters crossfade directly from the outgoing to the
+        // incoming page, rather than fading both pages through white.
         val outgoing = uniformPixel()
-        assertEquals(255, Color.red(outgoing))
-        assertTrue(Color.blue(outgoing) in 1..254)
+        assertTrue(Color.red(outgoing) > Color.blue(outgoing))
+        assertEquals(0, Color.green(outgoing))
+        assertTrue(Color.blue(outgoing) > 0)
         SystemClock.sleep(200)
-        assertEquals(Color.WHITE, uniformPixel())
+        val midpoint = uniformPixel()
+        assertTrue(kotlin.math.abs(Color.red(midpoint) - Color.blue(midpoint)) <= 3)
+        assertEquals(0, Color.green(midpoint))
         shadowOf(Looper.getMainLooper()).idle()
         assertEquals("duration must not use the scrolling default", 0, commits)
         SystemClock.sleep(200)
         val incoming = uniformPixel()
-        assertEquals(255, Color.blue(incoming))
-        assertTrue(Color.red(incoming) in 1..254)
+        assertTrue(Color.blue(incoming) > Color.red(incoming))
+        assertEquals(0, Color.green(incoming))
+        assertTrue(Color.red(incoming) > 0)
         SystemClock.sleep(200)
         assertEquals(Color.BLUE, uniformPixel())
         shadowOf(Looper.getMainLooper()).idle()

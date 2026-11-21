@@ -1,0 +1,303 @@
+name: Android Community Beta
+
+on:
+  push:
+    branches:
+      - main
+  # Community feature branches are already validated through PRs; avoid duplicate
+  # push+PR runs that cancel one another before producing reusable Gradle caches.
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Untrusted pull requests never gain write permissions, tokens or signing keys.
+permissions:
+  contents: read
+
+concurrency:
+  group: android-beta-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  policy:
+    name: Community policy & test inventory
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Check community restrictions, localization and test partitioning
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/check_community_policy.py
+          python3 tools/ci_test_inventory.py
+          python3 tools/check_community_translations.py
+          bash -n tools/ci_gradle_retry.sh tools/ci_run_jvm_shards.sh tools/ci_hilt_artifact_probe.sh tools/ci_compose_artifact_probe.sh tools/ci_run_device_smoke.sh
+          python3 -m compileall -q tools
+          python3 -m unittest discover -s tools/tests -p 'test_*.py' -v
+
+  verify:
+    name: OSS APK + JVM reader/ui/core (JDK 21)
+    needs: policy
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Android Gradle toolchain (JDK 21)
+        uses: ./.github/actions/setup-android-toolchain
+        with:
+          java-version: '21'
+          # Only trusted same-repo PRs or main builds write a Gradle cache.
+          # Fork PRs read only; GitHub scopes each PR cache to refs/pull/N/merge.
+          cache-read-only: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
+
+      - name: Verify community-only inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -d app/src/premium/java
+          grep -q 'val premiumEdition = false' app/build.gradle.kts
+          grep -q 'applicationId = "io.github.wxyu71.lumibooks"' app/build.gradle.kts
+          python3 tools/check_community_policy.py
+          chmod +x ./gradlew
+
+      - name: Probe Hilt Maven distribution endpoints
+        shell: bash
+        run: bash tools/ci_hilt_artifact_probe.sh
+
+      - name: Assemble debug-signed community beta APKs (targeted dependency retry)
+        id: build_apk
+        run: bash tools/ci_gradle_retry.sh test-logs/apk.log :app:assembleDebug
+
+      - name: Verify APK metadata and create SHA-256 checksums
+        id: apk_metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(sed -n 's/^lumi.communityVersionName=//p' gradle.properties)"
+          version_code="$(sed -n 's/^lumi.communityVersionCode=//p' gradle.properties)"
+          test -n "$version"
+          test -n "$version_code"
+          sdk_root="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          aapt="$sdk_root/build-tools/37.0.0/aapt"
+          apksigner="$sdk_root/build-tools/37.0.0/apksigner"
+          test -x "$aapt"
+          test -x "$apksigner"
+          mkdir -p dist
+          shopt -s nullglob
+          apks=(app/build/oss/outputs/apk/debug/*.apk)
+          # PR artifacts should be quick to download; keep architecture-specific
+          # APKs for main/manual builds and provide one universal APK for review.
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            apks=(app/build/oss/outputs/apk/debug/*universal*.apk)
+          fi
+          if (( ${#apks[@]} == 0 )); then
+            echo "No OSS debug APKs found" >&2
+            exit 1
+          fi
+          for apk in "${apks[@]}"; do
+            metadata="$("$aapt" dump badging "$apk" | grep '^package:')"
+            [[ "$metadata" == *"name='io.github.wxyu71.lumibooks'"* ]] || { echo "$metadata" >&2; exit 1; }
+            [[ "$metadata" == *"versionName='$version'"* ]] || { echo "$metadata" >&2; exit 1; }
+            [[ "$metadata" == *"versionCode='$version_code'"* ]] || { echo "$metadata" >&2; exit 1; }
+            "$apksigner" verify --verbose --print-certs "$apk" > "dist/signature-$(basename "$apk").txt"
+            grep -q "Android Debug" "dist/signature-$(basename "$apk").txt" || {
+              echo "::error::Community APK must be signed only with an Android Debug certificate" >&2
+              exit 1
+            }
+            cp "$apk" "dist/Lumi-Community-$version-$(basename "$apk")"
+          done
+          (cd dist && sha256sum ./*.apk > SHA256SUMS.txt && sha256sum --check SHA256SUMS.txt)
+          {
+            echo "### Community Beta APKs"
+            echo "Version: \`$version\` / code \`$version_code\`"
+            echo "Debug builds are signed with CI's temporary debug key; they are not stable release-signed builds."
+            echo
+            echo '```'
+            ls -lh dist
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload failed APK Gradle diagnostics
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: Lumi-Community-APK-failure-${{ github.run_number }}-${{ github.run_attempt }}
+          path: test-logs/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload installable debug APKs
+        if: ${{ steps.apk_metadata.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: Lumi-Community-Beta-${{ github.run_number }}-${{ github.run_attempt }}
+          path: dist/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+
+      # One machine compiles Kotlin tests once and reuses outputs for three
+      # individually bounded and verified test filters, keeping separate reports.
+      - name: Run bounded JVM shards with separate reports
+        # Even if APK assembly/metadata failed, retain independent JVM evidence.
+        if: ${{ always() && !cancelled() && steps.build_apk.outcome != 'skipped' }}
+        shell: bash
+        run: bash tools/ci_run_jvm_shards.sh
+
+      - name: Upload JUnit XML, HTML and diagnostic logs for all shards
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: Lumi-Community-JVM-all-${{ github.run_number }}-${{ github.run_attempt }}
+          path: test-logs/
+          if-no-files-found: warn
+          retention-days: 14
+
+
+  quality:
+    name: Android Lint + release/diagnostic variants
+    needs: [policy, verify]
+    if: ${{ needs.policy.result == 'success' && needs.verify.result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Android Gradle toolchain (JDK 21)
+        uses: ./.github/actions/setup-android-toolchain
+        with:
+          java-version: '21'
+          cache-read-only: 'true'
+
+      - name: Full Android Lint — zero errors required
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          rm -f app/build/oss/reports/lint-results-debug.xml
+          # Keep the report even when Gradle exits nonzero for a Lint finding.
+          # Neither old issues nor newly introduced errors are accepted.
+          lint_rc=0
+          bash tools/ci_gradle_retry.sh test-logs/quality/lint.log :app:lintDebug || lint_rc=$?
+          python3 tools/ci_require_clean_lint.py app/build/oss/reports/lint-results-debug.xml
+          if (( lint_rc != 0 )); then
+            echo "::error::Android Lint Gradle task failed with exit $lint_rc" >&2
+            exit "$lint_rc"
+          fi
+
+      - name: Compile diagnostic and assemble unsigned release variants
+        if: ${{ always() && !cancelled() }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash tools/ci_gradle_retry.sh test-logs/quality/variants.log :app:assembleDiagnostic :app:assembleRelease
+          # Release artifacts are never uploaded or signed from untrusted PRs.
+          test -d app/build/oss/outputs/apk/release
+          find app/build/oss/outputs/apk/release -name '*.apk' -type f | grep -q '.'
+
+      - name: Upload lint and variant reports (including failures)
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: Lumi-Community-Quality-${{ github.run_number }}-${{ github.run_attempt }}
+          path: |
+            app/build/oss/reports/lint-results*
+            app/build/oss/outputs/mapping/
+            test-logs/quality/
+          if-no-files-found: warn
+          retention-days: 14
+
+  device-smoke:
+    name: Emulator API ${{ matrix.api }} integration + UI + screenshots
+    needs: [policy, verify]
+    if: ${{ needs.policy.result == 'success' && needs.verify.result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 80
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [29, 35]
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Android Gradle toolchain (JDK 21)
+        uses: ./.github/actions/setup-android-toolchain
+        with:
+          java-version: '21'
+          cache-read-only: 'true'
+
+      - name: Enable KVM
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run blocking integration/UI/screenshot tests
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: ${{ matrix.api }}
+          arch: x86_64
+          target: google_apis
+          profile: pixel_6
+          disable-animations: true
+          emulator-boot-timeout: 600
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: bash tools/ci_run_device_smoke.sh
+
+      - name: Upload AndroidTest JUnit, logcat and UI screenshots
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: Lumi-Community-Emulator-API${{ matrix.api }}-${{ github.run_number }}-${{ github.run_attempt }}
+          path: |
+            app/build/oss/outputs/androidTest-results/
+            app/build/oss/reports/androidTests/
+            test-logs/device/
+          if-no-files-found: warn
+          retention-days: 14
+
+
+  ci-gate:
+    name: Required CI summary
+    if: always()
+    needs: [policy, verify, quality, device-smoke]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Verify all required checks passed
+        shell: bash
+        env:
+          POLICY: ${{ needs.policy.result }}
+          VERIFY: ${{ needs.verify.result }}
+          QUALITY: ${{ needs.quality.result }}
+          DEVICE: ${{ needs.device-smoke.result }}
+        run: |
+          set -euo pipefail
+          {
+            echo "### Lumi Community CI"
+            echo "| Stage | Result |"
+            echo "| --- | --- |"
+            echo "| Community policy and test inventory | $POLICY |"
+            echo "| OSS APK, SHA-256, Reader/UI/Core JVM | $VERIFY |"
+            echo "| Android Lint, release/diagnostic variants | $QUALITY |"
+            echo "| Emulator API 29 + 35 integration/UI/screenshot | $DEVICE |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          [[ "$POLICY" == success && "$VERIFY" == success && "$QUALITY" == success && "$DEVICE" == success ]]

@@ -438,7 +438,7 @@ fun ThemeSettingsSheet(
                                     interactionSource = remember { MutableInteractionSource() }
                                 ) { showFontSizeDialog = true }.padding(start = 6.dp, top = 4.dp, bottom = 4.dp)
                             ) {
-                                Text(String.format(Locale.getDefault(), "%.1f sp", currentFontSize),
+                                Text(String.format((androidx.compose.ui.platform.LocalConfiguration.current.locales[0] ?: Locale.ROOT), "%.1f sp", currentFontSize),
                                     fontSize = AppType.BodySmall, color = LightTextSecondary,
                                     fontWeight = FontWeight.SemiBold, maxLines = 1)
                             }
@@ -502,7 +502,7 @@ fun ThemeSettingsSheet(
                                     .padding(start = 6.dp, top = 4.dp, bottom = 4.dp)
                                     .testTag("reader-body-font-weight-value")
                             ) {
-                                Text(String.format(Locale.getDefault(), "%.1f", previewWeight.coerceIn(weightRange)),
+                                Text(String.format((androidx.compose.ui.platform.LocalConfiguration.current.locales[0] ?: Locale.ROOT), "%.1f", previewWeight.coerceIn(weightRange)),
                                     fontSize = AppType.BodySmall, color = LightTextSecondary, maxLines = 1)
                             }
                         }
