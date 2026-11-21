@@ -48,11 +48,13 @@ internal fun PdfSelectionActionSheets(
     backdrop: Backdrop?, onJump: (Note) -> Unit
 ) {
     val context = LocalContext.current
+    val pdfPageFormat = androidx.compose.ui.res.stringResource(R.string.pdf_page_number)
+    val pdfPageLocale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0] ?: java.util.Locale.ROOT
     val scope = rememberCoroutineScope()
     var results by remember(controller) { mutableStateOf<List<ReaderViewModel.SearchResult>>(emptyList()) }
     var searching by remember { mutableStateOf(false) }
     var searched by remember { mutableStateOf(false) }
-    LaunchedEffect(actions.searchVisible, actions.revision) {
+    LaunchedEffect(actions.searchVisible, actions.revision, pdfPageFormat, pdfPageLocale) {
         if (!actions.searchVisible) { searching = false; return@LaunchedEffect }
         results = emptyList()
         searched = false
@@ -61,7 +63,7 @@ internal fun PdfSelectionActionSheets(
         searching = true
         try {
             results = searchPdfText(controller.session, pageCount, query, pageTitle = { page ->
-                context.getString(R.string.pdf_page_number, page + 1)
+                String.format(pdfPageLocale, pdfPageFormat, page + 1)
             })
             searched = true
         } finally { searching = false }

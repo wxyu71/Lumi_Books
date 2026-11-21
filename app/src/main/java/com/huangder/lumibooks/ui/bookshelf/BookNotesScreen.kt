@@ -117,6 +117,8 @@ fun BookNotesScreen(
     val isLiquidGlass = LocalAppTheme.current == "liquid_glass"
     val excerptDark = LocalIsDarkTheme.current
     val context = LocalContext.current
+    val chapterNumberFormat = stringResource(R.string.chapter_number)
+    val resourceLocale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0] ?: java.util.Locale.ROOT
     val scope = rememberCoroutineScope()
     val glassBackdrop = rememberLayerBackdrop()
     val segmentedControlBackdrop = rememberLayerBackdrop()
@@ -198,7 +200,7 @@ fun BookNotesScreen(
             scope.launch {
                 runCatching {
                     ExcerptLauncher.open(context, viewModel.excerptTheme(ExcerptRequest.fromNote(book, note,
-                        context.getString(R.string.chapter_number, note.chapterIndex + 1)), excerptDark))
+                        String.format(resourceLocale, chapterNumberFormat, note.chapterIndex + 1)), excerptDark))
                 }.onFailure { Toast.makeText(context, R.string.excerpt_failed, Toast.LENGTH_SHORT).show() }
             }
         }
@@ -208,7 +210,7 @@ fun BookNotesScreen(
             scope.launch {
                 runCatching {
                     ExcerptLauncher.open(context, viewModel.excerptTheme(ExcerptRequest.fromBookmark(book, bookmark,
-                        context.getString(R.string.chapter_number, bookmark.chapterIndex + 1)), excerptDark))
+                        String.format(resourceLocale, chapterNumberFormat, bookmark.chapterIndex + 1)), excerptDark))
                 }.onFailure { Toast.makeText(context, R.string.excerpt_failed, Toast.LENGTH_SHORT).show() }
             }
         }

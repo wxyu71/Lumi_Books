@@ -64,12 +64,13 @@ internal fun rememberDeviceCredentialCheck(
     onConfirmed: () -> Unit
 ): () -> Unit {
     val context = LocalContext.current
+    val credentialPromptTitle = androidx.compose.ui.res.stringResource(R.string.passcode_reset_prompt_title)
     val confirmed by rememberUpdatedState(onConfirmed)
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) confirmed()
     }
     return {
-        val title = context.getString(R.string.passcode_reset_prompt_title)
+        val title = credentialPromptTitle
         when {
             !HiddenLibraryBiometrics.isDeviceSecure(context) -> onUnavailable()
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> auth.deviceCredential(title) { confirmed() }

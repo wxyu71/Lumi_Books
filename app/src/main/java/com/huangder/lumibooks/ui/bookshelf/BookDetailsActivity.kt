@@ -270,6 +270,9 @@ fun BookDetailsScreen(
     var coverOpen by remember { mutableStateOf(false) }
     var deleteOpen by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val folderMoveSuccessFormat = stringResource(R.string.folder_move_success)
+    val libraryRootTitle = stringResource(R.string.library_root)
+    val resourceLocale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0] ?: java.util.Locale.ROOT
     LaunchedEffect(bookId) { detailsViewModel.load(bookId) }
     val book = details.book ?: return
     val currentFolderId = library.bookFolderLinks.firstOrNull { it.bookId == book.id }?.folderId
@@ -299,7 +302,7 @@ fun BookDetailsScreen(
                 moveOpen = false
                 Toast.makeText(
                     context,
-                    context.getString(R.string.folder_move_success, request.bookIds.size, request.targetName),
+                    String.format(resourceLocale, folderMoveSuccessFormat, request.bookIds.size, request.targetName),
                     Toast.LENGTH_SHORT
                 ).show()
             }
@@ -309,7 +312,7 @@ fun BookDetailsScreen(
     fun requestBookMove(targetFolderId: String?) {
         val targetName = targetFolderId
             ?.let { id -> library.folders.firstOrNull { it.id == id }?.name }
-            ?: context.getString(R.string.library_root)
+            ?: libraryRootTitle
         val request = PendingCrossStorageBookMove(setOf(book.id), targetFolderId, false, targetName)
         if (homeViewModel.requiresCrossStorageMoveConfirmation(setOf(book.id), targetFolderId)) {
             pendingCrossStorageMove = request
