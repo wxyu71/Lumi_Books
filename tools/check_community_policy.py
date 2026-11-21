@@ -36,7 +36,13 @@ ensure("github.com/wxyu71/Lumi_Books/discussions" in about, "Community discussio
 ensure("github.com/wxyu71/Lumi_Books" in about, "Community repository link missing")
 ensure("qm.qq.com" not in about, "Official QQ group reintroduced in About")
 ensure("CategoryItem(AppIcons.Tile.Feedback" not in settings, "Feedback category reintroduced")
-ensure("CategoryItem(AppIcons.Tile.Sponsor" not in settings, "Sponsor should be inside About")
+ensure("CategoryItem(AppIcons.Tile.Sponsor" not in settings, "Official Sponsor entry reintroduced")
+ensure("SponsorActivity" not in manifest and "SponsorActivity" not in about,
+       "Upstream sponsor/donation page restored")
+ensure(not (ROOT / "app/src/main/java/com/huangder/lumibooks/ui/settings/SponsorActivity.kt").exists(),
+       "Upstream sponsor page must not ship")
+ensure(not (ROOT / "app/src/main/java/com/huangder/lumibooks/data/github/GitHubContributorsClient.kt").exists(),
+       "Fork has a single maintainer; do not import upstream contributor feed")
 for unused in ("ContinueReadingWidgetProvider", "QuoteWidgetProvider", 'android:name=".ui.settings.FeedbackActivity"'):
     ensure(unused not in manifest, "Disabled component still registered: " + unused)
 

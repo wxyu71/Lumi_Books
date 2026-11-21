@@ -1,87 +1,80 @@
-name: Publish signed Lumi Community Beta
+name: Publish personal Lumi Community Beta
 
+# Publish once when a new version has passed normal main-branch CI.
+# PRs never receive release write permissions. No separate CI rerun or tag push.
 on:
-  push:
-    tags:
-      - 'v*-beta.*'
+  workflow_run:
+    workflows: ['Android Community Beta']
+    types: [completed]
+    branches: [main]
 
-# Tag publication is isolated from PR checks and secrets.
 permissions:
   contents: read
 
 jobs:
-  full-ci:
-    name: Full required Android verification
-    uses: ./.github/workflows/android-beta.yml
-    permissions:
-      contents: read
-
   publish:
-    name: Sign and publish GitHub Pre-release
-    needs: full-ci
-    if: ${{ github.repository == 'wxyu71/Lumi_Books' && needs.full-ci.result == 'success' }}
+    name: Create GitHub Beta Pre-release
+    if: ${{ github.repository == 'wxyu71/Lumi_Books' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_repository.full_name == github.repository }}
     runs-on: ubuntu-24.04
     timeout-minutes: 100
-    environment: beta-release
     permissions:
       contents: write
     concurrency:
-      group: lumi-community-beta-publication
+      group: lumi-personal-beta-publish
       cancel-in-progress: false
     steps:
-      - name: Check out the exact release tag
+      - name: Check out the exact main CI commit
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.event.workflow_run.head_sha }}
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Require a version-matching tag already merged to main
+      - name: Check version and skip previously published versions
+        id: version
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERIFIED_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           set -euo pipefail
-          tag="$GITHUB_REF_NAME"
-          [[ "$GITHUB_REF_TYPE" == tag && "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-beta\.[0-9]+$ ]] || exit 1
+          git fetch --no-tags origin main
+          [[ "$(git rev-parse HEAD)" == "$VERIFIED_SHA" ]] || exit 1
+          if [[ "$(git rev-parse origin/main)" != "$VERIFIED_SHA" ]]; then
+            echo "Main has advanced; only its latest CI can publish a new Beta."
+            echo 'publish=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           version="$(sed -n 's/^lumi.communityVersionName=//p' gradle.properties)"
           code="$(sed -n 's/^lumi.communityVersionCode=//p' gradle.properties)"
-          [[ "$tag" == "v$version" && "$code" =~ ^[0-9]+$ ]] || exit 1
-          git fetch --no-tags origin main
-          git merge-base --is-ancestor HEAD origin/main || {
-            echo "Tag is not contained in main" >&2
-            exit 1
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+-beta\.[0-9]+$ ]] || {
+            echo "Only numeric Beta versions can be published" >&2; exit 1;
           }
-          echo "BETA_TAG=$tag" >> "$GITHUB_ENV"
-          echo "BETA_VERSION=$version" >> "$GITHUB_ENV"
-          echo "BETA_CODE=$code" >> "$GITHUB_ENV"
+          [[ "$code" =~ ^[1-9][0-9]*$ ]] || exit 1
+          tag="v$version"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Version $tag is already published; nothing to do."
+            echo 'publish=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" >/dev/null 2>&1; then
+            echo "Tag exists without the expected Release; do not reuse it" >&2
+            exit 1
+          fi
+          echo 'publish=true' >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
 
-      - name: Set up Android toolchain
+      - name: Prepare Android build tools
+        if: steps.version.outputs.publish == 'true'
         uses: ./.github/actions/setup-android-toolchain
         with:
           java-version: '21'
           cache-read-only: 'true'
 
-      - name: Load the protected signing identity
-        shell: bash
-        env:
-          KEYSTORE_BASE64: ${{ secrets.LUMI_BETA_KEYSTORE_BASE64 }}
-          STORE_PASSWORD: ${{ secrets.LUMI_BETA_STORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.LUMI_BETA_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.LUMI_BETA_KEY_PASSWORD }}
-          EXPECTED_CERT: ${{ vars.LUMI_BETA_CERT_SHA256 }}
-        run: |
-          set -euo pipefail
-          [[ -n "$KEYSTORE_BASE64" && -n "$STORE_PASSWORD" && -n "$KEY_ALIAS" &&
-             -n "$KEY_PASSWORD" && -n "$EXPECTED_CERT" ]] || {
-            echo "Configure signing secrets and certificate pin in the beta-release environment" >&2
-            exit 1
-          }
-          umask 077
-          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/lumi-beta.jks"
-          echo "LUMI_RELEASE_KEYSTORE_PATH=$RUNNER_TEMP/lumi-beta.jks" >> "$GITHUB_ENV"
-          echo "LUMI_RELEASE_STORE_PASSWORD=$STORE_PASSWORD" >> "$GITHUB_ENV"
-          echo "LUMI_RELEASE_KEY_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
-          echo "LUMI_RELEASE_KEY_PASSWORD=$KEY_PASSWORD" >> "$GITHUB_ENV"
-
-      - name: Build release signed with the community identity
+      - name: Build unsigned, optimized OSS release
+        if: steps.version.outputs.publish == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -89,54 +82,75 @@ jobs:
           chmod +x ./gradlew
           ./gradlew --no-daemon :app:assembleRelease
 
-      - name: Verify APK identity, signature and SHA-256
+      - name: Sign with an ephemeral personal-preview identity and verify
+        if: steps.version.outputs.publish == 'true'
         shell: bash
         env:
-          EXPECTED_CERT: ${{ vars.LUMI_BETA_CERT_SHA256 }}
+          VERSION: ${{ steps.version.outputs.version }}
+          VERSION_CODE: ${{ steps.version.outputs.code }}
         run: |
           set -euo pipefail
           sdk="${ANDROID_SDK_ROOT:-$ANDROID_HOME}/build-tools/37.0.0"
           shopt -s nullglob
-          apks=(app/build/oss/outputs/apk/release/*universal*release.apk)
-          [[ ${#apks[@]} -eq 1 ]] || { echo "Expected one universal release APK" >&2; exit 1; }
+          apks=(app/build/oss/outputs/apk/release/*universal*.apk)
+          [[ ${#apks[@]} -eq 1 ]] || {
+            echo "Expected exactly one universal Release APK" >&2; exit 1;
+          }
           apk="${apks[0]}"
           info="$("$sdk/aapt" dump badging "$apk" | grep '^package:')"
           [[ "$info" == *"name='io.github.wxyu71.lumibooks'"* &&
-             "$info" == *"versionCode='$BETA_CODE'"* &&
-             "$info" == *"versionName='$BETA_VERSION'"* ]] || exit 1
-          signature="$("$sdk/apksigner" verify --verbose --print-certs "$apk")"
-          echo "$signature" | grep -q 'Verified using v2 scheme (APK Signature Scheme v2): true'
-          actual="$(printf '%s\n' "$signature" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -n 1 | tr -d ':' | tr 'A-F' 'a-f')"
-          expected="$(printf '%s' "$EXPECTED_CERT" | tr -d ':[:space:]' | tr 'A-F' 'a-f')"
-          [[ "$actual" =~ ^[a-f0-9]{64}$ && "$actual" == "$expected" ]] || {
-            echo "Signing certificate differs from the pinned community identity" >&2; exit 1;
+             "$info" == *"versionCode='$VERSION_CODE'"* &&
+             "$info" == *"versionName='$VERSION'"* ]] || {
+            echo "APK package or version does not match source" >&2; exit 1;
           }
+          umask 077
+          pass="$(openssl rand -hex 24)"
+          store="$RUNNER_TEMP/lumi-personal-beta.jks"
+          trap 'rm -f "$store" "$RUNNER_TEMP/lumi-aligned.apk"' EXIT
+          keytool -genkeypair -noprompt -keystore "$store" \
+            -alias lumi-preview -keyalg RSA -keysize 3072 -validity 3650 \
+            -storepass "$pass" -keypass "$pass" \
+            -dname "CN=Lumi Community Personal Preview"
+          "$sdk/zipalign" -f -p 4 "$apk" "$RUNNER_TEMP/lumi-aligned.apk"
           mkdir -p dist
-          filename="Lumi-Community-v$BETA_VERSION-universal.apk"
-          cp "$apk" "dist/$filename"
-          (cd dist && sha256sum "$filename" > SHA256SUMS.txt && sha256sum --check SHA256SUMS.txt)
-          echo "Signed Beta $BETA_TAG; versionCode $BETA_CODE; verified APK SHA-256 and certificate $actual" >> "$GITHUB_STEP_SUMMARY"
+          name="Lumi-Community-v$VERSION-universal.apk"
+          "$sdk/apksigner" sign --ks "$store" --ks-key-alias lumi-preview \
+            --ks-pass "pass:$pass" --key-pass "pass:$pass" \
+            --out "dist/$name" "$RUNNER_TEMP/lumi-aligned.apk"
+          "$sdk/apksigner" verify --verbose --print-certs "dist/$name"
+          (cd dist && sha256sum "$name" > SHA256SUMS.txt && sha256sum --check SHA256SUMS.txt)
+          echo "Personal Beta $VERSION: unsigned release build signed once for this distribution; the next Beta is NOT an in-place APK update." >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Publish the verified GitHub Pre-release
+      - name: Create the Pre-release and version tag automatically
+        if: steps.version.outputs.publish == 'true'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+          TAG: ${{ steps.version.outputs.tag }}
+          VERIFIED_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           set -euo pipefail
-          if gh release view "$BETA_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            echo "Release already exists; refusing to replace public assets" >&2
-            exit 1
+          git fetch --no-tags origin main
+          if [[ "$(git rev-parse origin/main)" != "$VERIFIED_SHA" ]]; then
+            echo "Main advanced during packaging; skip stale publication."
+            exit 0
           fi
           cat > "$RUNNER_TEMP/beta-notes.md" <<'NOTES'
-          Non-official Lumi Community Beta, built from the public OSS source.
-          Includes community tag management, opt-in local reading journal and TXT/Markdown annotation exports.
-          No private Premium services. This is pre-release software, separate from Huangder's original app.
-          Verify the APK against SHA256SUMS.txt. Future Community Beta updates require the same signing identity.
+          Lumi Community — non-official personal-use Beta built from public OSS sources.
+
+          This Beta APK is signed with a newly generated temporary key, not the original author's key.
+          IMPORTANT: Future Beta APKs use a different key and CANNOT be installed over this app.
+          Back up your reading data inside the app before uninstalling an older Beta;
+          uninstalling normally removes its private app data. Then install the new Beta.
+          This is intended for personal testing, not an automatically upgradable app distribution.
+
+          Verify the downloadable APK using SHA256SUMS.txt.
           NOTES
-          gh release create "$BETA_TAG" \
-            "dist/Lumi-Community-v$BETA_VERSION-universal.apk" \
-            "dist/SHA256SUMS.txt" \
-            --repo "$GITHUB_REPOSITORY" \
-            --verify-tag --prerelease \
-            --title "Lumi Community $BETA_VERSION (Beta)" \
+          printf '\n## Changes\n\n' >> "$RUNNER_TEMP/beta-notes.md"
+          cat app/src/main/assets/changelog.md >> "$RUNNER_TEMP/beta-notes.md"
+          gh release create "$TAG" \
+            "dist/Lumi-Community-v$VERSION-universal.apk" "dist/SHA256SUMS.txt" \
+            --repo "$GITHUB_REPOSITORY" --target "$VERIFIED_SHA" \
+            --prerelease --title "Lumi Community $VERSION (personal Beta)" \
             --notes-file "$RUNNER_TEMP/beta-notes.md"

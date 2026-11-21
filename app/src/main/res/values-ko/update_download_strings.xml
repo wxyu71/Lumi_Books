@@ -2,4 +2,5 @@
 <resources>
     <string name="app_update_download_channel">GitHub Releases 열기</string>
     <string name="app_update_download_recommended">추천</string>
+    <string name="app_update_reinstall_warning">개인용 Beta는 매번 새로운 임시 서명 키를 사용하므로 이전 버전 위에 설치할 수 없습니다. 앱에서 독서 데이터를 백업한 다음 구버전을 제거하고 설치하세요.</string>
 </resources>

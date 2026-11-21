@@ -1,4 +1,4 @@
-"""Fast checks for the isolated, signed Beta release workflow."""
+"""Personal Beta release must follow a successful main CI, without keystore setup."""
 from pathlib import Path
 import unittest
 
@@ -9,29 +9,34 @@ GRADLE = (ROOT / "app/build.gradle.kts").read_text()
 
 
 class BetaPublicationContract(unittest.TestCase):
-    def test_full_gate_before_tag_publication(self):
-        self.assertIn("'v*-beta.*'", RELEASE)
-        self.assertIn("uses: ./.github/workflows/android-beta.yml", RELEASE)
-        self.assertIn("workflow_call:", PR)
-        self.assertIn("needs: full-ci", RELEASE)
-        self.assertIn("git merge-base --is-ancestor HEAD origin/main", RELEASE)
-        self.assertIn("lumi.communityVersionName", RELEASE)
+    def test_reuses_successful_main_ci_without_new_gate_or_tag_push(self):
+        for value in ("workflow_run:", "workflows: ['Android Community Beta']",
+                      "types: [completed]", "branches: [main]",
+                      "workflow_run.conclusion == 'success'",
+                      "workflow_run.event == 'push'",
+                      "workflow_run.head_repository.full_name == github.repository",
+                      "git rev-parse origin/main", "workflow_run.head_sha"):
+            self.assertIn(value, RELEASE)
+        self.assertNotIn("workflow_call:", PR)
+        self.assertNotIn("needs: full-ci", RELEASE)
+        self.assertNotIn("workflow_dispatch:", RELEASE)
 
-    def test_secrets_only_in_publisher(self):
+    def test_no_signing_secret_or_long_term_key(self):
+        self.assertNotIn("secrets.", RELEASE)
+        self.assertNotIn("LUMI_BETA_KEYSTORE", RELEASE)
+        self.assertNotIn("LUMI_RELEASE_KEYSTORE_PATH", GRADLE)
         self.assertIn("permissions:\n  contents: read", PR)
-        self.assertNotIn("secrets.", PR)
-        self.assertIn("environment: beta-release", RELEASE)
         self.assertIn("contents: write", RELEASE)
-        self.assertIn("LUMI_BETA_KEYSTORE_BASE64", RELEASE)
-        self.assertIn("LUMI_BETA_CERT_SHA256", RELEASE)
-        self.assertIn('signingConfig = signingConfigs.findByName("communityBeta")', GRADLE)
-        self.assertIn("signingConfig = null", GRADLE)
+        self.assertIn("openssl rand -hex", RELEASE)
+        self.assertIn("keytool -genkeypair", RELEASE)
+        self.assertIn("zipalign", RELEASE)
+        self.assertIn("apksigner", RELEASE)
 
-    def test_fail_closed_artifact_publishing(self):
-        for required in (":app:assembleRelease", "apksigner", "certificate SHA-256 digest",
-                         "sha256sum --check SHA256SUMS.txt", "--verify-tag", "--prerelease",
-                         "gh release create", "refusing to replace public assets"):
-            self.assertIn(required, RELEASE)
+    def test_publication_validation_and_user_warning(self):
+        for value in ("versionCode=", "versionName=", "SHA256SUMS.txt", "--prerelease",
+                      "--target", "gh release create", "gh release view",
+                      "NOT an in-place APK update", "Back up your reading data"):
+            self.assertIn(value, RELEASE)
         self.assertNotIn("[skip ci]", RELEASE)
 
 

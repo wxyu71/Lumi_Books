@@ -14,7 +14,7 @@
 
 [中文](README.md) · **English** · [日本語](README.ja.md) · [한국어](README.ko.md)
 
-**User Guide** · [Developer Guide](README.dev.en.md)
+**User Guide** · [Developer Guide](docs/development/build.md)
 
 </div>
 
@@ -96,13 +96,12 @@ Lumi is a local e-book reader for Android. Books and reading data are stored on 
 
 Signed Community Beta APKs and `SHA256SUMS.txt` are published as **Pre-releases** at [this fork's GitHub Releases](https://github.com/wxyu71/Lumi_Books/releases). There is no publicly downloadable official Community Beta until its verified release workflow succeeds. Do not install an upstream or mirror APK as a Community Beta.
 
+
+**Important:** Every Beta uses a temporary signing key. You **cannot install it over the previous Beta**. Back up reading data in the app before uninstalling the old version; uninstalling usually removes private app data.
+
 ## Community Beta
 
 This is an independent, unofficial OSS fork (`io.github.wxyu71.lumibooks`, `2.3.12-beta.1`). It includes community tags, opt-in local reading journal and TXT/Markdown exports without private Premium features. See [COMMUNITY.md](COMMUNITY.md).
-
-## Support Lumi
-
-You can optionally support Huangder, the original author, via the [upstream sponsorship page](https://huangder.top/sponsor.html). This is not payment for the Community fork.
 
 ## License
 

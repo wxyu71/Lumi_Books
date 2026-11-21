@@ -14,7 +14,7 @@
 
 [中文](README.md) · [English](README.en.md) · **日本語** · [한국어](README.ko.md)
 
-**ユーザー版** · [開発者版](README.dev.ja.md)
+**ユーザー版** · [開発ガイド](docs/development/build.md)
 
 </div>
 
@@ -96,13 +96,12 @@ Lumi は Android 向けのローカル電子書籍リーダーです。書籍と
 
 コミュニティ Beta は [このフォークの GitHub Releases](https://github.com/wxyu71/Lumi_Books/releases) で、署名付き APK と `SHA256SUMS.txt` を含む **Pre-release** として公開します。配布前に正式な Beta ダウンロードはありません。上流や外部ミラーの APK をコミュニティ版として使わないでください。
 
+
+**注意**：Beta ごとに一時署名鍵が変わるため、旧 Beta に上書きインストールできません。先にアプリ内で読書データをバックアップし、旧版をアンインストールしてから新しい APK をインストールしてください。
+
 ## コミュニティ Beta
 
 本リポジトリは非公式の独立 OSS フォークです（`io.github.wxyu71.lumibooks`、`2.3.12-beta.1`）。タグ管理、任意のローカル読書記録、TXT/Markdown 出力を含み、非公開 Premium 機能は含みません。詳細は [COMMUNITY.md](COMMUNITY.md)。
-
-## Lumi を支援する
-
-原作者 Huangder を支援したい場合は、[上流作者の支援ページ](https://huangder.top/sponsor.html) をご利用ください。このコミュニティ版への支払いではありません。
 
 ## ライセンス
 

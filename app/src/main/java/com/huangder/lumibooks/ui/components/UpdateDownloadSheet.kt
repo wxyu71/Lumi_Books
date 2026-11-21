@@ -48,6 +48,11 @@ internal fun UpdateDownloadSheet(
                 onClose = onDismiss,
                 onBack = onDismiss
             )
+            Text(
+                text = stringResource(R.string.app_update_reinstall_warning),
+                color = AppColors.TextSecondary,
+                fontSize = AppType.BodySmall
+            )
             LiquidGlassButton(
                 onClick = { onOpenChannel(githubUrl) },
                 modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),

@@ -2,4 +2,5 @@
 <resources>
     <string name="app_update_download_channel">GitHub Releases を開く</string>
     <string name="app_update_download_recommended">おすすめ</string>
+    <string name="app_update_reinstall_warning">個人用 Beta は毎回異なる一時署名鍵を使用します。旧版への上書きインストールはできません。アプリ内で読書データをバックアップし、旧版をアンインストールしてからインストールしてください。</string>
 </resources>

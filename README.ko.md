@@ -14,7 +14,7 @@
 
 [中文](README.md) · [English](README.en.md) · [日本語](README.ja.md) · **한국어**
 
-**사용자 버전** · [개발자 버전](README.dev.ko.md)
+**사용자 버전** · [개발 가이드](docs/development/build.md)
 
 </div>
 
@@ -96,13 +96,12 @@ Lumi는 Android용 로컬 전자책 리더입니다. 책과 독서 데이터는 
 
 커뮤니티 Beta는 [이 포크의 GitHub Releases](https://github.com/wxyu71/Lumi_Books/releases)에 서명된 APK와 `SHA256SUMS.txt`를 포함하는 **Pre-release**로 공개됩니다. 공개 전에는 정식 Beta 다운로드가 없습니다. 원본 또는 외부 미러 APK를 커뮤니티 버전으로 사용하지 마세요.
 
+
+**주의:** Beta마다 임시 서명 키가 바뀌므로 이전 Beta 위에 설치할 수 없습니다. 먼저 앱에서 독서 데이터를 백업한 다음 구버전을 제거하고 새 APK를 설치하세요.
+
 ## 커뮤니티 Beta
 
 이 저장소는 독립적인 비공식 OSS 포크입니다(`io.github.wxyu71.lumibooks`, `2.3.12-beta.1`). 태그 관리, 선택적 로컬 독서 기록 및 TXT/Markdown 내보내기를 포함하며 비공개 Premium 기능은 포함하지 않습니다. 자세한 내용은 [COMMUNITY.md](COMMUNITY.md)를 확인하세요.
-
-## Lumi 후원
-
-원본 개발자 Huangder의 [후원 페이지](https://huangder.top/sponsor.html)를 통해 선택적으로 후원할 수 있습니다. 이는 이 커뮤니티 버전에 대한 결제가 아닙니다.
 
 ## 라이선스
 

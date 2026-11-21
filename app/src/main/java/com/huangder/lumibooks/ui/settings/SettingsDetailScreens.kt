@@ -2653,10 +2653,6 @@ fun AboutDetail(viewModel: SettingsViewModel) {
                 Toast.makeText(context, R.string.network_error, Toast.LENGTH_LONG).show()
             }
         }
-        SettingsDivider()
-        ActionRow(label = stringResource(R.string.category_sponsor)) {
-            context.startActivity(Intent(context, SponsorActivity::class.java))
-        }
     }
 
     Spacer(Modifier.height(AppSpace.lg))

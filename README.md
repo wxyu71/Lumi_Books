@@ -8,7 +8,7 @@
 
 <h3 align="center">一款 Android 本地电子书阅读器</h3>
 
-[社区 Beta 构建](https://github.com/wxyu71/Lumi_Books/actions/workflows/android-beta.yml) | [社区仓库](https://github.com/wxyu71/Lumi_Books) | [开发规划](COMMUNITY.md) | [上游项目](https://github.com/huangder/Lumi_Books)
+[社区 Beta 构建](https://github.com/wxyu71/Lumi_Books/actions/workflows/android-beta.yml) | [社区仓库](https://github.com/wxyu71/Lumi_Books) | [文档](docs/README.md) | [上游项目](https://github.com/huangder/Lumi_Books)
 
 [![Version](https://img.shields.io/badge/version-2.3.12--beta.1-coral)](https://github.com/wxyu71/Lumi_Books/releases)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
@@ -16,7 +16,7 @@
 
 **中文** · [English](README.en.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
 
-**用户版** · [开发者版](README.dev.md)
+**用户版** · [开发指南](docs/development/build.md)
 
 </div>
 
@@ -100,13 +100,12 @@ Lumi 是一款 Android 本地电子书阅读器。书籍和阅读数据默认保
 
 社区版 Beta 通过 [本 Fork 的 GitHub Releases](https://github.com/wxyu71/Lumi_Books/releases) 提供。仅下载标记为 **Pre-release**、附带社区签名 APK 和 `SHA256SUMS.txt` 的版本；发布前没有可用的正式 Beta 安装包。不要从原项目或第三方网盘下载并当作社区版本。
 
+
+**注意**：每次 Beta 使用临时签名，**不能直接覆盖安装旧版**。换版本前在应用内备份阅读数据，再卸载旧版并安装新 APK；卸载通常会清除本地私有数据。
+
 ## 社区 Beta 版说明
 
 如果愿意支持上游原作者 Huangder，可访问[原作者赞助页](https://huangder.top/sponsor.html)。这不是社区版付款要求。
-
-## 支持 Lumi
-
-如果 Lumi 对你有帮助，可以通过 [赞助页](https://huangder.top/sponsor.html) 支持开发者，也可以使用 GitHub 页面右侧的 **Sponsor** 按钮。赞助完全自愿，不影响任何功能和问题处理。
 
 ## 许可证
 
