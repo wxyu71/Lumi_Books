@@ -28,12 +28,14 @@ Base64 只是编码，不是加密。不要把原始密钥、Base64 或密码提
 
 ## 发布工作流的权限边界
 
-`.github/workflows/android-release.yml` 分为两个 job：
+Beta 发布不再二次构建 APK。主 CI 的 P3 `release` job 在 JVM、Lint 通过后构建唯一的 unsigned universal Release APK，用 `aapt` 核对包名/版本，并在同一 Actions run 中上传名为 `lumi-community-unsigned-release` 的 1 天不可变 artifact。
 
-1. **Prepare verified unsigned Beta**：`contents: read`，没有签名 Secrets。它检出已经通过 main CI 的精确 SHA，确认该 SHA 仍是 `main`、版本未发布，构建 unsigned Release，使用 `aapt` 验证包名/版本，并把 APK 与发布说明上传为 1 天短期 artifact。
-2. **Sign and create GitHub Pre-release**：只有第一阶段成功且确实需要发布时才运行。它下载前一阶段 artifact，安装签名工具，读取固定签名 Secrets，执行 `zipalign` / `apksigner`、再次验证 APK 元数据并生成 `SHA256SUMS.txt`，最后才使用 `contents: write` 创建 Tag 和 Pre-release。
+完整 gate（包括 API 33/35 emulator）通过后，caller 才调用 `.github/workflows/android-release.yml`：
 
-第二个 job **不重新运行 Gradle**；被签名的就是前一只读 job 构建并验证过的 artifact。
+1. **Verify gated Release artifact**：`contents: read` + `actions: read`，没有签名 Secrets。它检出同一 `github.sha`，确认仍是最新 `main`、版本/Tag 可发布，然后下载同一 run 的 P3 artifact。
+2. **Sign and create GitHub Pre-release**：只有 verify 成功且确实需要发布时才运行。它再次下载同一个不可变 artifact，才读取固定签名 Secrets，执行 `zipalign` / `apksigner`、验证 APK 元数据并生成 `SHA256SUMS.txt`，最后使用 `contents: write` 创建 Tag 和 Pre-release。
+
+reusable release workflow **完全不运行 Gradle**；最终被签名的就是完整主 CI 已经构建、验证并通过后续 gate 的 Release artifact。
 
 ## Beta1 发布前检查
 

@@ -324,11 +324,13 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+
       - name: Set up Android Gradle toolchain (JDK 21)
         uses: ./.github/actions/setup-android-toolchain
         with:
           java-version: '21'
           cache-read-only: 'true'
+
       - name: Assemble unsigned release independently
         shell: bash
         run: |
@@ -336,8 +338,49 @@ jobs:
           mkdir -p test-logs/release
           ./gradlew --no-daemon --console=plain --stacktrace --max-workers=2 \
             :app:assembleRelease 2>&1 | tee test-logs/release/gradle.log
-          find app/build/oss/outputs/apk/release -name '*.apk' -type f | grep -q '.'
-      - name: Upload release build log and mapping
+
+      - name: Verify release metadata and prepare immutable publish input
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(sed -n 's/^lumi.communityVersionName=//p' gradle.properties)"
+          version_code="$(sed -n 's/^lumi.communityVersionCode=//p' gradle.properties)"
+          sdk="${ANDROID_SDK_ROOT:-$ANDROID_HOME}/build-tools/37.0.0"
+          shopt -s nullglob
+          apks=(app/build/oss/outputs/apk/release/*universal*.apk)
+          [[ ${#apks[@]} -eq 1 ]] || {
+            echo "Expected exactly one universal Release APK, found ${#apks[@]}" >&2
+            exit 1
+          }
+
+          info="$("$sdk/aapt" dump badging "${apks[0]}" | grep '^package:')"
+          [[ "$info" == *"name='io.github.wxyu71.lumibooks'"* &&
+             "$info" == *"versionCode='$version_code'"* &&
+             "$info" == *"versionName='$version'"* ]] || {
+            echo "$info" >&2
+            exit 1
+          }
+
+          mkdir -p release-input
+          cp "${apks[0]}" "release-input/Lumi-Community-v$version-universal-unsigned.apk"
+          cat > release-input/beta-notes.md <<'NOTES'
+          Lumi Community — non-official personal-use Beta built from public OSS sources.
+
+          This APK uses the stable Community Beta signing identity. Newer Betas can
+          normally install over older Community Betas when package ID, signature and
+          versionCode are compatible. It is not signed by the upstream author.
+
+          Builds using a debug or temporary signing key are not upgrade-compatible:
+          back up data before uninstalling those builds and installing this release.
+
+          Verify the downloadable APK using SHA256SUMS.txt.
+
+          ## Changes
+
+          NOTES
+          cat app/src/main/assets/changelog.md >> release-input/beta-notes.md
+
+      - name: Upload release build diagnostics
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -347,6 +390,17 @@ jobs:
             app/build/oss/outputs/mapping/
           if-no-files-found: warn
           retention-days: 14
+
+      - name: Upload immutable unsigned Beta input for same-run publication
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: lumi-community-unsigned-release
+          path: release-input/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 1
+
   device-smoke:
     name: Emulator API ${{ matrix.api }} integration + UI + screenshots
     needs: [policy, verify, quality, apk, diagnostic, release]
@@ -444,6 +498,7 @@ jobs:
     needs: [ci-gate]
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.ci-gate.result == 'success' }}
     permissions:
+      actions: read
       contents: write
     uses: ./.github/workflows/android-release.yml
     secrets:

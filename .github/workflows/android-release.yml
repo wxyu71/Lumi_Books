@@ -12,12 +12,13 @@ permissions:
   contents: read
 
 jobs:
-  build:
-    name: Prepare verified unsigned Beta
+  verify:
+    name: Verify gated Release artifact
     if: ${{ github.repository == 'wxyu71/Lumi_Books' && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 75
+    timeout-minutes: 15
     permissions:
+      actions: read
       contents: read
     outputs:
       publish: ${{ steps.version.outputs.publish }}
@@ -26,7 +27,7 @@ jobs:
       tag: ${{ steps.version.outputs.tag }}
       verified_sha: ${{ steps.version.outputs.verified_sha }}
     steps:
-      - name: Check out the exact verified main commit
+      - name: Check out the exact gated main commit
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.sha }}
@@ -75,80 +76,31 @@ jobs:
           echo "code=$code" >> "$GITHUB_OUTPUT"
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
 
-      - name: Prepare Android build toolchain
+      - name: Download immutable Release artifact from this CI run
         if: steps.version.outputs.publish == 'true'
-        uses: ./.github/actions/setup-android-toolchain
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          java-version: '21'
-          cache-read-only: 'true'
+          name: lumi-community-unsigned-release
+          path: release-input
 
-      - name: Build unsigned optimized OSS release
-        if: steps.version.outputs.publish == 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          chmod +x ./gradlew
-          ./gradlew --no-daemon --console=plain --stacktrace --max-workers=2 :app:assembleRelease
-
-      - name: Validate unsigned APK and prepare immutable release input
+      - name: Verify expected release input exists
         if: steps.version.outputs.publish == 'true'
         shell: bash
         env:
           VERSION: ${{ steps.version.outputs.version }}
-          VERSION_CODE: ${{ steps.version.outputs.code }}
         run: |
           set -euo pipefail
-          sdk="${ANDROID_SDK_ROOT:-$ANDROID_HOME}/build-tools/37.0.0"
-          shopt -s nullglob
-          apks=(app/build/oss/outputs/apk/release/*universal*.apk)
-          [[ ${#apks[@]} -eq 1 ]] || {
-            echo "Expected exactly one universal Release APK" >&2
-            exit 1
-          }
-
-          info="$("$sdk/aapt" dump badging "${apks[0]}" | grep '^package:')"
-          [[ "$info" == *"name='io.github.wxyu71.lumibooks'"* &&
-             "$info" == *"versionCode='$VERSION_CODE'"* &&
-             "$info" == *"versionName='$VERSION'"* ]] || {
-            echo "APK package or version does not match source" >&2
-            exit 1
-          }
-
-          mkdir -p release-input
-          cp "${apks[0]}" "release-input/Lumi-Community-v$VERSION-universal-unsigned.apk"
-          cat > release-input/beta-notes.md <<'NOTES'
-          Lumi Community — non-official personal-use Beta built from public OSS sources.
-
-          This APK uses the stable Community Beta signing identity. Newer Betas can
-          normally install over older Community Betas when package ID, signature and
-          versionCode are compatible. It is not signed by the upstream author.
-
-          Builds using a debug or temporary signing key are not upgrade-compatible:
-          back up data before uninstalling those builds and installing this release.
-
-          Verify the downloadable APK using SHA256SUMS.txt.
-
-          ## Changes
-
-          NOTES
-          cat app/src/main/assets/changelog.md >> release-input/beta-notes.md
-
-      - name: Upload unsigned release input
-        if: steps.version.outputs.publish == 'true'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: lumi-community-release-input
-          path: release-input/
-          if-no-files-found: error
-          retention-days: 1
+          test -s "release-input/Lumi-Community-v$VERSION-universal-unsigned.apk"
+          test -s release-input/beta-notes.md
 
   publish:
     name: Sign and create GitHub Pre-release
-    needs: build
-    if: needs.build.result == 'success' && needs.build.outputs.publish == 'true'
+    needs: verify
+    if: needs.verify.result == 'success' && needs.verify.outputs.publish == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
+      actions: read
       contents: write
     concurrency:
       group: lumi-community-beta-publish
@@ -172,30 +124,30 @@ jobs:
           fi
           "$sdkmanager" --install "build-tools;37.0.0"
 
-      - name: Download verified unsigned release input
+      - name: Download the same immutable Release artifact
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: lumi-community-release-input
+          name: lumi-community-unsigned-release
           path: release-input
 
-      - name: Confirm the verified commit is still main
+      - name: Confirm the gated commit is still main
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          VERIFIED_SHA: ${{ needs.build.outputs.verified_sha }}
+          VERIFIED_SHA: ${{ needs.verify.outputs.verified_sha }}
         run: |
           set -euo pipefail
           current="$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)"
           [[ "$current" == "$VERIFIED_SHA" ]] || {
-            echo "Main advanced after the verified build; refusing a stale publication." >&2
+            echo "Main advanced after the gated build; refusing a stale publication." >&2
             exit 1
           }
 
       - name: Sign with the stable Community Beta identity and verify
         shell: bash
         env:
-          VERSION: ${{ needs.build.outputs.version }}
-          VERSION_CODE: ${{ needs.build.outputs.code }}
+          VERSION: ${{ needs.verify.outputs.version }}
+          VERSION_CODE: ${{ needs.verify.outputs.code }}
           LUMI_BETA_KEYSTORE_BASE64: ${{ secrets.LUMI_BETA_KEYSTORE_BASE64 }}
           LUMI_BETA_KEYSTORE_PASSWORD: ${{ secrets.LUMI_BETA_KEYSTORE_PASSWORD }}
         run: |
@@ -237,9 +189,9 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ needs.build.outputs.version }}
-          TAG: ${{ needs.build.outputs.tag }}
-          VERIFIED_SHA: ${{ needs.build.outputs.verified_sha }}
+          VERSION: ${{ needs.verify.outputs.version }}
+          TAG: ${{ needs.verify.outputs.tag }}
+          VERIFIED_SHA: ${{ needs.verify.outputs.verified_sha }}
         run: |
           set -euo pipefail
           current="$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)"

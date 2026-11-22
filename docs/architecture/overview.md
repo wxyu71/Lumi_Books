@@ -58,12 +58,13 @@ PR JVM lane 面向 API 33/35/36；历史显式 SDK 场景由每周 legacy lane �
 
 PR/main CI 按成本由低到高执行：仓库静态分析 → 编译/Robolectric/JVM → Android Lint → APK/Diagnostic/Release 构建 → API 33/35 emulator。
 
-发布由成功的 `main` CI 触发，并分成两个权限域：
+发布复用同一个成功 `main` CI run 的 P3 Release artifact，而不是重新构建：
 
-1. **build**：只读权限，无签名 Secret，构建并验证 unsigned Release APK，上传短期 artifact；
-2. **publish**：下载该 artifact，才获得签名 Secret 和 `contents: write`，完成 zipalign、签名、校验和 GitHub Pre-release。
+1. **P3 release**：只读、无签名 Secret，构建并验证唯一的 unsigned universal Release APK，并上传 1 天短期的不可变 artifact；
+2. **release verify**：reusable workflow 只读下载同一 run 的 artifact，确认当前 SHA/版本仍可发布；
+3. **publish**：再次下载同一个不可变 artifact，才获得签名 Secret 和 `contents: write`，完成 zipalign、签名、校验和 GitHub Pre-release。
 
-发布 job 不重新运行 Gradle，从而避免“测试过的源码”和“最终签名的二次构建”发生漂移。
+发布阶段不重新运行 Gradle，从而让最终签名 APK 与已通过 JVM、Lint、P3 和 emulator gate 的 Release 构建保持同源。
 
 ## 文档职责
 
