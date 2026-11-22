@@ -12,19 +12,22 @@ import java.net.URL
 /**
  * Remote notice and update checker.
  *
- * The app reads docs/app-config.json from the GitHub repository Raw URL at startup
- * or when the user manually checks for updates. This static file drives notice,
- * normal update, and forced update dialogs without a separate server.
+ * Only an explicit manual check reads the fork's static policy configuration and
+ * GitHub Releases API. Update availability comes exclusively from a published
+ * prerelease containing the signed Community APK, never from an unreleased
+ * version string in app-config.json or the original author's server.
  *
  * Config URL:
- * https://raw.githubusercontent.com/huangder/Lumi_Books/main/docs/app-config.json
+ * https://raw.githubusercontent.com/wxyu71/Lumi_Books/main/docs/app-config.json
  */
 object UpdateChecker {
 
     private const val TAG = "UpdateChecker"
 
     /** GitHub repository Raw config URL. Do not use a custom domain for mobile reliability. */
-    private const val CONFIG_URL = "https://raw.githubusercontent.com/huangder/Lumi_Books/main/docs/app-config.json"
+    private const val CONFIG_URL = "https://raw.githubusercontent.com/wxyu71/Lumi_Books/main/docs/app-config.json"
+    private const val BETA_RELEASES_API = "https://api.github.com/repos/wxyu71/Lumi_Books/releases?per_page=100"
+    private const val BETA_RELEASES_URL = "https://github.com/wxyu71/Lumi_Books/releases"
 
     /** Network request timeout. */
     private const val TIMEOUT_MS = 10_000
@@ -59,6 +62,16 @@ object UpdateChecker {
     )
 
     /** Remote downloadable font config (docs/app-config.json "fonts" section). */
+    internal data class PublishedBeta(
+        val version: String,
+        val releaseUrl: String,
+        val notes: String,
+        val major: Int,
+        val minor: Int,
+        val patch: Int,
+        val betaNumber: Int
+    )
+
     data class RemoteFontConfig(
         val key: String,
         val version: Int,
@@ -101,37 +114,19 @@ object UpdateChecker {
         return try {
             val cacheBustedUrl = "$CONFIG_URL?t=${System.currentTimeMillis() / (60 * 60 * 1000)}"
             val json = JSONObject(openJsonConnection(cacheBustedUrl))
-            val updateJson = json.optJSONObject("update")
             val noticeJson = json.optJSONObject("notice")
+            // Fail closed on network/API errors. A version advertised by static JSON
+            // must never become an update before its signed GitHub asset exists.
+            val published = selectLatestPublishedBeta(JSONArray(openJsonConnection(BETA_RELEASES_API)))
 
             UpdateConfig(
-                latestVersion = updateJson.optStringCompat(
-                    keys = arrayOf("latest_version_name", "latest_version"),
-                    fallback = json.optString("latest_version", "")
-                ),
-                latestVersionCode = updateJson.optLongCompat(
-                    keys = arrayOf("latest_version_code"),
-                    fallback = json.optLong("latest_version_code", 0L)
-                ),
-                releaseUrl = resolveUpdateDownloadUrl(
-                    updateJson,
-                    json.optString("release_url", "")
-                ),
-                updateTitle = updateJson.optStringCompat(
-                    keys = arrayOf("title"),
-                    fallback = json.optString("update_title", "")
-                ),
-                updateMessage = updateJson.optStringCompat(
-                    keys = arrayOf("message"),
-                    fallback = json.optString("update_message", "")
-                ),
-                changelog = updateJson.optChangelog(
-                    fallback = json.optChangelog(fallback = "")
-                ),
-                forceUpdateBelowVersionCode = updateJson.optLongCompat(
-                    keys = arrayOf("force_update_below_version_code", "min_supported_version_code"),
-                    fallback = json.optLong("force_update_below_version_code", 0L)
-                ),
+                latestVersion = published?.version.orEmpty(),
+                latestVersionCode = 0L, // compare semver + Beta ordinal, not stale JSON versionCode
+                releaseUrl = published?.releaseUrl ?: BETA_RELEASES_URL,
+                updateTitle = "Lumi Community Beta",
+                updateMessage = "",
+                changelog = published?.notes.orEmpty(),
+                forceUpdateBelowVersionCode = 0L,
                 termsVersion = json.optInt("terms_version", 0),
                 privacyVersion = json.optInt("privacy_version", 0),
                 notice = parseNotice(noticeJson),
@@ -146,6 +141,39 @@ object UpdateChecker {
             Log.w(TAG, "Failed to fetch update config: ${e.message}")
             null
         }
+    }
+
+    /** Only real, downloadable GitHub Pre-releases are eligible for update prompts. */
+    internal fun selectLatestPublishedBeta(releases: JSONArray): PublishedBeta? {
+        val tagPattern = Regex("""^v(\d+)\.(\d+)\.(\d+)-beta\.(\d+)$""")
+        return (0 until releases.length()).mapNotNull { index ->
+            val release = releases.optJSONObject(index) ?: return@mapNotNull null
+            if (release.optBoolean("draft", true) || !release.optBoolean("prerelease", false)) {
+                return@mapNotNull null
+            }
+            val tag = release.optString("tag_name", "")
+            val match = tagPattern.matchEntire(tag) ?: return@mapNotNull null
+            val parts = match.groupValues.drop(1).map {
+                it.toIntOrNull() ?: return@mapNotNull null
+            }
+            val expectedApk = "Lumi-Community-$tag-universal.apk"
+            val assets = release.optJSONArray("assets") ?: return@mapNotNull null
+            val hasApk = (0 until assets.length()).any { assetIndex ->
+                val asset = assets.optJSONObject(assetIndex)
+                asset?.optString("name") == expectedApk &&
+                    asset.optString("state") == "uploaded" && asset.optLong("size") > 0L
+            }
+            if (!hasApk) return@mapNotNull null
+            PublishedBeta(
+                version = tag.removePrefix("v"),
+                releaseUrl = "$BETA_RELEASES_URL/tag/$tag",
+                notes = release.optString("body", "").take(1200),
+                major = parts[0],
+                minor = parts[1],
+                patch = parts[2],
+                betaNumber = parts[3]
+            )
+        }.maxWithOrNull(compareBy({ it.major }, { it.minor }, { it.patch }, { it.betaNumber }))
     }
 
     /** URL block checks share the update config so admins can block reported OPDS catalogs. */
@@ -172,7 +200,7 @@ object UpdateChecker {
         val candidate = (update?.opt("github_apk_url") as? String)?.trim().orEmpty()
         val uri = runCatching { URI(candidate) }.getOrNull() ?: return fallback
         val path = uri.path ?: return fallback
-        val prefix = "/huangder/Lumi_Books/releases/download/"
+        val prefix = "/wxyu71/Lumi_Books/releases/download/"
         val asset = path.removePrefix(prefix).split('/')
         if (!"https".equals(uri.scheme, ignoreCase = true) ||
             !"github.com".equals(uri.rawAuthority, ignoreCase = true) ||
@@ -182,7 +210,7 @@ object UpdateChecker {
             uri.rawQuery != null || uri.rawFragment != null
         ) return fallback
 
-        val releasePrefix = "/huangder/Lumi_Books/releases/tag/"
+        val releasePrefix = "/wxyu71/Lumi_Books/releases/tag/"
         val release = runCatching { URI(fallback) }.getOrNull()
         val releasePath = release?.path
         if ("github.com".equals(release?.host, ignoreCase = true) &&
@@ -307,16 +335,24 @@ object UpdateChecker {
      * must never be reported as an available update.
      */
     private fun isRemoteVersionNewer(remoteVersion: String, currentVersion: String): Boolean {
-        val remoteParts = parseVersionParts(remoteVersion)
-        val currentParts = parseVersionParts(currentVersion)
+        val remoteCore = remoteVersion.trim().substringBefore("-")
+        val currentCore = currentVersion.trim().substringBefore("-")
+        val remoteParts = parseVersionParts(remoteCore)
+        val currentParts = parseVersionParts(currentCore)
         val partCount = maxOf(remoteParts.size, currentParts.size)
-
         for (index in 0 until partCount) {
             val remotePart = remoteParts.getOrElse(index) { 0 }
             val currentPart = currentParts.getOrElse(index) { 0 }
             if (remotePart != currentPart) return remotePart > currentPart
         }
-        return false
+        val betaNumber = Regex("""-beta\.(\d+)$""", RegexOption.IGNORE_CASE)
+        val remoteBeta = betaNumber.find(remoteVersion.trim())?.groupValues?.get(1)?.toIntOrNull()
+        val currentBeta = betaNumber.find(currentVersion.trim())?.groupValues?.get(1)?.toIntOrNull()
+        return when {
+            remoteBeta != null && currentBeta != null -> remoteBeta > currentBeta
+            remoteBeta == null && currentBeta != null -> true // Stable beats prerelease
+            else -> false // A prerelease never supersedes an already-installed stable
+        }
     }
 
     private fun parseVersionParts(version: String): List<Int> =

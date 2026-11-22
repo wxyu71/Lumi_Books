@@ -37,9 +37,9 @@
     <string name="tts_timer_decimal_hours">%1$.1f hours</string>
     <string name="tts_timer_label">Timer</string>
     <string name="webdav_select_content_required">Select content to sync</string>
-    <string name="webdav_sync_books_summary">Books</string>
-    <string name="webdav_sync_data_summary">Data</string>
+    <string name="webdav_sync_books_summary">Book files: %1$d synced (%2$d uploaded, %3$d already remote, %4$d discovered)%5$s</string>
+    <string name="webdav_sync_data_summary">%1$s: %2$d uploaded, %3$d downloaded%4$s</string>
     <string name="webdav_sync_failed_detail">Sync failed: %1$s</string>
     <string name="webdav_sync_failure_count_suffix"> (%1$d failed)</string>
-    <string name="webdav_sync_failure_suffix"> (failed)</string>
+    <string name="webdav_sync_failure_suffix">, %1$d failed: %2$s</string>
 </resources>

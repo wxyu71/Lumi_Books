@@ -243,9 +243,10 @@ private fun ReaderRouter(
         }
     }
     val appIsDark = LocalIsDarkTheme.current
+    val readerState by viewModel.uiState.collectAsState()
     val paperColor by remember(viewModel, appIsDark) {
         viewModel.uiState.map { it.resolveReaderPaperColor(appIsDark) }.distinctUntilChanged()
-    }.collectAsState(initial = viewModel.uiState.value.resolveReaderPaperColor(appIsDark))
+    }.collectAsState(initial = readerState.resolveReaderPaperColor(appIsDark))
     val documentState by viewModel.documentState.collectAsState()
     if (documentState.book != null) {
         androidx.compose.runtime.SideEffect { onReaderPaperColorChanged(paperColor) }
@@ -428,6 +429,10 @@ fun MainNavGraph(
     var isPreparingImport by remember { mutableStateOf(false) }
     var importPreparationGeneration by remember { mutableIntStateOf(0) }
     val context = LocalContext.current
+    val missingBookText = stringResource(R.string.book_file_unavailable)
+    val importFailedTemplate = stringResource(R.string.import_failed)
+    val noAuthorizedDirectoryText = stringResource(R.string.import_no_authorized_directory)
+    val appLocale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0] ?: java.util.Locale.ROOT
     var transientMessage by remember { mutableStateOf<String?>(null) }
     var showArchivedNotice by remember { mutableStateOf(false) }
     if (showArchivedNotice) {
@@ -549,7 +554,8 @@ fun MainNavGraph(
     val navigationState = remember(homeViewModel) {
         homeViewModel.uiState.map { it.forNavigation() }.distinctUntilChanged().flowOn(Dispatchers.Default)
     }
-    val homeUiState by navigationState.collectAsStateWithLifecycle(initialValue = homeViewModel.uiState.value.forNavigation())
+    val initialHomeState by homeViewModel.uiState.collectAsStateWithLifecycle()
+    val homeUiState by navigationState.collectAsStateWithLifecycle(initialValue = initialHomeState.forNavigation())
     val folderBooksLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -616,7 +622,7 @@ fun MainNavGraph(
         fadeOpen: Boolean = false
     ) {
         if (book.isMissing) {
-            transientMessage = context.getString(R.string.book_file_unavailable)
+            transientMessage = missingBookText
         } else if (eInkMode) {
             ReaderOpenPerformance.start(book.id)
             transitionBookId = book.id
@@ -1670,25 +1676,19 @@ fun MainNavGraph(
                     runCatching {
                         importLauncher.launch(arrayOf("*/*"))
                     }.onFailure { error ->
-                        transientMessage = context.getString(
-                            R.string.import_failed,
-                            error.message.orEmpty()
-                        )
+                        transientMessage = String.format(appLocale, importFailedTemplate, error.message.orEmpty())
                     }
                 },
                 onAuthorizeDirectory = {
                     runCatching {
                         directoryLauncher.launch(null)
                     }.onFailure { error ->
-                        transientMessage = context.getString(
-                            R.string.import_failed,
-                            error.message.orEmpty()
-                        )
+                        transientMessage = String.format(appLocale, importFailedTemplate, error.message.orEmpty())
                     }
                 },
                 onOpenFolderBooks = {
                     if (homeUiState.authorizedBookDirectories.isEmpty()) {
-                        transientMessage = context.getString(R.string.import_no_authorized_directory)
+                        transientMessage = noAuthorizedDirectoryText
                     } else {
                         folderBooksLauncher.launch(
                             AuthorizedFolderBooksActivity.createIntent(context)
@@ -1768,17 +1768,17 @@ fun MainNavGraph(
             val currentFolderName = importRequestFolderId
                 ?.let { id -> homeUiState.folderNames[id] }
             val primaryLabel = if (importCopiesIntoApp) {
-                context.getString(
+                stringResource(
                     R.string.import_to_current_folder,
-                    currentFolderName ?: context.getString(R.string.bookshelf_title)
+                    currentFolderName ?: stringResource(R.string.bookshelf_title)
                 )
             } else if (sourceNames.size == 1) {
-                context.getString(R.string.import_to_authorized_folder, sourceNames.first())
+                stringResource(R.string.import_to_authorized_folder, sourceNames.first())
             } else {
-                context.getString(R.string.import_group_authorized_folders)
+                stringResource(R.string.import_group_authorized_folders)
             }
             val primaryDetail = if (!importCopiesIntoApp && sourceNames.size > 1) {
-                context.getString(
+                stringResource(
                     R.string.import_group_authorized_folders_detail,
                     sourceNames.joinToString("、")
                 )

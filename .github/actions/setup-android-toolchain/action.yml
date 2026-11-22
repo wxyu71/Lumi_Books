@@ -1,0 +1,38 @@
+name: Prepare Android Gradle toolchain
+description: Pin JDK, Gradle cache and Android 37 SDK consistently across all CI jobs
+inputs:
+  java-version:
+    description: Gradle runtime JDK (17 for app; 21 for Robolectric)
+    required: true
+  cache-read-only:
+    description: Only the default-branch APK job may write the shared cache
+    required: true
+    default: 'true'
+runs:
+  using: composite
+  steps:
+    - name: Select JDK
+      uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+      with:
+        distribution: temurin
+        java-version: ${{ inputs.java-version }}
+    - name: Validate wrapper and restore Gradle cache
+      uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+      with:
+        cache-provider: basic
+        cache-read-only: ${{ inputs.cache-read-only }}
+    - name: Install Android SDK 37.0 / NDK 28 / CMake 3.22
+      shell: bash
+      run: |
+        set -euo pipefail
+        sdk_root="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+        test -n "$sdk_root"
+        sdkmanager="$sdk_root/cmdline-tools/latest/bin/sdkmanager"
+        if [[ ! -x "$sdkmanager" ]]; then
+          sdkmanager="$(command -v sdkmanager)"
+        fi
+        "$sdkmanager" --install \
+          "platforms;android-37.0" \
+          "build-tools;37.0.0" \
+          "ndk;28.0.13004108" \
+          "cmake;3.22.1"

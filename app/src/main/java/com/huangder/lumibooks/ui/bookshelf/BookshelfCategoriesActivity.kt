@@ -258,6 +258,7 @@ private fun BookshelfCategoriesScreen(
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
+    val imagePickerFailedText = stringResource(R.string.image_picker_open_failed)
     val haptic = LocalHapticFeedback.current
     val uiState by viewModel.uiState.collectAsState()
     val tagsById = remember(uiState.tags) { uiState.tags.associateBy { it.id } }
@@ -334,7 +335,7 @@ private fun BookshelfCategoriesScreen(
                         folderCoverTarget = null
                         Toast.makeText(
                             context,
-                            it.message ?: context.getString(R.string.image_picker_open_failed),
+                            it.message ?: imagePickerFailedText,
                             Toast.LENGTH_SHORT
                         ).show()
                     }
@@ -910,6 +911,10 @@ private fun CategoryBooksPage(
     viewModel: HomeViewModel
 ) {
     val context = LocalContext.current
+    val archiveLocationHint = stringResource(R.string.archive_book_location_hint)
+    val folderMoveFormat = stringResource(R.string.folder_move_success)
+    val rootFolderTitle = stringResource(R.string.library_root)
+    val formatLocale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0] ?: java.util.Locale.ROOT
     val density = LocalDensity.current
     val haptic = LocalHapticFeedback.current
     val contextMenuState = rememberBookContextMenuState()
@@ -931,11 +936,11 @@ private fun CategoryBooksPage(
     var pendingCrossStorageMove by remember { mutableStateOf<PendingCrossStorageBookMove?>(null) }
     var pendingArchiveBookId by remember { mutableStateOf<String?>(null) }
     val operationState by viewModel.uiState.collectAsState()
-    LaunchedEffect(operationState.importMessage, operationState.error) {
+    LaunchedEffect(operationState.importMessage, operationState.error, archiveLocationHint) {
         val message = operationState.error ?: operationState.importMessage
         if (message != null) {
             val text = if (operationState.error == null && operationState.archiveNoticePending) {
-                message + "\n" + context.getString(R.string.archive_book_location_hint)
+                message + "\n" + archiveLocationHint
             } else {
                 message
             }
@@ -997,7 +1002,7 @@ private fun CategoryBooksPage(
             }
             Toast.makeText(
                 context,
-                context.getString(R.string.folder_move_success, request.bookIds.size, request.targetName),
+                String.format(formatLocale, folderMoveFormat, request.bookIds.size, request.targetName),
                 Toast.LENGTH_SHORT
             ).show()
         }
@@ -1005,8 +1010,8 @@ private fun CategoryBooksPage(
 
     fun requestBookMove(bookIds: Set<String>, targetFolderId: String?, isBatch: Boolean) {
         val targetName = targetFolderId
-            ?.let { id -> viewModel.uiState.value.folders.firstOrNull { it.id == id }?.name }
-            ?: context.getString(R.string.library_root)
+            ?.let { id -> operationState.folders.firstOrNull { it.id == id }?.name }
+            ?: rootFolderTitle
         val request = PendingCrossStorageBookMove(bookIds, targetFolderId, isBatch, targetName)
         if (viewModel.requiresCrossStorageMoveConfirmation(bookIds, targetFolderId)) {
             pendingCrossStorageMove = request
@@ -1081,7 +1086,7 @@ private fun CategoryBooksPage(
                     selectedBookIds = selectedBookIds,
                     contextMenuState = contextMenuState,
                     syncedBookIds = syncedBookIds,
-                    downloadStates = viewModel.uiState.value.downloadStates,
+                    downloadStates = operationState.downloadStates,
                     expandedListBookId = expandedListBookId,
                     topPadding = LocalCollapsingPageTopInset.current + 12.dp,
                     bottomPadding = com.huangder.lumibooks.ui.components.LocalCollapsingPageBottomInset.current + 32.dp,
@@ -1201,7 +1206,7 @@ private fun CategoryBooksPage(
     }
     if (showBatchMoveSheet) {
         FolderMoveSheet(
-            folders = viewModel.uiState.value.folders,
+            folders = operationState.folders,
             selectedBookCount = selectedBookIds.size,
             sourceFolderId = "__mixed_category__",
             onDismiss = { showBatchMoveSheet = false },
@@ -1212,10 +1217,10 @@ private fun CategoryBooksPage(
         )
     }
     moveTargetBook?.let { targetBook ->
-        val sourceFolderId = viewModel.uiState.value.bookFolderLinks
+        val sourceFolderId = operationState.bookFolderLinks
             .firstOrNull { it.bookId == targetBook.id }?.folderId
         FolderMoveSheet(
-            folders = viewModel.uiState.value.folders,
+            folders = operationState.folders,
             selectedBookCount = 1,
             sourceFolderId = sourceFolderId,
             onDismiss = { moveTargetBook = null },

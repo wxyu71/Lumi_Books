@@ -21,6 +21,20 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
+internal fun journalConsentEpochIsCurrent(state: ReadingJournalState, epoch: Long): Boolean =
+    state.enabled && epoch > 0L && state.enabledAt == epoch
+
+internal fun journalActivityWriteAllowed(
+    persisted: ReadingJournalState,
+    consentEpoch: Long,
+    endTime: Long,
+    now: Long
+): Boolean {
+    if (!journalConsentEpochIsCurrent(persisted, consentEpoch)) return false
+    val cutoff = ReadingJournalRetentionPolicy.cutoff(persisted.retention, now)
+    return cutoff == null || endTime >= cutoff
+}
+
 /**
  * Writes the opt-in journal. Nothing is recorded until the user enables it; recording
  * itself does not depend on the edition, so history survives a later unlock.
@@ -59,18 +73,37 @@ class ReadingJournalRecorder @Inject constructor(
                 }
                 .collect { (books, enabledAt) ->
                     val events = detector.update(books, System.currentTimeMillis(), deviceId(), enabledAt)
-                    if (events.isNotEmpty()) runCatching { dao.upsertAll(events) }
-                        .onFailure { Log.w(TAG, "Unable to save journal milestone", it) }
+                    if (events.isNotEmpty()) runCatching {
+                        mutex.withLock {
+                            val persisted = settings.current()
+                            // A late milestone from a cancelled collector must not recreate
+                            // history after the user stopped or erased the journal.
+                            if (journalConsentEpochIsCurrent(persisted, enabledAt)) {
+                                dao.upsertAll(events)
+                            }
+                        }
+                    }.onFailure { Log.w(TAG, "Unable to save journal milestone", it) }
                 }
         }
     }
 
     /** Called by the activity tracker after a time increment was committed. */
     fun recordActivity(bookId: String, readingMs: Long, listeningMs: Long, startTime: Long, endTime: Long) {
-        if (!state.enabled) return
+        val consentEpoch = state.enabledAt
+        if (!state.enabled || consentEpoch <= 0L) return
         scope.launch {
             runCatching {
                 mutex.withLock {
+                    // A queued callback from an earlier consent epoch must never be revived
+                    // by a later disable/erase -> re-enable sequence.
+                    val persisted = settings.current()
+                    if (!journalActivityWriteAllowed(
+                            persisted = persisted,
+                            consentEpoch = consentEpoch,
+                            endTime = endTime,
+                            now = System.currentTimeMillis()
+                        )
+                    ) return@withLock
                     if (readingMs > 0) appendSession(bookId, false, startTime, endTime, readingMs)
                     if (listeningMs > 0) appendSession(bookId, true, startTime, endTime, listeningMs)
                 }
@@ -88,11 +121,13 @@ class ReadingJournalRecorder @Inject constructor(
         openSessions[listening] = next
     }
 
-    suspend fun cleanupNow(now: Long = System.currentTimeMillis()): Int {
+    suspend fun cleanupNow(now: Long = System.currentTimeMillis()): Int = mutex.withLock {
         val cutoff = ReadingJournalRetentionPolicy.cutoff(settings.current().retention, now)
         val removed = if (cutoff == null) 0 else dao.deleteEndedBefore(cutoff)
+        // A retained in-memory session can otherwise restore a just-pruned entry.
+        if (removed > 0) openSessions.clear()
         settings.markCleanup(now)
-        return removed
+        removed
     }
 
     suspend fun clearAll() = mutex.withLock {

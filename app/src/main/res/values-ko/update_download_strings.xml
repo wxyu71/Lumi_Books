@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_update_download_channel">다운로드 경로 선택</string>
+    <string name="app_update_download_channel">GitHub Releases 열기</string>
     <string name="app_update_download_recommended">추천</string>
-    <string name="app_update_download_baidu">바이두 넷디스크</string>
-    <string name="app_update_download_lanzou">란쭤 클라우드</string>
-    <string name="app_update_download_code">코드 %1$s</string>
+    <string name="app_update_signing_notice">커뮤니티 Beta는 동일한 고정 서명 키를 사용하므로 이후 버전은 덮어쓸 수 있습니다. 이전 Debug 또는 임시 서명 빌드에서 전환할 때는 데이터를 먼저 백업하고 기존 앱을 삭제하세요.</string>
 </resources>

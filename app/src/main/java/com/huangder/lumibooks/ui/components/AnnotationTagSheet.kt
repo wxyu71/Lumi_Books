@@ -192,7 +192,7 @@ fun AnnotationTagSheet(
                     onClose = close,
                     onBack = if (secondary || groupOpen) dismiss else null,
                     actions = {
-                        if (repository != null && !secondary) {
+                        if (repository != null && !secondary && !managementOnly) {
                             EditionTagManagementButton(catalogType, Modifier.padding(start = 8.dp))
                         }
                     }

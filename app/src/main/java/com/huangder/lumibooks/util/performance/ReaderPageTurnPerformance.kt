@@ -57,6 +57,9 @@ object ReaderPageTurnPerformance {
     }
 
     private fun end(turn: PendingTurn) {
+        // beginIntent only starts async traces on Q+, but cancellation may
+        // happen after the OS state changed (tests) or from another caller.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
         if (turn.crossChapter) Trace.endAsyncSection(CROSS_CHAPTER_SECTION, turn.cookie)
         if (turn.preloaded) Trace.endAsyncSection(PRELOADED_SECTION, turn.cookie)
         Trace.endAsyncSection(PAGE_TURN_SECTION, turn.cookie)

@@ -59,13 +59,60 @@ class ReaderImageAdjustmentsTest {
         scope.cancel()
     }
 
+    @Test fun asyncSharpenCompletesAndNeutralResetRejectsOlderWork() {
+        val source = edgeBitmap()
+        val drawable = AdjustedReaderDrawable(
+            BitmapDrawable(null, source).apply { setBounds(0, 0, 5, 3) }
+        )
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+        val mainLooper = org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper())
+
+        fun pixel(): Int {
+            val output = Bitmap.createBitmap(5, 3, Bitmap.Config.ARGB_8888)
+            return try {
+                drawable.draw(Canvas(output))
+                Color.red(output.getPixel(1, 1))
+            } finally {
+                output.recycle()
+            }
+        }
+
+        try {
+            drawable.update(ReaderImageAdjustments(sharpen = 1f), scope) {}
+            val deadline = System.nanoTime() + 5_000_000_000L
+            while (pixel() != 40 && System.nanoTime() < deadline) {
+                mainLooper.idleFor(java.time.Duration.ofMillis(50))
+                Thread.sleep(10)
+            }
+            assertEquals("async sharpen publishes the expected edge pixels", 40, pixel())
+
+            drawable.update(ReaderImageAdjustments(), scope) {}
+            assertEquals("neutral reset clears the rendered sharpened bitmap immediately", 80, pixel())
+
+            // Start another sharpen and supersede it before its background result may publish.
+            // A cancelled job is not itself a publication barrier; the drawable generation guard
+            // must keep the neutral request authoritative even after background work settles.
+            drawable.update(ReaderImageAdjustments(sharpen = 1f), scope) {}
+            drawable.update(ReaderImageAdjustments(), scope) {}
+            repeat(20) {
+                mainLooper.idleFor(java.time.Duration.ofMillis(50))
+                Thread.sleep(10)
+                assertEquals("superseded sharpen must never overwrite neutral pixels", 80, pixel())
+            }
+        } finally {
+            scope.cancel()
+        }
+    }
+
     @Test fun preferencesSurviveNewReaderAndStayScopedToBook() = runBlocking {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val store = DataStoreManager(context)
         val book = "image-test-${System.nanoTime()}"
         val settings = ReaderImageAdjustments(1f, 1.65f, 0.7f)
-        store.persistReaderImageAdjustments(book, settings)
-        withTimeout(5000) { store.readerPreferences(book).first { it.imageAdjustments == settings } }
+        // Verify durable persistence deterministically; the fire-and-forget
+        // channel is exercised separately and is not an appropriate barrier.
+        store.saveReaderImageAdjustments(book, settings)
+        assertEquals(settings, store.readerPreferences(book).first().imageAdjustments)
         val reopened = DataStoreManager(context)
         assertEquals(settings, reopened.readerPreferences(book).first().imageAdjustments)
         assertEquals(ReaderImageAdjustments(), reopened.readerPreferences("$book-other").first().imageAdjustments)

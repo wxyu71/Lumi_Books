@@ -105,6 +105,7 @@ internal class BookShareViewModel @Inject constructor(
     val state by model.state.collectAsState()
     val input = state.input
     val context = LocalContext.current
+    val shareChooserTitle = stringResource(R.string.insights_share)
     var kind by rememberSaveable { mutableStateOf(if (initialDate == null) BookShareKind.REVIEW else BookShareKind.CHECK_IN) }
     var style by rememberSaveable { mutableStateOf(BookShareStyle.SIMPLE) }
     val activeStyle = style.takeIf { it in BookShareEdition.styles } ?: BookShareStyle.SIMPLE
@@ -139,7 +140,7 @@ internal class BookShareViewModel @Inject constructor(
                     type = "image/png"; putExtra(Intent.EXTRA_STREAM, uri)
                     clipData = ClipData.newUri(context.contentResolver, "Lumi", uri)
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                }, context.getString(R.string.insights_share)))
+                }, shareChooserTitle))
                 else Toast.makeText(context, R.string.insights_saved, Toast.LENGTH_SHORT).show()
             } catch (e: CancellationException) { throw e }
             catch (_: Exception) { Toast.makeText(context, R.string.insights_export_failed, Toast.LENGTH_LONG).show() }

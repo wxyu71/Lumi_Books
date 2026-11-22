@@ -80,7 +80,14 @@ internal fun LiquidMenuSurface(
                     fallbackBlurPx = AppPresentation.OverlayFallbackBlur.toPx() + extraBlur,
                     resetEffects = { renderEffect = baseEffect; padding = basePadding },
                     blur = { radius -> blur(radius) },
-                    refract = { optics!!.effect(frame(), padding, density, content = false, samplingScale = samplingScale).let { effect(it) } },
+                    refract = {
+                        // render() decides whether to refract, but its callback is
+                        // evaluated later; guard the API 33 call at the call site.
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            optics!!.effect(frame(), padding, density, content = false, samplingScale = samplingScale)
+                                .let { effect(it) }
+                        }
+                    },
                     onFailure = { Log.w("LiquidMenuOptics", "Refraction unavailable; using blur fallback", it) }
                 )
             },

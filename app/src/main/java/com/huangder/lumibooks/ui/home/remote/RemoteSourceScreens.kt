@@ -315,6 +315,7 @@ internal fun RemoteSourceFormScreen(
 ) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val reportedBlockedText = stringResource(R.string.remote_error_reported_blocked)
     var name by rememberSaveable { mutableStateOf(existing?.name.orEmpty()) }
     var url by rememberSaveable { mutableStateOf(existing?.url.orEmpty()) }
     var username by rememberSaveable { mutableStateOf(existing?.username.orEmpty()) }
@@ -361,7 +362,7 @@ internal fun RemoteSourceFormScreen(
                     if (result == null) {
                         onSaved()
                     } else if (result == RemoteErrorKind.REPORTED_BLOCKED) {
-                        Toast.makeText(context, context.getString(R.string.remote_error_reported_blocked), Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, reportedBlockedText, Toast.LENGTH_LONG).show()
                     } else {
                         error = result
                     }

@@ -42,7 +42,7 @@ class MarkdownPageProvider(private val source: MarkdownBlockSource, val style: M
         val value = text to StaticLayout.Builder.obtain(text, 0, text.length, paint, style.render.width.coerceAtLeast(1))
             .setAlignment(if (source.document.blocks[index].kind == "heading") Layout.Alignment.ALIGN_NORMAL else style.alignment)
             .setIncludePad(false)
-            .setLineSpacing(0f, style.lineHeight).setBreakStrategy(Layout.BREAK_STRATEGY_SIMPLE).build()
+            .setLineSpacing(0f, style.lineHeight).setBreakStrategy(com.huangder.lumibooks.util.AndroidLineBreakCompat.SIMPLE).build()
         layouts.put(index, value)
         value
     }
@@ -56,7 +56,7 @@ class MarkdownPageProvider(private val source: MarkdownBlockSource, val style: M
             val end = starts.getOrNull(i + 1)?.minus(1) ?: text.length
             val cellText = text.subSequence(start, end.coerceAtLeast(start))
             val layout = StaticLayout.Builder.obtain(cellText, 0, cellText.length, paint, (width - style.render.fontSize.toInt()).coerceAtLeast(1))
-                .setIncludePad(false).setLineSpacing(0f, style.lineHeight).setBreakStrategy(Layout.BREAK_STRATEGY_SIMPLE).build()
+                .setIncludePad(false).setLineSpacing(0f, style.lineHeight).setBreakStrategy(com.huangder.lumibooks.util.AndroidLineBreakCompat.SIMPLE).build()
             MarkdownTableCell(start, end, width, layout, node.cellColumns.getOrElse(i) { i })
         }.also { tableLayouts.put(index, it) }
     }

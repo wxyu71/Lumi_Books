@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_update_download_channel">Choose a download source</string>
+    <string name="app_update_download_channel">Open GitHub Releases</string>
     <string name="app_update_download_recommended">Recommended</string>
-    <string name="app_update_download_baidu">Baidu Netdisk</string>
-    <string name="app_update_download_lanzou">Lanzou Cloud</string>
-    <string name="app_update_download_code">Code %1$s</string>
+    <string name="app_update_signing_notice">Community Betas use one fixed signing key, so future versions can install over older signed releases. If you used an earlier debug or temporary-signed build, back up your data and uninstall it before switching.</string>
 </resources>

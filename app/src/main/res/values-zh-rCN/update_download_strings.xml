@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_update_download_channel">选择下载渠道</string>
+    <string name="app_update_download_channel">前往 GitHub Releases</string>
     <string name="app_update_download_recommended">推荐</string>
-    <string name="app_update_download_baidu">百度网盘</string>
-    <string name="app_update_download_lanzou">蓝奏云</string>
-    <string name="app_update_download_code">提取码 %1$s</string>
+    <string name="app_update_signing_notice">社区 Beta 使用固定签名；以后可以覆盖安装并保留数据。若此前安装的是 Debug 或旧临时签名测试版，首次切换请先备份数据，再卸载旧版。</string>
 </resources>

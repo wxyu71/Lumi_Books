@@ -175,6 +175,9 @@ fun HighlightRulesSheet(
     if (!visible) return
 
     val context = LocalContext.current
+    val importFailedFormat = stringResource(R.string.highlight_rules_import_failed)
+    val importErrorFallback = stringResource(R.string.error)
+    val importErrorLocale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0] ?: java.util.Locale.ROOT
     val scope = rememberCoroutineScope()
     val sheetOffset = remember { Animatable(1f) }
     var isClosing by remember { mutableStateOf(false) }
@@ -201,10 +204,7 @@ fun HighlightRulesSheet(
     fun showImportError(error: Throwable) {
         Toast.makeText(
             context,
-            context.getString(
-                R.string.highlight_rules_import_failed,
-                error.message ?: context.getString(R.string.error)
-            ),
+            String.format(importErrorLocale, importFailedFormat, error.message ?: importErrorFallback),
             Toast.LENGTH_LONG
         ).show()
     }
@@ -1432,6 +1432,8 @@ private fun RuleFontSelector(
     val bodyLabel = stringResource(R.string.highlight_rule_font_body)
     val importLabel = stringResource(R.string.highlight_rule_font_import)
     val unavailableLabel = stringResource(R.string.highlight_rule_font_unavailable)
+    val numberedFontFormat = stringResource(R.string.custom_font_numbered_name)
+    val fontLocale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0] ?: java.util.Locale.ROOT
     val fontMenuSurfaceColor = AppColors.CardBg
     val fontMenuContentColor = AppColors.TextPrimary
     // Older imported rules used `system`; keep that value visually equivalent to
@@ -1441,7 +1443,7 @@ private fun RuleFontSelector(
         RuleFontOption(
             key = preset.fontTypeKey,
             label = preset.displayName(
-                context.getString(R.string.custom_font_numbered_name, index + 1)
+                String.format(fontLocale, numberedFontFormat, index + 1)
             ),
             family = rememberRuleFontFamily(preset.path)
         )

@@ -18,6 +18,13 @@ class ReadingJournalRepository @Inject constructor(
     fun observeEvents(startInclusive: Long, endExclusive: Long): Flow<List<ReadingJournalEventEntity>> =
         dao.observeBetween(startInclusive, endExclusive)
 
+    /** The community timeline doesn't materialize the entire retained history. */
+    fun observeRecent(limit: Int = 300): Flow<List<ReadingJournalEventEntity>> =
+        dao.observeRecent(limit.coerceIn(1, 1_000))
+
+    fun observeRecentForBook(bookId: String, limit: Int = 300): Flow<List<ReadingJournalEventEntity>> =
+        dao.observeRecentForBook(bookId, limit.coerceIn(1, 1_000))
+
     fun observeBookEvents(bookId: String): Flow<List<ReadingJournalEventEntity>> = dao.observeForBook(bookId)
 
     fun observeEventCount(): Flow<Int> = dao.observeCount()

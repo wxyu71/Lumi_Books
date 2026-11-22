@@ -15,6 +15,7 @@ class OssAccess @Inject constructor() : PremiumAccess {
     override val unlocked: StateFlow<Boolean> = MutableStateFlow(true).asStateFlow()
     override fun isUnlocked() = true
     override fun canAddRemoteSource(count: Int) = true
+    // The app already starts ReadingJournalRecorder after first frame in EBookReaderApp.
     override fun start() = Unit
 }
 

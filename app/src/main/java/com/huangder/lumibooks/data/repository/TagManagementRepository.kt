@@ -12,7 +12,6 @@ import com.huangder.lumibooks.domain.model.TagOperationResult
 import com.huangder.lumibooks.domain.model.TagTypes
 import com.huangder.lumibooks.domain.repository.ReadingRepository
 import com.huangder.lumibooks.domain.repository.TagRepository
-import com.huangder.lumibooks.edition.PremiumAccess
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -26,7 +25,6 @@ import kotlinx.coroutines.flow.combine
 @Singleton
 class TagManagementRepository @Inject constructor(
     private val db: AppDatabase,
-    private val premium: PremiumAccess,
     private val reading: ReadingRepository,
     private val tags: TagRepository
 ) {
@@ -49,7 +47,7 @@ class TagManagementRepository @Inject constructor(
         }
     }
 
-    suspend fun createGroup(type: String, name: String): TagOperationResult = operation(type, premiumOnly = true) {
+    suspend fun createGroup(type: String, name: String): TagOperationResult = operation(type) {
         if (!TagNameValidator.isValid(name)) return@operation failure("invalid_name")
         val normalized = TagNameValidator.normalized(name)
         val groups = db.tagGroupDao().getAllGroups()
@@ -61,7 +59,7 @@ class TagManagementRepository @Inject constructor(
         success()
     }
 
-    suspend fun renameGroup(type: String, id: String, name: String): TagOperationResult = operation(type, premiumOnly = true) {
+    suspend fun renameGroup(type: String, id: String, name: String): TagOperationResult = operation(type) {
         if (!TagNameValidator.isValid(name)) return@operation failure("invalid_name")
         val groups = db.tagGroupDao().getAllGroups()
         val group = groups.find { it.id == id && it.type == type && !it.isDeleted } ?: return@operation failure("not_found")
@@ -71,7 +69,7 @@ class TagManagementRepository @Inject constructor(
         success()
     }
 
-    suspend fun deleteGroup(type: String, id: String): TagOperationResult = operation(type, premiumOnly = true) {
+    suspend fun deleteGroup(type: String, id: String): TagOperationResult = operation(type) {
         val group = db.tagGroupDao().getAllGroups().find { it.id == id && it.type == type && !it.isDeleted }
             ?: return@operation failure("not_found")
         val now = nextTime()
@@ -119,13 +117,13 @@ class TagManagementRepository @Inject constructor(
         return result
     }
 
-    suspend fun deleteTag(type: String, key: String): TagOperationResult = delete(type, listOf(key), premiumOnly = false)
+    suspend fun deleteTag(type: String, key: String): TagOperationResult = delete(type, listOf(key))
 
-    suspend fun deleteTags(type: String, keys: List<String>): TagOperationResult = delete(type, keys, premiumOnly = true)
+    suspend fun deleteTags(type: String, keys: List<String>): TagOperationResult = delete(type, keys)
 
-    private suspend fun delete(type: String, keys: List<String>, premiumOnly: Boolean): TagOperationResult {
+    private suspend fun delete(type: String, keys: List<String>): TagOperationResult {
         val selected = keys.distinct()
-        val result = operation(type, premiumOnly) {
+        val result = operation(type) {
             if (!catalogSnapshot(type).map { it.key }.containsAll(selected)) return@operation failure("not_found")
             selected.forEach { if (type == TagTypes.BOOK) tags.deleteTag(it) else reading.deleteAnnotationTag(it) }
             success()
@@ -134,7 +132,7 @@ class TagManagementRepository @Inject constructor(
         return result
     }
 
-    suspend fun moveTags(type: String, keys: List<String>, groupId: String?): TagOperationResult = operation(type, premiumOnly = true) {
+    suspend fun moveTags(type: String, keys: List<String>, groupId: String?): TagOperationResult = operation(type) {
         if (!validGroup(type, groupId)) return@operation failure("invalid_group")
         if (!catalogSnapshot(type).map { it.key }.containsAll(keys)) return@operation failure("not_found")
         if (keys.isNotEmpty()) {
@@ -182,20 +180,13 @@ class TagManagementRepository @Inject constructor(
         (db.annotationTagDao().getAllTags().maxOfOrNull { it.updatedAt } ?: 0L) + 1
     )
 
-    private suspend fun operation(type: String, premiumOnly: Boolean = false, block: suspend () -> TagOperationResult): TagOperationResult {
+    /** Tag management is a built-in local community capability, never an entitlement. */
+    private suspend fun operation(type: String, block: suspend () -> TagOperationResult): TagOperationResult {
         if (!TagTypes.isValid(type)) return failure("invalid_type")
-        if (premiumOnly && !premium.isUnlocked()) return failure("premium_required")
         return try {
-            db.withTransaction {
-                if (premiumOnly && !premium.isUnlocked()) throw PremiumRequired()
-                val result = block()
-                if (premiumOnly && !premium.isUnlocked()) throw PremiumRequired()
-                result
-            }
+            db.withTransaction { block() }
         } catch (cancelled: CancellationException) {
             throw cancelled
-        } catch (_: PremiumRequired) {
-            failure("premium_required")
         } catch (_: Exception) {
             failure("save_failed")
         }
@@ -203,5 +194,4 @@ class TagManagementRepository @Inject constructor(
 
     private fun success() = TagOperationResult(true)
     private fun failure(code: String) = TagOperationResult(false, code)
-    private class PremiumRequired : RuntimeException()
 }

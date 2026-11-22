@@ -40,6 +40,19 @@ class AnnotationFeedTest {
         assertEquals(second, feed.first().book)
     }
 
+    @Test fun hiddenBooksNeverEnterTheCrossBookFeedOrItsSearchAndExport() {
+        val hidden = second.copy(isHidden = true)
+        val feedAfterHiding = buildAnnotationFeed(
+            listOf(first, hidden),
+            listOf(highlight, thought, underline, ruleHighlight),
+            listOf(bookmark)
+        )
+        assertEquals(listOf("note-2", "note-1"), keys(feedAfterHiding))
+        assertTrue(feedAfterHiding.matching(AnnotationFeedQuery(searchText = "Second Book")).isEmpty())
+        assertEquals(listOf("a"), notesExportBooks(feedAfterHiding).map { it.book.id })
+        assertEquals(0, feedAfterHiding.ruleHighlightCount(AnnotationFeedQuery()))
+    }
+
     @Test fun hidesRuleHighlightsUntilAskedAndCountsThemPerTab() {
         val query = AnnotationFeedQuery()
         assertEquals(listOf("note-3", "bookmark-1", "note-2", "note-1"), keys(feed.matching(query)))

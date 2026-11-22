@@ -8,15 +8,17 @@
 
 **読書は、自分だけのものに。**
 
-[![Version](https://img.shields.io/badge/version-2.3.11-coral)](https://github.com/huangder/Lumi_Books/releases)
+[![Version](https://img.shields.io/badge/version-2.3.12--beta.1-coral)](https://github.com/wxyu71/Lumi_Books/releases)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
 [![Android](https://img.shields.io/badge/Android-8.0%2B-blue)](https://developer.android.com)
 
 [中文](README.md) · [English](README.en.md) · **日本語** · [한국어](README.ko.md)
 
-**ユーザー版** · [開発者版](README.dev.ja.md)
+**ユーザー版** · [開発ガイド](docs/development/build.md)
 
 </div>
+
+> **Lumi Community（非公式フォーク）**：Huangder 氏の公式アプリとは独立した配布元 `wxyu71/Lumi_Books` です。原作者の帰属表示は保持します。
 
 Lumi は Android 向けのローカル電子書籍リーダーです。書籍と読書データは既定で端末内に保存されます。基本機能は無料・オープンソース・広告なしで提供されます。
 
@@ -57,11 +59,11 @@ Lumi は Android 向けのローカル電子書籍リーダーです。書籍と
 - 書籍を閉じた後も読み上げを続けられます。フローティング字幕で読み上げ中の内容を確認できます。
 - イヤホンのリモコン操作と、ロック画面のメディアコントロールに対応しています。
 
-### 統計とウィジェット
+### 読書統計
 
 - 読書時間、1日の目標、週・月・年の推移とヒートマップを表示します。
 - 連続読書日数、注釈の数、個人の書評と評価を記録できます。
-- ホーム画面のウィジェットで、続きから読む書籍や抜粋を表示できます。
+- 上流のホーム画面ウィジェットは、このコミュニティ Beta では登録されていません。
 
 ### 同期とバックアップ
 
@@ -87,35 +89,18 @@ Lumi は Android 向けのローカル電子書籍リーダーです。書籍と
 
 - 読書データは既定で端末内に保存されます。アプリのデータは Android のアプリ専用領域に置かれます。
 - 依存関係に、アナリティクス、広告、プッシュ通知、クラッシュレポートの SDK は含まれていません。
-- ネットワーク通信が発生するのは、利用者が該当する機能を使ったときだけです。表紙の検索、リモートフォント、WebDAV、MinerU、外部の音声・翻訳 API、更新の確認、コントリビューターのアバター表示が対象です。
+- ネットワーク通信が発生するのは、利用者が該当する機能を使ったときだけです。表紙の検索、リモートフォント、WebDAV、MinerU、外部の音声・翻訳 API、更新の確認が対象です。
 - 初回起動時に、プライバシーポリシーと利用規約を表示します。
 
 ## ダウンロード
 
-[GitHub Releases](https://github.com/huangder/Lumi_Books/releases) から最新の APK をダウンロードできます。
+コミュニティ Beta は [このフォークの GitHub Releases](https://github.com/wxyu71/Lumi_Books/releases) で、署名付き APK と `SHA256SUMS.txt` を含む **Pre-release** として公開します。配布前に正式な Beta ダウンロードはありません。上流や外部ミラーの APK をコミュニティ版として使わないでください。
 
-予備のダウンロード先：[百度网盘](https://pan.baidu.com/s/1vDdFsoqQuuZlntUTUjssZw?pwd=lumi)（パスワード：lumi） · [蓝奏云](https://wwaug.lanzoub.com/b0xxfmxvi)（パスワード：lumi）
+**署名と更新**：コミュニティ Beta は固定の署名鍵を使い、`versionCode` が上がれば同じ鍵の Beta に上書き更新できます。以前の Debug／一時署名版から最初に移行する際は、先にデータをバックアップし、旧版をアンインストールしてください。
 
-## バージョンについて
+## コミュニティ Beta
 
-Lumi には 2 つのバージョンがあります。
-
-- **オープンソース版**（このリポジトリからビルドされるもの）：読書機能と基本の抜粋スタイルをすべて提供します。会員向けの入口、読書レポート、タグ管理は含まれません。
-- **公式版**：オープンソース版に、任意で利用できる Premium 機能を加えたものです。読書レポート、高度な抜粋テンプレート、タグ管理を含みます。読書レポートと高度な抜粋はプレビューできます。書き出しにはロック解除が必要です。公式版には 5 日間の試用期間があります。
-
-更新履歴は [更新ログのページ](https://huangder.top/changelog.html) で確認できます。アプリ内でも見られます。
-
-## Lumi を支援する
-
-Lumi が役に立ったと感じたら、[支援ページ](https://huangder.top/sponsor.html) から開発者を支援できます。GitHub ページ右側の **Sponsor** ボタンからも支援できます。支援は任意で、機能の利用やサポートには影響しません。
-
-## Star History
-
-<p align="center">
-  <a href="https://star-history.com/#huangder/Lumi_Books&Date">
-    <img src="https://api.star-history.com/svg?repos=huangder/Lumi_Books&type=Date" alt="Star History Chart" width="600">
-  </a>
-</p>
+本リポジトリは非公式の独立 OSS フォークです（`io.github.wxyu71.lumibooks`、`2.3.12-beta.1`）。タグ管理、任意のローカル読書記録、TXT/Markdown 出力を含み、非公開 Premium 機能は含みません。詳細は [COMMUNITY.md](COMMUNITY.md)。
 
 ## ライセンス
 
@@ -125,6 +110,7 @@ Lumi のオリジナルコードは [Apache License 2.0](LICENSE) で公開さ�
 
 ## リンク
 
-- 公式サイト：[huangder.top](https://huangder.top)
-- GitHub：[github.com/huangder/Lumi_Books](https://github.com/huangder/Lumi_Books)
-- メール：huangder0104@126.com
+- コミュニティリポジトリ：[wxyu71/Lumi_Books](https://github.com/wxyu71/Lumi_Books)
+- 原作者サイト：[huangder.top](https://huangder.top)
+- 上流ソース：[huangder/Lumi_Books](https://github.com/huangder/Lumi_Books)
+- 原作者メール：<huangder0104@126.com>

@@ -70,7 +70,6 @@ import com.huangder.lumibooks.ui.components.LiquidGlassDialogHost
 import com.huangder.lumibooks.ui.components.rememberLocalNetworkPermissionGate
 import com.huangder.lumibooks.ui.components.PolicyUpdateDialog
 import com.huangder.lumibooks.ui.components.RemoteNoticeDialog
-import com.huangder.lumibooks.domain.model.EARLY_DONOR_NOTICE_ID
 import com.huangder.lumibooks.domain.model.ReceivedNotice
 import com.huangder.lumibooks.ui.components.WebdavSyncUpgradeDialog
 import com.huangder.lumibooks.ui.settings.DetailActivity
@@ -229,23 +228,32 @@ class MainActivity : ComponentActivity() {
     /** 当前阅读页可分别处理两个音量键；返回 false 时交给系统处理。 */
     var readerVolumeKeyHandler: ((KeyEvent) -> Boolean)? = null
 
-    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+    /**
+     * Let the view hierarchy dispatch first. Activity.onKey* is the public window
+     * fallback for unconsumed keys; ComponentActivity.dispatchKeyEvent is reserved
+     * for AndroidX internals and must not be overridden by app code.
+     */
+    private fun handleUnconsumedReaderOrMediaKey(event: KeyEvent): Boolean {
         val isVolumeKey = event.keyCode == KeyEvent.KEYCODE_VOLUME_UP ||
             event.keyCode == KeyEvent.KEYCODE_VOLUME_DOWN
-        if (isVolumeKey && readerVolumeKeyHandler?.invoke(event) == true) {
-            return true
-        }
-        // 部分 ROM / 耳机把媒体按键投递给前台窗口而不是 MediaSession。
-        // 听书进行中时在这里兜底处理；未听书时不拦截，仍交给系统的媒体按键路由。
+        if (isVolumeKey && readerVolumeKeyHandler?.invoke(event) == true) return true
+        // Some ROMs route headphone events to the Activity rather than MediaSession.
         if (TtsMediaButtons.isSupportedKey(event.keyCode)) {
             val result = TtsMediaButtons.handleEvent(ttsController, event)
             logMediaButtonDelivery("activity_window", event, result, ttsController)
-            if (result.consumed && ttsController.playbackState.value != TtsPlaybackState.IDLE) {
-                return true
-            }
+            if (result.consumed && ttsController.playbackState.value != TtsPlaybackState.IDLE) return true
         }
-        return super.dispatchKeyEvent(event)
+        return false
     }
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean =
+        if (handleUnconsumedReaderOrMediaKey(event)) true else super.onKeyDown(keyCode, event)
+
+    override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean =
+        if (handleUnconsumedReaderOrMediaKey(event)) true else super.onKeyUp(keyCode, event)
+
+    override fun onKeyMultiple(keyCode: Int, repeatCount: Int, event: KeyEvent): Boolean =
+        if (handleUnconsumedReaderOrMediaKey(event)) true else super.onKeyMultiple(keyCode, repeatCount, event)
 
     // Startup dialog pending states.
     /** Pending app update dialog; non-null means show it after startup. */
@@ -253,7 +261,6 @@ class MainActivity : ComponentActivity() {
 
     /** Pending remote notice dialog; non-null means show it after startup. */
     private var pendingRemoteNotice by mutableStateOf<UpdateChecker.NoticeConfig?>(null)
-    private var pendingEarlyDonorNotice by mutableStateOf(false)
 
     /** Pending terms/privacy policy update dialog; non-null means show it after startup. */
     private var pendingPolicyUpdate by mutableStateOf<PendingPolicyUpdate?>(null)
@@ -951,7 +958,7 @@ class MainActivity : ComponentActivity() {
                         }
                         val globalGlassDialogVisible = !onReaderRoute && (
                             pendingAppUpdate != null ||
-                                pendingEarlyDonorNotice || pendingRemoteNotice != null ||
+                                pendingRemoteNotice != null ||
                                 policyDialog != null ||
                                 pendingWebdavSyncUpgrade ||
                                 // 外部导入询问弹窗也是玻璃容器，同样需要在它显示期间捕获主内容，
@@ -1020,7 +1027,6 @@ class MainActivity : ComponentActivity() {
                     // Startup dialog priority: app update > notice > policy > sync upgrade.
                     // 阅读页不渲染启动弹窗，避免 layerBackdrop 切换导致内容闪烁。
                     val appUpdate = pendingAppUpdate
-                    val earlyDonorNotice = pendingEarlyDonorNotice
                     val remoteNotice = pendingRemoteNotice
                     when {
                         !onReaderRoute && appUpdate != null -> {
@@ -1045,14 +1051,6 @@ class MainActivity : ComponentActivity() {
                                         pendingAppUpdate = null
                                     }
                                 }
-                            )
-                        }
-                        !onReaderRoute && earlyDonorNotice -> {
-                            RemoteNoticeDialog(
-                                title = stringResource(R.string.early_donor_notice_title),
-                                message = stringResource(R.string.early_donor_notice_message),
-                                imageResId = R.drawable.early_donor_claim_code,
-                                onConfirm = { acknowledgeStartupNotice(EARLY_DONOR_NOTICE_ID) }
                             )
                         }
                         !onReaderRoute && remoteNotice != null -> {
@@ -1153,11 +1151,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun acknowledgeStartupNotice(id: String) {
-        if (id == EARLY_DONOR_NOTICE_ID) {
-            pendingEarlyDonorNotice = false
-        } else {
-            pendingRemoteNotice = null
-        }
+        pendingRemoteNotice = null
         lifecycleScope.launch { dataStoreManager.acknowledgeNotice(id) }
     }
 
@@ -1176,92 +1170,17 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    /** Load the bundled notice before starting the remote configuration request. */
+    /** Check only the bundled policy versions; do not contact the upstream server at startup. */
     private fun performStartupUpdateCheck() {
         lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val terms = BundledPolicy.TERMS.version
-                val privacy = BundledPolicy.PRIVACY.version
-                val needsTerms = dataStoreManager.acceptedTermsVersion.first() < terms
-                val needsPrivacy = dataStoreManager.acceptedPrivacyVersion.first() < privacy
-                if (needsTerms || needsPrivacy) {
-                    withContext(Dispatchers.Main) {
-                        pendingPolicyUpdate = PendingPolicyUpdate(needsTerms, terms, needsPrivacy, privacy)
-                    }
-                    dataStoreManager.hasAcceptedBundledPolicies.first { it }
-                }
-                val acknowledgedNoticeIds = dataStoreManager.acknowledgedNoticeIds.first()
-                // The bundled announcement can be recovered even if it was confirmed before history existed.
-                archiveStartupNotice(
-                    EARLY_DONOR_NOTICE_ID,
-                    getString(R.string.early_donor_notice_title),
-                    getString(R.string.early_donor_notice_message)
-                )
+            val terms = BundledPolicy.TERMS.version
+            val privacy = BundledPolicy.PRIVACY.version
+            val needsTerms = dataStoreManager.acceptedTermsVersion.first() < terms
+            val needsPrivacy = dataStoreManager.acceptedPrivacyVersion.first() < privacy
+            if (needsTerms || needsPrivacy) {
                 withContext(Dispatchers.Main) {
-                    pendingEarlyDonorNotice = EARLY_DONOR_NOTICE_ID !in acknowledgedNoticeIds
+                    pendingPolicyUpdate = PendingPolicyUpdate(needsTerms, terms, needsPrivacy, privacy)
                 }
-
-                val config = UpdateChecker.fetchUpdateConfig() ?: return@launch
-                val packageInfo = try {
-                    packageManager.getPackageInfo(packageName, 0)
-                } catch (_: Exception) { null }
-                val currentVersion = packageInfo?.versionName ?: "1.0"
-                val currentVersionCode = packageInfo?.let { PackageInfoCompat.getLongVersionCode(it) } ?: 0L
-
-                val acceptedTerms = dataStoreManager.acceptedTermsVersion.first()
-                val acceptedPrivacy = dataStoreManager.acceptedPrivacyVersion.first()
-                val ignoredAppUpdateVersionCode = dataStoreManager.ignoredAppUpdateVersionCode.first()
-
-                val result = UpdateChecker.evaluate(
-                    config = config,
-                    currentVersion = currentVersion,
-                    currentVersionCode = currentVersionCode,
-                    acceptedTerms = acceptedTerms,
-                    acceptedPrivacy = acceptedPrivacy
-                )
-
-                val remoteNotice = result.notice
-                remoteNotice?.let { archiveStartupNotice(it.id, it.title, it.message, it.imageUrl) }
-
-                val nextAppUpdate = result
-                    .takeIf {
-                        it.hasAppUpdate && !(
-                                !it.isForceUpdate &&
-                                        it.latestVersionCode > 0L &&
-                                        it.latestVersionCode == ignoredAppUpdateVersionCode
-                                )
-                    }
-                    ?.let {
-                        PendingAppUpdate(
-                            appVersion = it.appVersion,
-                            latestVersionCode = it.latestVersionCode,
-                            title = it.updateTitle,
-                            message = it.updateMessage,
-                            changelog = it.changelog,
-                            releaseUrl = it.releaseUrl,
-                            force = it.isForceUpdate
-                        )
-                    }
-                val nextNotice = remoteNotice
-                    ?.takeIf { it.id != EARLY_DONOR_NOTICE_ID && it.id !in acknowledgedNoticeIds }
-                val nextPolicy = if (result.hasTermsUpdate || result.hasPrivacyUpdate) {
-                    PendingPolicyUpdate(
-                        hasTermsUpdate = result.hasTermsUpdate,
-                        termsVersion = result.termsVersion,
-                        hasPrivacyUpdate = result.hasPrivacyUpdate,
-                        privacyVersion = result.privacyVersion
-                    )
-                } else {
-                    null
-                }
-
-                withContext(Dispatchers.Main) {
-                    pendingAppUpdate = nextAppUpdate
-                    pendingRemoteNotice = nextNotice
-                    pendingPolicyUpdate = nextPolicy
-                }
-            } catch (_: Exception) {
-                // Fail silently so startup is not blocked.
             }
         }
     }

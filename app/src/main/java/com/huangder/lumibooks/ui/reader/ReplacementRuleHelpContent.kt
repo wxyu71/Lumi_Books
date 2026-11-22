@@ -146,6 +146,7 @@ private fun ReplacementAiGuide() {
     HelpSection(R.string.replacement_help_ai_screenshot_title, R.string.replacement_help_ai_screenshot_body)
     HelpSection(R.string.replacement_help_ai_copy_title, R.string.replacement_help_ai_copy_body)
     val context = LocalContext.current
+    val aiPromptLabel = stringResource(R.string.replacement_help_tab_ai)
     val prompt = remember(context) {
         context.resources.openRawResource(R.raw.replacement_regex_ai_prompt).bufferedReader().use { it.readText() }
     }
@@ -153,7 +154,7 @@ private fun ReplacementAiGuide() {
     LiquidGlassButton(
         onClick = {
             val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            clipboard.setPrimaryClip(ClipData.newPlainText(context.getString(R.string.replacement_help_tab_ai), prompt))
+            clipboard.setPrimaryClip(ClipData.newPlainText(aiPromptLabel, prompt))
             copied = true
         },
         tintedColor = AppColors.Accent,

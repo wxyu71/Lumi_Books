@@ -49,9 +49,14 @@ class BookNotesExportBuilder @Inject constructor(
     suspend fun build(
         book: Book,
         bookmarks: List<Bookmark>,
-        notes: List<Note>
+        notes: List<Note>,
+        format: NotesExportFormat = NotesExportFormat.TXT
     ): BookNotesExportDocument = withContext(Dispatchers.IO) {
-        prepare(NotesExportBook(book, notes, bookmarks)).asTxt()
+        val content = prepare(NotesExportBook(book, notes, bookmarks))
+        when (format) {
+            NotesExportFormat.TXT -> content.asTxt()
+            NotesExportFormat.MARKDOWN -> content.asMarkdown()
+        }
     }
 
     internal suspend fun prepare(source: NotesExportBook): NotesExportContent = withContext(Dispatchers.IO) {

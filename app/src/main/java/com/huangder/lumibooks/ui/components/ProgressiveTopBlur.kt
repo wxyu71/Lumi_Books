@@ -198,7 +198,8 @@ internal fun ProgressiveSurface(
     val tintBrush = remember(tint, direction) {
         tint?.let { progressiveBrush(it, direction, 0f, opaqueEdge = false) }
     }
-    if (effect == null || backdrop == null) {
+    // The effect API itself is Android 13+; fallback covers API 26–32.
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || effect == null || backdrop == null) {
         Box(modifier.graphicsLayer { alpha = resolvedStrength }
             .then(if (exportedBackdrop != null) Modifier.layerBackdrop(exportedBackdrop) else Modifier)
             .background(fallbackBrush))

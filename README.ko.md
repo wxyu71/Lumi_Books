@@ -8,15 +8,17 @@
 
 **읽는 시간은 나에게만.**
 
-[![Version](https://img.shields.io/badge/version-2.3.11-coral)](https://github.com/huangder/Lumi_Books/releases)
+[![Version](https://img.shields.io/badge/version-2.3.12--beta.1-coral)](https://github.com/wxyu71/Lumi_Books/releases)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
 [![Android](https://img.shields.io/badge/Android-8.0%2B-blue)](https://developer.android.com)
 
 [中文](README.md) · [English](README.en.md) · [日本語](README.ja.md) · **한국어**
 
-**사용자 버전** · [개발자 버전](README.dev.ko.md)
+**사용자 버전** · [개발 가이드](docs/development/build.md)
 
 </div>
+
+> **Lumi Community(비공식 포크)**: Huangder의 공식 앱과 별개인 `wxyu71/Lumi_Books` 배포판이며 원본 저작자 표기는 유지합니다.
 
 Lumi는 Android용 로컬 전자책 리더입니다. 책과 독서 데이터는 기본적으로 기기 안에 저장됩니다. 기본 기능은 무료이며 오픈소스이고, 광고가 없습니다.
 
@@ -57,11 +59,11 @@ Lumi는 Android용 로컬 전자책 리더입니다. 책과 독서 데이터는 
 - 책을 닫은 뒤에도 계속 들을 수 있습니다. 떠 있는 자막으로 읽고 있는 내용을 확인할 수 있습니다.
 - 이어폰 리모컨 조작과 잠금 화면 미디어 컨트롤을 지원합니다.
 
-### 통계와 위젯
+### 읽기 통계
 
 - 독서 시간, 하루 목표, 주·월·년 추이와 히트맵을 보여 줍니다.
 - 연속 독서 일수, 주석 수, 개인 서평과 평점을 기록할 수 있습니다.
-- 홈 화면 위젯에서 이어 읽을 책이나 발췌를 볼 수 있습니다.
+- 원본 홈 화면 위젯은 이 커뮤니티 Beta에서 등록되지 않습니다.
 
 ### 동기화와 백업
 
@@ -87,35 +89,18 @@ Lumi는 Android용 로컬 전자책 리더입니다. 책과 독서 데이터는 
 
 - 독서 데이터는 기본적으로 기기 안에 저장됩니다. 앱 데이터는 Android의 앱 전용 저장 공간에 있습니다.
 - 의존성에는 분석, 광고, 푸시 알림, 충돌 보고 SDK가 포함되어 있지 않습니다.
-- 네트워크 연결은 사용자가 해당 기능을 사용할 때만 일어납니다. 표지 검색, 원격 글꼴, WebDAV, MinerU, 외부 음성·번역 API, 업데이트 확인, 기여자 아바타 표시가 여기에 해당합니다.
+- 네트워크 연결은 사용자가 해당 기능을 사용할 때만 일어납니다. 표지 검색, 원격 글꼴, WebDAV, MinerU, 외부 음성·번역 API, 업데이트 확인이 여기에 해당합니다.
 - 처음 실행할 때 개인정보 처리방침과 이용약관을 보여 줍니다.
 
 ## 다운로드
 
-[GitHub Releases](https://github.com/huangder/Lumi_Books/releases)에서 최신 APK를 내려받을 수 있습니다.
+커뮤니티 Beta는 [이 포크의 GitHub Releases](https://github.com/wxyu71/Lumi_Books/releases)에 서명된 APK와 `SHA256SUMS.txt`를 포함하는 **Pre-release**로 공개됩니다. 공개 전에는 정식 Beta 다운로드가 없습니다. 원본 또는 외부 미러 APK를 커뮤니티 버전으로 사용하지 마세요.
 
-예비 다운로드: [百度网盘](https://pan.baidu.com/s/1vDdFsoqQuuZlntUTUjssZw?pwd=lumi)(비밀번호 lumi) · [蓝奏云](https://wwaug.lanzoub.com/b0xxfmxvi)(비밀번호 lumi)
+**서명과 업그레이드:** 커뮤니티 Beta는 동일한 고정 서명 키를 사용하며 `versionCode`를 올리면 기존 Beta 위에 설치할 수 있습니다. 이전 Debug/임시 서명 빌드에서 처음 전환할 때는 데이터를 백업하고 기존 앱을 삭제한 후 설치하세요.
 
-## 버전 안내
+## 커뮤니티 Beta
 
-Lumi에는 두 가지 버전이 있습니다.
-
-- **오픈소스 버전**(이 저장소에서 빌드되는 버전): 읽기 기능과 기본 발췌 스타일을 모두 제공합니다. 멤버십 진입점, 독서 리포트, 태그 관리는 포함되지 않습니다.
-- **공식 버전**: 오픈소스 버전에 선택 사항인 Premium 기능을 더한 버전입니다. 독서 리포트, 고급 발췌 템플릿, 태그 관리를 포함합니다. 독서 리포트와 고급 발췌는 미리 볼 수 있으며, 내보내려면 잠금을 해제해야 합니다. 공식 버전은 5일 체험판을 제공합니다.
-
-업데이트 기록은 [업데이트 로그 페이지](https://huangder.top/changelog.html)에서 볼 수 있습니다. 앱 안에서도 확인할 수 있습니다.
-
-## Lumi 후원
-
-Lumi가 도움이 되었다면 [후원 페이지](https://huangder.top/sponsor.html)에서 개발자를 후원할 수 있습니다. GitHub 페이지 오른쪽의 **Sponsor** 버튼으로도 후원할 수 있습니다. 후원은 자유 의사이며, 기능 이용이나 문제 처리에는 영향을 주지 않습니다.
-
-## Star History
-
-<p align="center">
-  <a href="https://star-history.com/#huangder/Lumi_Books&Date">
-    <img src="https://api.star-history.com/svg?repos=huangder/Lumi_Books&type=Date" alt="Star History Chart" width="600">
-  </a>
-</p>
+이 저장소는 독립적인 비공식 OSS 포크입니다(`io.github.wxyu71.lumibooks`, `2.3.12-beta.1`). 태그 관리, 선택적 로컬 독서 기록 및 TXT/Markdown 내보내기를 포함하며 비공개 Premium 기능은 포함하지 않습니다. 자세한 내용은 [COMMUNITY.md](COMMUNITY.md)를 확인하세요.
 
 ## 라이선스
 
@@ -125,6 +110,7 @@ Lumi의 원본 코드는 [Apache License 2.0](LICENSE)으로 공개됩니다. �
 
 ## 링크
 
-- 공식 사이트: [huangder.top](https://huangder.top)
-- GitHub: [github.com/huangder/Lumi_Books](https://github.com/huangder/Lumi_Books)
-- 이메일: huangder0104@126.com
+- 커뮤니티 저장소: [wxyu71/Lumi_Books](https://github.com/wxyu71/Lumi_Books)
+- 원본 개발자 사이트: [huangder.top](https://huangder.top)
+- 상위 프로젝트: [huangder/Lumi_Books](https://github.com/huangder/Lumi_Books)
+- 원본 개발자 이메일: <huangder0104@126.com>

@@ -1,45 +1,27 @@
 {
   "config_version": 1,
-  "generated_at": "2026-11-18T16:59:38+08:00",
-  "latest_version": "2.3.11",
-  "latest_version_code": 18,
-  "release_url": "https://github.com/huangder/Lumi_Books/releases/tag/Filmy",
-  "terms_version": 3,
-  "privacy_version": 4,
+  "latest_version": "",
+  "latest_version_code": 0,
+  "release_url": "https://github.com/wxyu71/Lumi_Books/releases",
+  "terms_version": 6,
+  "privacy_version": 6,
   "update": {
-    "latest_version_code": 18,
-    "latest_version_name": "2.3.11",
-    "download_url": "https://github.com/huangder/Lumi_Books/releases/tag/Filmy",
-    "github_apk_url": "https://github.com/huangder/Lumi_Books/releases/download/Filmy/app-universal-release.apk",
-    "title": "Lumi Books 2.3.11「Filmy」",
-    "message": "丰富阅读场景，完善书籍管理，提升阅读与听书体验。推荐所有用户更新至新版本。",
-    "changelog": "各位读者：\n\n为进一步丰富阅读场景、完善书籍管理，并提升阅读与听书体验，Lumi Books 2.3.11「Filmy」版本带来了一系列功能更新与体验优化。推荐所有用户更新至新版本，体验更加丰富、便捷的阅读服务。\n\n本次更新围绕阅读、听书、书库管理和跨设备使用等方面展开：\n\n· 阅读方式更加丰富。\n新增 AZW、AZW3 及 Word 文档导入与阅读支持；新增替换净化功能，可为书籍设置文字替换规则，同时保留原文件。\n\n· 阅读记录更加有序。\n新增书籍笔记下载与导出，支持跨书查看高亮、划线、笔记和书签，让阅读中的思考便于整理与回顾。\n\n· 听书体验进一步升级。\n新增全屏听书页面，支持封面与字幕模式、章节切换及语音引擎调整；退出书籍后也可选择继续听书，并通过悬浮字幕查看朗读内容。\n\n· 书库管理更加便捷。\n新增桌面阅读小组件、书架自定义排序与书名作者批量补全；支持 OPDS 和 WebDAV 远程书库，方便浏览、搜索和导入书籍。\n\n· 阅读体验持续优化。\n新版本完善了横屏双页阅读、高亮选色、连续滚动选区及页面布局，同时对界面、动画、自定义字体和 WebDAV 同步反馈等进行了优化，并修复部分 EPUB 脚注与链接问题。\n\n· Premium 体验更新。\n新增 5 天试用，并完善激活帮助与设备管理。\n\n每一次更新，都源于对阅读体验的关注，也离不开大家的建议与支持。感谢每一位读者的陪伴与反馈，Lumi Books 将继续倾听真实需求，认真打磨产品细节，让阅读更加自在，让热爱持续生长。\n\n建议所有用户及时更新至 Lumi Books 2.3.11，在新版本中开启更好的阅读体验。\n\nLumi Books 开发者 敬上",
+    "latest_version_code": 0,
+    "latest_version_name": "",
+    "download_url": "https://github.com/wxyu71/Lumi_Books/releases",
+    "title": "Lumi Community Beta",
+    "message": "仅手动查询此社区 Fork 已公开的 GitHub Pre-release；不会连接上游更新源。",
+    "changelog": "以 GitHub Pre-release 发布说明为准。",
     "force_update_below_version_code": 0
   },
   "notice": {
-    "id": "notice-20261118-23-reading-performance",
-    "enabled": true,
-    "min_version_code": 18,
-    "max_version_code": 18,
-    "title": "关于 2.3 版本的更新说明",
-    "message": "这次版本更新幅度较大，尤其是原排版相关的调整较多，部分使用场景下可能会出现阅读时偶发卡顿，给大家带来不便，抱歉。\n\n目前建议大家优先使用「阅读器排版」，以获得更稳定、流畅的阅读体验。\n\n我会继续排查和优化，并在 2.4 版本之前发布 2.3fix 修复版本，优先处理阅读卡顿和稳定性问题。\n\n如果遇到问题，欢迎反馈设备型号、使用的排版模式及具体操作步骤，方便我定位和修复。\n\n感谢大家的理解与耐心，也谢谢大家一直以来的支持。"
+    "id": "disabled",
+    "enabled": false,
+    "min_version_code": 0,
+    "max_version_code": 0,
+    "title": "",
+    "message": ""
   },
-  "fonts": [
-    {
-      "key": "fangsong",
-      "version": 1,
-      "fileName": "fandol_fang.ttf",
-      "sizeBytes": 8824084,
-      "urls": [
-        "https://raw.githubusercontent.com/huangder/Lumi_Books/main/docs/fonts/fandol_fang.ttf",
-        "https://cdn.jsdelivr.net/gh/huangder/Lumi_Books@main/docs/fonts/fandol_fang.ttf"
-      ]
-    }
-  ],
-  "blocked_opds_urls": [],
-  "premium_pricing": {
-    "price_minor": 2500,
-    "original_price_minor": 3500,
-    "paypal_price_minor": 400
-  }
+  "fonts": [],
+  "blocked_opds_urls": []
 }

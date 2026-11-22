@@ -1,4 +1,6 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.gradle.api.tasks.WriteProperties
+import org.gradle.api.tasks.testing.Test
 
 plugins {
     id("com.android.application")
@@ -14,9 +16,8 @@ val releaseStartupTrace = providers.gradleProperty("lumiStartupTrace")
     .map { it.toBooleanStrict() }
     .orElse(false)
 
-// The optional private checkout supplies the official edition. A public clone builds on its own.
-val forceOss = providers.gradleProperty("lumi.oss").map { it.toBooleanStrict() }.orElse(false)
-val premiumEdition = !forceOss.get() && file("src/premium/java").isDirectory
+// Community fork: always compile the OSS source set. Never bundle the private official edition.
+val premiumEdition = false
 // KSP/Hilt outputs must not survive a switch to a source set with fewer declarations.
 // Concurrent verification in this checkout needs separate generated resources and classes.
 val buildTag = providers.gradleProperty("lumi.buildTag").orNull
@@ -41,11 +42,11 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.huangder.lumibooks"
+        applicationId = "io.github.wxyu71.lumibooks"
         minSdk = 26
         targetSdk = 37
-        versionCode = 18
-        versionName = "2.3.11"
+        versionCode = providers.gradleProperty("lumi.communityVersionCode").get().toInt()
+        versionName = providers.gradleProperty("lumi.communityVersionName").get()
 
         buildConfigField("boolean", "DIAGNOSTIC_BUILD", "false")
         buildConfigField("boolean", "STARTUP_TRACE_ENABLED", "false")
@@ -78,6 +79,7 @@ android {
         }
         create("diagnostic") {
             initWith(getByName("release"))
+            signingConfig = null
             versionNameSuffix = "-diagnostic"
             isDebuggable = true
             isMinifyEnabled = false
@@ -109,6 +111,11 @@ android {
             if (premiumEdition) {
                 res.srcDir("src/premium/res")
                 assets.srcDir("src/premium/assets")
+            } else {
+                // Keep Community-only UI resources and policy assets in the same
+                // source-set boundary as the OSS implementation.
+                res.srcDir("src/oss/res")
+                assets.srcDir("src/oss/assets")
             }
         }
         getByName("debug") {
@@ -138,12 +145,28 @@ android {
             excludes += "org/bouncycastle/**"
         }
     }
+    // Delegate error severity to Android Lint itself, not a bespoke XML parser.
+    lint {
+        abortOnError = true
+    }
     testOptions {
         unitTests {
             isIncludeAndroidResources = true
             all {
                 it.maxHeapSize = "2g"
-                it.systemProperty("robolectric.dependency.repo.url", "https://repo.maven.apache.org/maven2")
+                if (System.getenv("CI") == "true") {
+                    // Mainline checks cover Android 13+, older SDK assertions
+                    // run unchanged in the scheduled legacy JVM lane.
+                    if (System.getenv("LUMI_ROBOLECTRIC_LEGACY") != "1") {
+                        it.systemProperty("robolectric.enabledSdks", "33,35,36")
+                    }
+                    // Resolve SDKs with Gradle, then point Robolectric at the exact cached
+                    // artifacts through its standard dependency-properties mechanism.
+                    it.systemProperty(
+                        "robolectric-deps.properties",
+                        layout.buildDirectory.file("robolectric-deps.properties").get().asFile.absolutePath
+                    )
+                }
                 // Optional host JNI build for real Kindle reconstruction tests, never packaged.
                 System.getenv("LUMI_KINDLE_NATIVE_DIR")?.let { nativeDirectory ->
                     it.systemProperty("java.library.path", nativeDirectory)
@@ -271,3 +294,68 @@ dependencies {
     baselineProfile(project(":benchmark"))
 }
 
+
+// Prefetch exactly the SDKs for each CI lane using Gradle's existing
+// repositories and cache. Historical @Config(sdk) tests remain in the
+// weekly compatibility lane, not in the Android 13+ PR gate.
+val modernRobolectricSdks = listOf(
+    "13-robolectric-9030017-i7",       // API 33
+    "15-robolectric-13954326-i7",      // API 35
+    "16-robolectric-13921718-i7"       // API 36
+)
+val legacyRobolectricSdks = listOf(
+    "8.0.0_r4-robolectric-r1-i7",      // API 26
+    "9-robolectric-4913185-2-i7",     // API 28
+    "10-robolectric-5803371-i7",      // API 29
+    "11-robolectric-6757853-i7",      // API 30
+    "12-robolectric-7732740-i7",      // API 31
+    "12.1-robolectric-8229987-i7",    // API 32
+    "14-robolectric-10818077-i7"      // API 34
+)
+val robolectricSdkVersions = if (System.getenv("LUMI_ROBOLECTRIC_LEGACY") == "1") {
+    modernRobolectricSdks + legacyRobolectricSdks
+} else {
+    modernRobolectricSdks
+}
+val robolectricSdkDownload = tasks.register<WriteProperties>("robolectricSdkDownload") {
+    group = "Dependencies"
+    description = "Resolve Robolectric SDKs with Gradle and write their cached paths"
+    destinationFile = layout.buildDirectory.file("robolectric-deps.properties")
+}
+
+// Keep one Gradle configuration per SDK so version conflict resolution cannot discard
+// historical runtimes. This follows Robolectric's dependency-properties contract and
+// the pattern used by AnkiDroid for Robolectric 4.16.x.
+robolectricSdkVersions.forEachIndexed { index, version ->
+    val config = configurations.create("robolectricSdkJar$index") {
+        isCanBeResolved = true
+        isCanBeConsumed = false
+        isTransitive = false
+    }
+    dependencies.add(config.name, "org.robolectric:android-all-instrumented:$version")
+    robolectricSdkDownload.configure {
+        inputs.files(config).withPropertyName(version)
+        property(
+            "org.robolectric:android-all-instrumented:$version",
+            config.elements.map { elements -> elements.single().asFile.absolutePath }
+        )
+    }
+}
+
+// CI uses the normal Android Gradle Plugin unit-test task. Keep the execution
+// model conventional: Robolectric SDK selection is the only CI-specific input;
+// Gradle/JUnit remain authoritative for discovery, failures and reports.
+tasks.withType<Test>().configureEach {
+    if (System.getenv("CI") == "true") dependsOn(robolectricSdkDownload)
+    if (name == "testDebugUnitTest" && System.getenv("CI") == "true") {
+        // A single fork at a time protects the hosted runner from Gradle + Robolectric OOM.
+        // A bounded worker lifetime prevents one test's static state leaking indefinitely.
+        maxParallelForks = 1
+        forkEvery = 100
+        maxHeapSize = "1536m"
+        testLogging {
+            events("started", "passed", "skipped", "failed")
+            showStandardStreams = false
+        }
+    }
+}

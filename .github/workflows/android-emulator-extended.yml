@@ -1,0 +1,162 @@
+name: Extended Android emulator matrix (non-blocking) + manual benchmark
+
+on:
+  schedule:
+    # PR gate runs API 33 + 35; historical API 26 coverage stays weekly.
+    - cron: '47 5 * * 0'
+  workflow_dispatch:
+    inputs:
+      run_macrobenchmarks:
+        description: 'Also run full reader Macrobenchmark suite (expensive; emulator numbers informational)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-device-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  device:
+    name: Extended emulator API ${{ matrix.api }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [26, 33, 36]
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Android Gradle toolchain (JDK 21)
+        uses: ./.github/actions/setup-android-toolchain
+        with:
+          java-version: '21'
+          cache-read-only: 'true'
+
+      - name: Verify community policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/check_community_policy.py
+
+      - name: Enable KVM for hardware-accelerated emulator
+        shell: bash
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run targeted Android UI tests (and optional Macrobenchmark)
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: ${{ matrix.api }}
+          arch: x86_64
+          target: google_apis
+          profile: pixel_6
+          disable-animations: true
+          emulator-boot-timeout: 600
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: |
+            set -euo pipefail
+            export LUMI_DEVICE_EXTENDED=1
+            bash tools/ci_run_device_smoke.sh
+            # Benchmarks are only run manually on the newest API to avoid
+            # distorting CI results with cross-API emulator performance.
+            if [[ "${{ inputs.run_macrobenchmarks }}" == "true" && "${{ matrix.api }}" == "36" ]]; then
+              timeout --signal=TERM --kill-after=30s 40m \
+                ./gradlew --no-daemon --console=plain --stacktrace :benchmark:connectedBenchmarkAndroidTest \
+                -Pandroid.testInstrumentationRunnerArguments.class=com.huangder.lumibooks.benchmark.ReaderMacrobenchmark
+            fi
+
+      - name: Upload device reports and benchmark evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: Lumi-Community-Extended-API${{ matrix.api }}-${{ github.run_number }}-${{ github.run_attempt }}
+          path: |
+            test-logs/device/
+            app/build/oss/reports/androidTests/
+            app/build/oss/outputs/androidTest-results/
+            benchmark/build/reports/androidTests/
+            benchmark/build/outputs/androidTest-results/
+            benchmark/build/outputs/connected_android_test_additional_output/
+          if-no-files-found: warn
+          retention-days: 14
+
+  legacy-jvm:
+    name: Weekly legacy Robolectric compatibility (API 26–36)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    env:
+      # Exact legacy @Config(sdk=...) cases are not discarded from the repo.
+      LUMI_ROBOLECTRIC_LEGACY: '1'
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Android Gradle toolchain (JDK 21)
+        uses: ./.github/actions/setup-android-toolchain
+        with:
+          java-version: '21'
+          cache-read-only: 'true'
+
+      - name: Resolve all legacy Robolectric SDKs with bounded retry
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          timeout_minutes: 10
+          retry_wait_seconds: 60
+          max_attempts: 3
+          command: >
+            ./gradlew --no-daemon --console=plain --stacktrace --max-workers=2
+            :app:robolectricSdkDownload
+
+      - name: Compile legacy JVM test sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./gradlew --no-daemon --console=plain --stacktrace --max-workers=2 \
+            :app:compileDebugUnitTestKotlin
+
+      - name: Run the complete historical JVM suite
+        id: legacy_jvm_test
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p test-logs/legacy-jvm
+          ./gradlew --no-daemon --console=plain --stacktrace --max-workers=2 \
+            :app:testDebugUnitTest 2>&1 | tee test-logs/legacy-jvm/gradle.log
+
+      - name: Publish legacy JUnit results
+        if: ${{ always() && !cancelled() && steps.legacy_jvm_test.outcome != 'skipped' }}
+        uses: mikepenz/action-junit-report@4a26df3e2ae132254ba12a53f65a388d0961e786 # v6.7.0
+        with:
+          report_paths: app/build/oss/test-results/testDebugUnitTest/TEST-*.xml
+          annotate_only: true
+          skip_annotations: true
+          require_tests: true
+          fail_on_parse_error: true
+          fail_on_failure: false
+          detailed_summary: true
+          failed_summary_logs: true
+
+      - name: Upload legacy compatibility JUnit XML, HTML and Gradle logs
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: Lumi-Community-Legacy-JVM-${{ github.run_number }}-${{ github.run_attempt }}
+          path: |
+            app/build/oss/test-results/testDebugUnitTest/
+            app/build/oss/reports/tests/testDebugUnitTest/
+            test-logs/legacy-jvm/
+          if-no-files-found: warn
+          retention-days: 14

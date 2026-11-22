@@ -4,6 +4,10 @@ import com.huangder.lumibooks.domain.model.Book
 import com.huangder.lumibooks.domain.model.Bookmark
 import com.huangder.lumibooks.domain.model.Note
 
+enum class NotesExportFormat(val extension: String, val mimeType: String) {
+    TXT("txt", "text/plain"), MARKDOWN("md", "text/markdown")
+}
+
 /** A snapshot of marks supplied by the page, never a new database query. */
 internal data class NotesExportBook(
     val book: Book,
@@ -21,6 +25,18 @@ internal data class NotesExportContent(
 internal fun NotesExportContent.asTxt() = BookNotesExportDocument(
     fileName = BookNotesExportFormatter.suggestedFileName(source.book.title, labels.fileSuffix),
     text = BookNotesExportFormatter.format(
+        bookTitle = source.book.title,
+        notes = source.notes,
+        bookmarks = bookmarks,
+        chapterTitles = chapterTitles,
+        labels = labels
+    )
+)
+
+
+internal fun NotesExportContent.asMarkdown() = BookNotesExportDocument(
+    fileName = BookNotesExportFormatter.suggestedFileName(source.book.title, labels.fileSuffix, "md"),
+    text = BookNotesExportFormatter.formatMarkdown(
         bookTitle = source.book.title,
         notes = source.notes,
         bookmarks = bookmarks,
