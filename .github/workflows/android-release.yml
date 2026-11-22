@@ -1,10 +1,12 @@
-name: Publish Lumi Community Beta
+name: Reusable Lumi Community Beta release
 
 on:
-  workflow_run:
-    workflows: ['Android Community Beta']
-    types: [completed]
-    branches: [main]
+  workflow_call:
+    secrets:
+      LUMI_BETA_KEYSTORE_BASE64:
+        required: true
+      LUMI_BETA_KEYSTORE_PASSWORD:
+        required: true
 
 permissions:
   contents: read
@@ -12,9 +14,11 @@ permissions:
 jobs:
   build:
     name: Prepare verified unsigned Beta
-    if: ${{ github.repository == 'wxyu71/Lumi_Books' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_repository.full_name == github.repository }}
+    if: ${{ github.repository == 'wxyu71/Lumi_Books' && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 75
+    permissions:
+      contents: read
     outputs:
       publish: ${{ steps.version.outputs.publish }}
       version: ${{ steps.version.outputs.version }}
@@ -25,7 +29,7 @@ jobs:
       - name: Check out the exact verified main commit
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
 
@@ -34,7 +38,7 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          VERIFIED_SHA: ${{ github.event.workflow_run.head_sha }}
+          VERIFIED_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
           git fetch --no-tags origin main

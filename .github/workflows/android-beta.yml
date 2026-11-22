@@ -67,7 +67,7 @@ jobs:
         run: python3 tools/check_community_policy.py
 
   verify:
-    name: JVM compile + Robolectric reader/ui/core (JDK 21)
+    name: JVM compile + Robolectric (JDK 21)
     needs: policy
     runs-on: ubuntu-24.04
     timeout-minutes: 100
@@ -422,7 +422,7 @@ jobs:
             echo "### Lumi Community CI"
             echo "| Stage | Result |"
             echo "| --- | --- |"
-            echo "| Community policy and test inventory | $POLICY |"
+            echo "| Repository static analysis | $POLICY |"
             echo "| Kotlin/test compile + Robolectric API 33/35/36 JVM scope | $VERIFY |"
             echo "| Android Lint (zero errors) | $QUALITY |"
             echo "| Debug APK + metadata/SHA-256 | $APK |"
@@ -430,6 +430,18 @@ jobs:
             echo "| Unsigned Release build | $RELEASE |"
             echo "| Emulator API 33 + 35 integration/UI/screenshot | $DEVICE |"
             echo
-            echo "PR JVM scope is Android 13+ (API 33/35/36). Historical explicit SDK cases are not claimed here; the weekly legacy lane runs API 26–36 and enforces its own JUnit skip budget."
+            echo "PR JVM scope is Android 13+ (API 33/35/36). Historical explicit SDK cases are covered by the weekly legacy workflow using the same Gradle test task."
           } >> "$GITHUB_STEP_SUMMARY"
           [[ "$POLICY" == success && "$VERIFY" == success && "$QUALITY" == success && "$APK" == success && "$DIAGNOSTIC" == success && "$RELEASE" == success && "$DEVICE" == success ]]
+
+
+  publish-beta:
+    name: Publish Beta from verified main
+    needs: [ci-gate]
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.ci-gate.result == 'success' }}
+    permissions:
+      contents: write
+    uses: ./.github/workflows/android-release.yml
+    secrets:
+      LUMI_BETA_KEYSTORE_BASE64: ${{ secrets.LUMI_BETA_KEYSTORE_BASE64 }}
+      LUMI_BETA_KEYSTORE_PASSWORD: ${{ secrets.LUMI_BETA_KEYSTORE_PASSWORD }}
