@@ -64,8 +64,10 @@ class ReaderImageAdjustmentsTest {
         val store = DataStoreManager(context)
         val book = "image-test-${System.nanoTime()}"
         val settings = ReaderImageAdjustments(1f, 1.65f, 0.7f)
-        store.persistReaderImageAdjustments(book, settings)
-        withTimeout(5000) { store.readerPreferences(book).first { it.imageAdjustments == settings } }
+        // Verify durable persistence deterministically; the fire-and-forget
+        // channel is exercised separately and is not an appropriate barrier.
+        store.saveReaderImageAdjustments(book, settings)
+        assertEquals(settings, store.readerPreferences(book).first().imageAdjustments)
         val reopened = DataStoreManager(context)
         assertEquals(settings, reopened.readerPreferences(book).first().imageAdjustments)
         assertEquals(ReaderImageAdjustments(), reopened.readerPreferences("$book-other").first().imageAdjustments)

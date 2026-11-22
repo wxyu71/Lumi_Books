@@ -23,12 +23,12 @@ IFS=,
 test_classes="${classes[*]}"
 unset IFS
 echo "Instrumented smoke classes: $test_classes" | tee test-logs/device/classes.txt
-# Probe two Haze/JetBrains Compose coordinates that previously failed
-# on a cold API 29 runner. This is diagnostic, not a gate by itself.
-bash tools/ci_compose_artifact_probe.sh
+# Gradle is authoritative for artifact availability; no speculative HTTP probes.
 set +e
-bash tools/ci_gradle_retry.sh test-logs/device/gradle.log \
-  :app:connectedDebugAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=$test_classes"
+timeout --signal=TERM --kill-after=30s 46m \
+  ./gradlew --no-daemon --console=plain --stacktrace --max-workers=2 \
+    :app:connectedDebugAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=$test_classes" \
+    2>&1 | tee test-logs/device/gradle.log
 rc=$?
 set -e
 # Always capture independent screenshots and emulator logs on assertion failures.

@@ -13,6 +13,7 @@ if not files:
     raise SystemExit(f"No JUnit XML reports found for {shard}")
 prefix = "com.huangder.lumibooks.ui."
 count = 0
+skipped = 0
 failures = 0
 for file in files:
     root = ET.parse(file).getroot()
@@ -22,8 +23,11 @@ for file in files:
                     else "ui" if name.startswith(prefix) else "core")
         if expected != shard:
             raise SystemExit(f"Out-of-shard test {name} in {shard}: {file}")
-        count += 1
+        if case.find("skipped") is not None:
+            skipped += 1
+        else:
+            count += 1
         failures += sum(1 for child in case if child.tag in ("error", "failure"))
 if count < 1 or failures:
-    raise SystemExit(f"{shard}: {count} tests, {failures} failures")
-print(f"{shard}: {count} executed test cases, zero failures; {len(files)} JUnit XML reports")
+    raise SystemExit(f"{shard}: {count} executed, {skipped} skipped, {failures} failures")
+print(f"{shard}: {count} executed, {skipped} JUnit-reported skipped, zero failures; {len(files)} JUnit XML reports")

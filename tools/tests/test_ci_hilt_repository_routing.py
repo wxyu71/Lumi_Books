@@ -34,31 +34,23 @@ class HiltRepositoryRoutingTest(unittest.TestCase):
         self.assertEqual(1, self.settings.count('includeGroup("org.robolectric")'))
         self.assertNotIn('includeGroupByRegex("org[.]robolectric[.].*")', self.settings)
 
-    def test_robolectric_sdk_is_prefetched_before_any_jvm_test(self):
-        # #133: runtime Maven 429s; #134: the first offline SDK worked,
-        # but 159 tests needed nine additional Android SDK versions.
-        versions = (
-            "8.0.0_r4-robolectric-r1-i7",
-            "9-robolectric-4913185-2-i7",
-            "10-robolectric-5803371-i7",
-            "11-robolectric-6757853-i7",
-            "12-robolectric-7732740-i7",
-            "12.1-robolectric-8229987-i7",
-            "13-robolectric-9030017-i7",
-            "14-robolectric-10818077-i7",
-            "15-robolectric-13954326-i7",
-            "16-robolectric-13921718-i7",
-        )
-        for version in versions:
-            self.assertIn('"' + version + '"', self.app_build)
-        self.assertIn('val robolectricSdkJarConfigurations = robolectricSdkVersions.mapIndexed',
+    def test_modern_pr_sdks_are_small_and_legacy_is_explicit(self):
+        self.assertIn('it.systemProperty("robolectric.enabledSdks", "33,35,36")',
                       self.app_build)
-        self.assertIn('configurations.create("robolectricSdkJar$index")', self.app_build)
+        self.assertIn('LUMI_ROBOLECTRIC_LEGACY', self.app_build)
+        main, legacy = self.app_build.split("val modernRobolectricSdks = listOf(", 1)[1].split(
+            "val legacyRobolectricSdks = listOf(", 1)
+        modern_versions = ("13-robolectric-9030017-i7",
+                           "15-robolectric-13954326-i7",
+                           "16-robolectric-13921718-i7")
+        for version in modern_versions:
+            self.assertIn('"' + version + '"', main)
+        self.assertEqual(3, main.count("-robolectric-"))
+        self.assertEqual(7, legacy.split("val robolectricSdkVersions", 1)[0].count("-robolectric-"))
+        self.assertIn('configurations.create("robolectricSdkJar$index")',
+                      self.app_build)
         self.assertIn('isTransitive = false', self.app_build)
-        self.assertIn('org.robolectric:android-all-instrumented:$version@jar',
-                      self.app_build)
         self.assertIn('from(robolectricSdkJarConfigurations)', self.app_build)
-        self.assertIn('val prepareRobolectricSdkJars = tasks.register<Copy>', self.app_build)
         self.assertIn('dependsOn(prepareRobolectricSdkJars)', self.app_build)
         self.assertIn('it.systemProperty("robolectric.dependency.dir",', self.app_build)
         self.assertNotIn('it.systemProperty("robolectric.dependency.repo.url"', self.app_build)

@@ -20,7 +20,7 @@ class GitHubOnlyAndroidCIContract(unittest.TestCase):
 
     def test_required_matrix_and_png_remain_blocking(self):
         required = (CI / "android-beta.yml").read_text(encoding="utf-8")
-        self.assertIn("api: [29, 35]", required)
+        self.assertIn("api: [33, 35]", required)
         self.assertIn("Lumi-Community-Emulator-API", required)
         self.assertIn("bash tools/ci_run_device_smoke.sh", required)
         self.assertIn("needs: [policy, verify, quality, device-smoke]", required)

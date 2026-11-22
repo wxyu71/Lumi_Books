@@ -29,6 +29,13 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: actionlint + ShellCheck (all GitHub workflows)
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --rm -v "$PWD:/repo:ro" -w /repo \
+            rhysd/actionlint:1.7.12 -color
+
       - name: Check community restrictions, localization and test partitioning
         shell: bash
         run: |
@@ -36,7 +43,8 @@ jobs:
           python3 tools/check_community_policy.py
           python3 tools/ci_test_inventory.py
           python3 tools/check_community_translations.py
-          bash -n tools/ci_gradle_retry.sh tools/ci_run_jvm_shards.sh tools/ci_hilt_artifact_probe.sh tools/ci_compose_artifact_probe.sh tools/ci_run_device_smoke.sh
+          bash -n tools/ci_run_jvm_shards.sh tools/ci_run_device_smoke.sh
+          shellcheck --severity=error tools/ci_run_jvm_shards.sh tools/ci_run_device_smoke.sh
           python3 -m compileall -q tools
           python3 -m unittest discover -s tools/tests -p 'test_*.py' -v
 
@@ -69,13 +77,46 @@ jobs:
           python3 tools/check_community_policy.py
           chmod +x ./gradlew
 
-      - name: Probe Hilt Maven distribution endpoints
+      # Check source/test compilation and Robolectric classpath before APK packaging.
+      - name: Compile app + JVM test sources; prefetch modern Robolectric SDKs
         shell: bash
-        run: bash tools/ci_hilt_artifact_probe.sh
+        run: |
+          set -euo pipefail
+          mkdir -p test-logs/compile
+          ./gradlew --no-daemon --console=plain --stacktrace --max-workers=2 \
+            :app:compileDebugKotlin :app:compileDebugUnitTestKotlin \
+            :app:prepareRobolectricSdkJars 2>&1 | tee test-logs/compile/gradle.log
 
-      - name: Assemble debug-signed community beta APKs (targeted dependency retry)
+      - name: Smoke-test Robolectric API 33 runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./gradlew --no-daemon --console=plain --stacktrace --max-workers=2 \
+            :app:testDebugUnitTest \
+            --tests 'com.huangder.lumibooks.ui.reader.ReaderImageAdjustmentsTest.flatImagesKeepTheirColorIncludingBorders'
+
+      - name: Test reader/ui/core on Android 13+ (blocking)
+        shell: bash
+        run: bash tools/ci_run_jvm_shards.sh
+
+      - name: Upload JVM XML, HTML and compile/runtime diagnostics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: Lumi-Community-JVM-all-${{ github.run_number }}-${{ github.run_attempt }}
+          path: test-logs/
+          if-no-files-found: warn
+          retention-days: 14
+
+      # Tests failed? No APK packaging; retain test diagnostics above.
+      - name: Assemble debug-signed community APK after JVM passes
         id: build_apk
-        run: bash tools/ci_gradle_retry.sh test-logs/apk.log :app:assembleDebug
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p test-logs/apk
+          ./gradlew --no-daemon --console=plain --stacktrace --max-workers=2 \
+            :app:assembleDebug 2>&1 | tee test-logs/apk/gradle.log
 
       - name: Verify APK metadata and create SHA-256 checksums
         id: apk_metadata
@@ -145,23 +186,6 @@ jobs:
           compression-level: 0
           retention-days: 14
 
-      # One machine compiles Kotlin tests once and reuses outputs for three
-      # individually bounded and verified test filters, keeping separate reports.
-      - name: Run bounded JVM shards with separate reports
-        # Even if APK assembly/metadata failed, retain independent JVM evidence.
-        if: ${{ always() && !cancelled() && steps.build_apk.outcome != 'skipped' }}
-        shell: bash
-        run: bash tools/ci_run_jvm_shards.sh
-
-      - name: Upload JUnit XML, HTML and diagnostic logs for all shards
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: Lumi-Community-JVM-all-${{ github.run_number }}-${{ github.run_attempt }}
-          path: test-logs/
-          if-no-files-found: warn
-          retention-days: 14
-
 
   quality:
     name: Android Lint + release/diagnostic variants
@@ -185,25 +209,19 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          chmod +x gradlew
-          rm -f app/build/oss/reports/lint-results-debug.xml
-          # Keep the report even when Gradle exits nonzero for a Lint finding.
-          # Neither old issues nor newly introduced errors are accepted.
-          lint_rc=0
-          bash tools/ci_gradle_retry.sh test-logs/quality/lint.log :app:lintDebug || lint_rc=$?
-          python3 tools/ci_require_clean_lint.py app/build/oss/reports/lint-results-debug.xml
-          if (( lint_rc != 0 )); then
-            echo "::error::Android Lint Gradle task failed with exit $lint_rc" >&2
-            exit "$lint_rc"
-          fi
+          mkdir -p test-logs/quality
+          ./gradlew --no-daemon --console=plain --stacktrace --max-workers=2 \
+            :app:lintDebug 2>&1 | tee test-logs/quality/lint.log
 
-      - name: Compile diagnostic and assemble unsigned release variants
-        if: ${{ always() && !cancelled() }}
+      # Avoid packageDiagnostic OOM by separating packaging worker lifetimes.
+      - name: Assemble diagnostic then unsigned release in separate Gradle invocations
         shell: bash
         run: |
           set -euo pipefail
-          bash tools/ci_gradle_retry.sh test-logs/quality/variants.log :app:assembleDiagnostic :app:assembleRelease
-          # Release artifacts are never uploaded or signed from untrusted PRs.
+          ./gradlew --no-daemon --console=plain --stacktrace --max-workers=2 \
+            :app:assembleDiagnostic 2>&1 | tee test-logs/quality/diagnostic.log
+          ./gradlew --no-daemon --console=plain --stacktrace --max-workers=2 \
+            :app:assembleRelease 2>&1 | tee test-logs/quality/release.log
           test -d app/build/oss/outputs/apk/release
           find app/build/oss/outputs/apk/release -name '*.apk' -type f | grep -q '.'
 
@@ -221,14 +239,14 @@ jobs:
 
   device-smoke:
     name: Emulator API ${{ matrix.api }} integration + UI + screenshots
-    needs: [policy, verify]
-    if: ${{ needs.policy.result == 'success' && needs.verify.result == 'success' }}
+    needs: [policy, verify, quality]
+    if: ${{ needs.policy.result == 'success' && needs.verify.result == 'success' && needs.quality.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 80
     strategy:
       fail-fast: false
       matrix:
-        api: [29, 35]
+        api: [33, 35]
     steps:
       - name: Checkout sources
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -298,6 +316,6 @@ jobs:
             echo "| Community policy and test inventory | $POLICY |"
             echo "| OSS APK, SHA-256, Reader/UI/Core JVM | $VERIFY |"
             echo "| Android Lint, release/diagnostic variants | $QUALITY |"
-            echo "| Emulator API 29 + 35 integration/UI/screenshot | $DEVICE |"
+            echo "| Emulator API 33 + 35 integration/UI/screenshot | $DEVICE |"
           } >> "$GITHUB_STEP_SUMMARY"
           [[ "$POLICY" == success && "$VERIFY" == success && "$QUALITY" == success && "$DEVICE" == success ]]

@@ -17,6 +17,6 @@ python3 -m unittest discover -s tools/tests -p 'test_*.py'
 ./gradlew :app:lintDebug
 ```
 
-Android APK 通常位于 `app/build/oss/outputs/apk/debug/`。CI 将 JVM 测试分片以复用编译结果；本地 `testDebugUnitTest` 是原有完整测试套件。涉及 Android 仪器测试时参考 [CI 检查](ci.md)。
+Android APK 通常位于 `app/build/oss/outputs/apk/debug/`。CI 在 APK 打包前先编译并运行 Android 13+（API 33/35/36）JVM 分片；历史 SDK 测试保留在每周扩展 CI。**本地 `testDebugUnitTest` 仍是原有完整测试套件**，不会因 PR 的 SDK 筛选丢失旧版行为验证。涉及 Android 仪器测试时参考 [CI 检查](ci.md)。
 
 版本名和版本号以根目录 `gradle.properties` 为准。由于改用单人发布模式，不再维护官方/社区双编译分支，也不再把旧的 `devdocs/editions.md` 当作操作依据。

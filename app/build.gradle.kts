@@ -140,16 +140,26 @@ android {
             excludes += "org/bouncycastle/**"
         }
     }
+    // Delegate error severity to Android Lint itself, not a bespoke XML parser.
+    lint {
+        abortOnError = true
+    }
     testOptions {
         unitTests {
             isIncludeAndroidResources = true
             all {
                 it.maxHeapSize = "2g"
-                // Robolectric otherwise downloads huge Android SDK jars at test runtime,
-                // bypassing Gradle mirrors/retries (and failing with HTTP 429 on CI).
-                // The preparation task below makes the exact SDK jar available locally.
-                it.systemProperty("robolectric.dependency.dir",
-                    layout.buildDirectory.dir("robolectric-sdks").get().asFile.absolutePath)
+                if (System.getenv("CI") == "true") {
+                    // Mainline checks cover Android 13+, older SDK assertions
+                    // run unchanged in the scheduled legacy JVM lane.
+                    if (System.getenv("LUMI_ROBOLECTRIC_LEGACY") != "1") {
+                        it.systemProperty("robolectric.enabledSdks", "33,35,36")
+                    }
+                    // Local SDK jars are prepared by Gradle before tests start;
+                    // avoid Robolectric's independent Maven downloader in CI.
+                    it.systemProperty("robolectric.dependency.dir",
+                        layout.buildDirectory.dir("robolectric-sdks").get().asFile.absolutePath)
+                }
                 // Optional host JNI build for real Kindle reconstruction tests, never packaged.
                 System.getenv("LUMI_KINDLE_NATIVE_DIR")?.let { nativeDirectory ->
                     it.systemProperty("java.library.path", nativeDirectory)
@@ -278,23 +288,28 @@ dependencies {
 }
 
 
-// Robolectric's @Config(sdk) tests require all these pinned Android runtimes.
-// Prefetch through Gradle mirrors/cache; the Robolectric runtime downloader
-// otherwise bypasses Gradle and can receive Maven Central HTTP 429.
-// Use one configuration per version: a single configuration would perform
-// version conflict resolution and discard nine of these SDK artifacts.
-val robolectricSdkVersions = listOf(
-    "8.0.0_r4-robolectric-r1-i7",
-    "9-robolectric-4913185-2-i7",
-    "10-robolectric-5803371-i7",
-    "11-robolectric-6757853-i7",
-    "12-robolectric-7732740-i7",
-    "12.1-robolectric-8229987-i7",
-    "13-robolectric-9030017-i7",
-    "14-robolectric-10818077-i7",
-    "15-robolectric-13954326-i7",
-    "16-robolectric-13921718-i7"
+// Prefetch exactly the SDKs for each CI lane using Gradle's existing
+// repositories and cache. Historical @Config(sdk) tests remain in the
+// weekly compatibility lane, not in the Android 13+ PR gate.
+val modernRobolectricSdks = listOf(
+    "13-robolectric-9030017-i7",       // API 33
+    "15-robolectric-13954326-i7",      // API 35
+    "16-robolectric-13921718-i7"       // API 36
 )
+val legacyRobolectricSdks = listOf(
+    "8.0.0_r4-robolectric-r1-i7",      // API 26
+    "9-robolectric-4913185-2-i7",     // API 28
+    "10-robolectric-5803371-i7",      // API 29
+    "11-robolectric-6757853-i7",      // API 30
+    "12-robolectric-7732740-i7",      // API 31
+    "12.1-robolectric-8229987-i7",    // API 32
+    "14-robolectric-10818077-i7"      // API 34
+)
+val robolectricSdkVersions = if (System.getenv("LUMI_ROBOLECTRIC_LEGACY") == "1") {
+    modernRobolectricSdks + legacyRobolectricSdks
+} else {
+    modernRobolectricSdks
+}
 val robolectricSdkJarConfigurations = robolectricSdkVersions.mapIndexed { index, version ->
     configurations.create("robolectricSdkJar$index") {
         isCanBeResolved = true
@@ -317,7 +332,7 @@ require(communityTestShard == null || communityTestShard in setOf("reader", "ui"
     "lumi.testShard must be reader, ui or core"
 }
 tasks.withType<Test>().configureEach {
-    dependsOn(prepareRobolectricSdkJars)
+    if (System.getenv("CI") == "true") dependsOn(prepareRobolectricSdkJars)
     if (name == "testDebugUnitTest") {
         communityTestShard?.let { shard ->
             filter {
