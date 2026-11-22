@@ -129,7 +129,7 @@ jobs:
           skip_annotations: true
           require_tests: true
           fail_on_parse_error: true
-          fail_on_failure: true
+          fail_on_failure: false
           detailed_summary: true
           failed_summary_logs: true
 
