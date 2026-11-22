@@ -85,4 +85,25 @@ class ReadingJournalCoreTest {
         assertEquals(listOf("want:a:150"), events.map { it.id })
         assertEquals(150L, events.single().startedAt)
     }
+    @Test fun consentEpochRejectsLateWritesAcrossDisableAndReenable() {
+        val enabled = ReadingJournalState(enabled = true, enabledAt = 200)
+        assertTrue(journalConsentEpochIsCurrent(enabled, 200))
+        assertFalse(journalConsentEpochIsCurrent(enabled, 100))
+        assertFalse(journalConsentEpochIsCurrent(enabled.copy(enabled = false), 200))
+        assertFalse(journalConsentEpochIsCurrent(enabled.copy(enabledAt = 0), 0))
+    }
+
+    @Test fun activityWritePolicyRejectsExpiredEventsButKeepsCurrentConsent() {
+        val now = at("2026-11-08", 12)
+        val state = ReadingJournalState(
+            enabled = true,
+            enabledAt = 500,
+            retention = JournalRetention(6, JournalRetentionUnit.MONTH)
+        )
+        assertTrue(journalActivityWriteAllowed(state, 500, at("2026-11-08", 11), now))
+        assertTrue(journalActivityWriteAllowed(state, 500, at("2026-05-08", 0), now))
+        assertFalse(journalActivityWriteAllowed(state, 500, at("2026-05-07", 23, 59), now))
+        assertFalse(journalActivityWriteAllowed(state, 400, at("2026-11-08", 11), now))
+    }
+
 }

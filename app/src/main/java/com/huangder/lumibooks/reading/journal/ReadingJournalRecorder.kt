@@ -21,6 +21,20 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
+internal fun journalConsentEpochIsCurrent(state: ReadingJournalState, epoch: Long): Boolean =
+    state.enabled && epoch > 0L && state.enabledAt == epoch
+
+internal fun journalActivityWriteAllowed(
+    persisted: ReadingJournalState,
+    consentEpoch: Long,
+    endTime: Long,
+    now: Long
+): Boolean {
+    if (!journalConsentEpochIsCurrent(persisted, consentEpoch)) return false
+    val cutoff = ReadingJournalRetentionPolicy.cutoff(persisted.retention, now)
+    return cutoff == null || endTime >= cutoff
+}
+
 /**
  * Writes the opt-in journal. Nothing is recorded until the user enables it; recording
  * itself does not depend on the edition, so history survives a later unlock.
@@ -64,7 +78,7 @@ class ReadingJournalRecorder @Inject constructor(
                             val persisted = settings.current()
                             // A late milestone from a cancelled collector must not recreate
                             // history after the user stopped or erased the journal.
-                            if (persisted.enabled && persisted.enabledAt == enabledAt) {
+                            if (journalConsentEpochIsCurrent(persisted, enabledAt)) {
                                 dao.upsertAll(events)
                             }
                         }
@@ -83,9 +97,13 @@ class ReadingJournalRecorder @Inject constructor(
                     // A queued callback from an earlier consent epoch must never be revived
                     // by a later disable/erase -> re-enable sequence.
                     val persisted = settings.current()
-                    if (!persisted.enabled || persisted.enabledAt != consentEpoch) return@withLock
-                    val cutoff = ReadingJournalRetentionPolicy.cutoff(persisted.retention, System.currentTimeMillis())
-                    if (cutoff != null && endTime < cutoff) return@withLock
+                    if (!journalActivityWriteAllowed(
+                            persisted = persisted,
+                            consentEpoch = consentEpoch,
+                            endTime = endTime,
+                            now = System.currentTimeMillis()
+                        )
+                    ) return@withLock
                     if (readingMs > 0) appendSession(bookId, false, startTime, endTime, readingMs)
                     if (listeningMs > 0) appendSession(bookId, true, startTime, endTime, listeningMs)
                 }

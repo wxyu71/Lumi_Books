@@ -89,7 +89,7 @@ Lumi is a local e-book reader for Android. Books and reading data are stored on 
 
 - Reading data is stored on the device by default. App data is in the Android app-private directory.
 - The dependencies contain no analytics, advertising, push or crash reporting SDKs.
-- Lumi connects to the network only when you use the related features: cover search, remote fonts, WebDAV, MinerU, external speech and translation APIs, update checks and contributor avatars.
+- Lumi connects to the network only when you use the related features: cover search, remote fonts, WebDAV, MinerU, external speech and translation APIs and update checks.
 - The privacy policy and terms of use are shown on first launch.
 
 ## Download
