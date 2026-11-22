@@ -35,27 +35,27 @@ class JunitCompletenessBudgetTest(unittest.TestCase):
             return verify(shard, temp, lane)
 
     def test_modern_lane_accepts_expected_scale_and_visible_legacy_skips(self):
-        executed = MIN_EXECUTED["reader"]
+        executed = MIN_EXECUTED["modern"]["reader"]
         skipped = MAX_SKIPPED["modern"]["reader"]
         result = self.run_case("reader", "modern", executed, skipped)
         self.assertEqual((executed, skipped, 0, 1), result)
 
     def test_execution_collapse_fails(self):
         with self.assertRaisesRegex(ValueError, "minimum"):
-            self.run_case("ui", "modern", MIN_EXECUTED["ui"] - 1)
+            self.run_case("ui", "modern", MIN_EXECUTED["modern"]["ui"] - 1)
 
     def test_mass_skipping_fails_in_legacy_lane(self):
         with self.assertRaisesRegex(ValueError, "exceeds budget"):
             self.run_case(
                 "core",
                 "legacy",
-                MIN_EXECUTED["core"],
+                MIN_EXECUTED["legacy"]["core"],
                 MAX_SKIPPED["legacy"]["core"] + 1,
             )
 
     def test_failures_are_never_hidden_by_budgets(self):
         with self.assertRaisesRegex(ValueError, "1 failures"):
-            self.run_case("reader", "modern", MIN_EXECUTED["reader"], failures=1)
+            self.run_case("reader", "modern", MIN_EXECUTED["modern"]["reader"], failures=1)
 
 
 if __name__ == "__main__":
