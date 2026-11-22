@@ -111,6 +111,11 @@ android {
             if (premiumEdition) {
                 res.srcDir("src/premium/res")
                 assets.srcDir("src/premium/assets")
+            } else {
+                // Keep Community-only UI resources and policy assets in the same
+                // source-set boundary as the OSS implementation.
+                res.srcDir("src/oss/res")
+                assets.srcDir("src/oss/assets")
             }
         }
         getByName("debug") {

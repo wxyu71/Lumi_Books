@@ -9,7 +9,7 @@
 应用构建固定使用公开 OSS 代码：
 
 - `app/src/main/`：共享生产代码、资源和业务能力。
-- `app/src/oss/`：Community Fork 专属的能力适配和实现，不依赖私有 Premium 源码。
+- `app/src/oss/`：Community Fork 专属的 Kotlin 实现、资源与内置 policy assets，不依赖私有 Premium 源码。
 - `app/src/debug/`：仅开发/调试能力。
 - `app/src/nonDebug/`：Release、Diagnostic、Benchmark 共用的非调试实现。
 - `app/src/test/`：JVM/JUnit/Robolectric 测试。
