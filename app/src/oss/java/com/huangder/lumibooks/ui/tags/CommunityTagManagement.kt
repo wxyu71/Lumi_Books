@@ -1,4 +1,4 @@
-package com.huangder.lumibooks.edition
+package com.huangder.lumibooks.ui.tags
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn

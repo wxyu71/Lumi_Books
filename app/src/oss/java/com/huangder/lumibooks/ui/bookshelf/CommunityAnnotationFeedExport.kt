@@ -1,4 +1,4 @@
-package com.huangder.lumibooks.edition
+package com.huangder.lumibooks.ui.bookshelf
 
 import android.net.Uri
 import android.widget.Toast
