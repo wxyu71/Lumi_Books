@@ -339,17 +339,24 @@ class ContinuousScrollReaderTest {
         loadChapter = { _, _ -> SpannableStringBuilder(text).append(imageChapter(100)) }
         show(background = background, imageAdjustments = settings)
         compose.waitUntil(15_000) { restored }
+        // "restored" means the list position restore completed; AndroidView attachment can
+        // finish a frame later. Wait for the actual selectable surface before touching it.
+        compose.waitUntil(15_000) { visibleTextViewOrNull() != null }
         compose.runOnIdle {
             val view = visibleTextView()
             view.requestFocus()
             Selection.setSelection(view.text as Spannable, 4, 18)
         }
-        compose.waitForIdle()
         compose.runOnIdle {
             background.value = Color.LTGRAY
             settings.value = ReaderImageAdjustments(brightness = 0.2f)
         }
-        compose.waitForIdle()
+        compose.waitUntil(15_000) {
+            visibleTextViewOrNull()?.let { view ->
+                Selection.getSelectionStart(view.text) == 4 &&
+                    Selection.getSelectionEnd(view.text) == 18
+            } == true
+        }
         compose.runOnIdle {
             val view = visibleTextView()
             assertEquals(4, Selection.getSelectionStart(view.text))
@@ -1299,15 +1306,26 @@ class ContinuousScrollReaderTest {
             assertEquals(80, pixels())
             settings.value = ReaderImageAdjustments(brightness = 1f)
         }
-        compose.runOnIdle { assertEquals(255, pixels()); settings.value = ReaderImageAdjustments(contrast = 2f) }
-        compose.runOnIdle { assertTrue(pixels() < 80); settings.value = ReaderImageAdjustments(sharpen = 1f) }
-        compose.waitUntil(10_000) { pixels() < 80 }
-        compose.runOnIdle { settings.value = ReaderImageAdjustments() }
-        // State mutation schedules recomposition; runOnIdle alone does not guarantee that
-        // AdjustedReaderDrawable.update has consumed the new settings yet. Wait for the
-        // user-visible pixels to return to their original value, then assert geometry.
-        compose.waitUntil(10_000) { pixels() == 80 }
+        compose.waitForIdle()
         compose.runOnIdle {
+            assertEquals(255, pixels())
+            settings.value = ReaderImageAdjustments(contrast = 2f)
+        }
+        compose.waitForIdle()
+        compose.runOnIdle {
+            assertTrue(pixels() < 80)
+            settings.value = ReaderImageAdjustments(sharpen = 1f)
+        }
+        // Contrast and sharpen are both darker at this sample, so "< 80" was not a
+        // synchronization barrier. The sharpened edge is exactly 40 for this fixture;
+        // observing it proves the async sharpen generation was actually published.
+        compose.waitUntil(10_000) { pixels() == 40 }
+        compose.runOnIdle { settings.value = ReaderImageAdjustments() }
+        compose.waitForIdle()
+        compose.runOnIdle {
+            // Reset is synchronous once the AndroidView update consumes the neutral settings.
+            // The generation guard in AdjustedReaderDrawable prevents the old sharpen result
+            // from publishing after this point.
             assertEquals(80, pixels())
             assertEquals(originalHeight, list.layoutInfo.visibleItemsInfo.first().size)
             assertEquals(0, list.firstVisibleItemScrollOffset)
