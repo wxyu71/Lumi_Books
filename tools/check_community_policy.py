@@ -80,8 +80,14 @@ for readme in ("README.md", "README.en.md", "README.ja.md", "README.ko.md"):
            "An upstream download link reappeared in " + readme)
     ensure("pan.baidu.com" not in content and "lanzoub.com" not in content,
            "An upstream distribution mirror reappeared in " + readme)
-for dev_readme in ("README.dev.md", "README.dev.en.md", "README.dev.ja.md", "README.dev.ko.md"):
-    ensure("Lumi_Books-premium.git" not in file(dev_readme),
-           "Private official edition checkout instructions reappeared in " + dev_readme)
+# The obsolete parallel developer READMEs were deliberately deleted during
+# the single-maintainer docs restructure. Check absence rather than opening them.
+for obsolete in ("README.dev.md", "README.dev.en.md", "README.dev.ja.md", "README.dev.ko.md"):
+    ensure(not (ROOT / obsolete).exists(),
+           "Obsolete developer README was reintroduced: " + obsolete)
+for maintained in ("docs/README.md", "docs/development/build.md", "docs/development/release.md"):
+    ensure((ROOT / maintained).is_file(), "Maintained development guide is missing: " + maintained)
+    ensure("Lumi_Books-premium.git" not in file(maintained),
+           "Private edition checkout instructions reappeared in " + maintained)
 ensure(not (ROOT / "docs/CNAME").exists(), "Upstream custom domain must not be deployed from this fork")
 print("Community policy guardrails passed.")
