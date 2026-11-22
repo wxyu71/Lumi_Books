@@ -186,7 +186,7 @@ class ContinuousScrollReaderTest {
         compose.waitUntil(15_000) {
             restored && descendants(composeRoot.rootView)
                 .filterIsInstance<ContinuousSelectableTextView>()
-                .any { it.isAttachedToWindow && it.text.isNotEmpty() && it.layout?.lineCount ?: 0 > 1 }
+                .any { it.isAttachedToWindow && it.text.isNotEmpty() && (it.layout?.lineCount ?: 0) > 1 }
         }
 
         compose.runOnIdle {
