@@ -5,6 +5,18 @@ set -uo pipefail
 failed=0
 summary="${GITHUB_STEP_SUMMARY:-/dev/null}"
 mkdir -p test-logs
+if [[ "${LUMI_ROBOLECTRIC_LEGACY:-0}" == "1" ]]; then
+  lane="legacy API 26–36"
+  scope_note="All explicit historical @Config SDK cases are enabled; mass skipping is a CI failure."
+else
+  lane="PR API 33/35/36"
+  scope_note="Explicit older-SDK @Config cases are intentionally outside this PR lane and run in the weekly legacy lane."
+fi
+{
+  printf '\n### JVM test scope — %s\n' "$lane"
+  printf '%s\n' "$scope_note"
+  echo "JUnit XML reports executed, skipped and failed testcase counts for every shard."
+} >> "$summary"
 for shard in reader ui core; do
   output="test-logs/$shard"
   mkdir -p "$output"
