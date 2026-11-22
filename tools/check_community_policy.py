@@ -14,6 +14,7 @@ def ensure(ok, message):
 
 manifest = file("app/src/main/AndroidManifest.xml")
 welcome = file("app/src/main/java/com/huangder/lumibooks/ui/welcome/WelcomeScreen.kt")
+welcome_activity = file("app/src/main/java/com/huangder/lumibooks/ui/welcome/WelcomeActivity.kt")
 about = file("app/src/main/java/com/huangder/lumibooks/ui/settings/SettingsDetailScreens.kt")
 settings = file("app/src/main/java/com/huangder/lumibooks/ui/settings/SettingsScreen.kt")
 edition = file("app/src/oss/java/com/huangder/lumibooks/edition/EditionUi.kt")
@@ -50,6 +51,8 @@ onboarding = welcome.split("internal fun welcomePages(", 1)[1].split("private da
 ensure("add(WelcomePage.FEATURES)" not in onboarding and "add(WelcomePage.SUPPORT)" not in onboarding,
        "Mandatory promotional welcome page reintroduced")
 ensure("onContinue = onFinished" in welcome, "Agreement must immediately enter reader")
+ensure("SponsorActivity" not in welcome_activity,
+       "Removed upstream sponsor activity is still referenced from the welcome flow")
 startup = main.split("private fun performStartupUpdateCheck()", 1)[1]
 ensure("UpdateChecker.fetchUpdateConfig()" not in startup, "Startup network update request reintroduced")
 ensure('name="community_app_name"' in file("app/src/main/res/values/community_strings.xml"), "Community launcher label missing")

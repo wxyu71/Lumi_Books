@@ -3,15 +3,13 @@ package com.huangder.lumibooks.ui.welcome
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
-import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.huangder.lumibooks.BuildConfig
 import com.huangder.lumibooks.R
 import com.huangder.lumibooks.ui.theme.EBookReaderTheme
-import org.junit.Assume.assumeFalse
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -38,57 +36,46 @@ class WelcomeScreenInstrumentedTest {
     }
 
     @Test
-    fun newInstallGoesThroughUpdatesWithoutThemeStep() {
-        // The official build replaces the last page with the Hilt-backed trial invitation.
-        assumeFalse(BuildConfig.PREMIUM_EDITION)
+    fun newInstallCompletesWithoutPromotionalTour() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-        showWelcome(isNewInstallation = true, startOnIntroduction = true)
+        var finished = false
+        showWelcome(isNewInstallation = true, onFinished = { finished = true })
 
+        composeRule.onNodeWithText(context.getString(R.string.welcome_start_using)).assertIsDisplayed()
+        composeRule.onNodeWithText(context.getString(R.string.welcome_story_journal_title)).assertDoesNotExist()
+        composeRule.onNodeWithText(context.getString(R.string.welcome_support_title)).assertDoesNotExist()
+        composeRule.onNodeWithText(context.getString(R.string.welcome_open_sponsor)).assertDoesNotExist()
         composeRule.onNodeWithText(context.getString(R.string.welcome_start_using)).performClick()
-        walkThroughStories(context)
-        composeRule.onNodeWithText(context.getString(R.string.welcome_support_title)).assertIsDisplayed()
+        assertTrue("New installation should finish from the introduction", finished)
     }
 
     @Test
-    fun updateWalkthroughGoesDirectlyToSupport() {
-        // The official build replaces this page with the Hilt-backed trial invitation.
-        assumeFalse(BuildConfig.PREMIUM_EDITION)
+    fun updateCompletesWithoutPromotionalTour() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-        showWelcome(isNewInstallation = false, startOnIntroduction = true)
+        var finished = false
+        showWelcome(isNewInstallation = false, onFinished = { finished = true })
 
+        composeRule.onNodeWithText(context.getString(R.string.welcome_story_listening_title)).assertDoesNotExist()
+        composeRule.onNodeWithText(context.getString(R.string.welcome_support_title)).assertDoesNotExist()
         composeRule.onNodeWithText(context.getString(R.string.welcome_start_using)).performClick()
-        walkThroughStories(context)
-        composeRule.onNodeWithText(context.getString(R.string.welcome_support_title)).assertIsDisplayed()
+        assertTrue("Update welcome should finish without promotional screens", finished)
     }
 
     @Test
-    fun supportPageContainsCopyAndActionsWithoutDecorativeEmoji() {
-        // The official build replaces this page with the Hilt-backed trial invitation.
-        assumeFalse(BuildConfig.PREMIUM_EDITION)
+    fun legacySupportPreviewCannotRestoreSponsorPage() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         showWelcome(isNewInstallation = false, startOnSupport = true)
 
-        composeRule.onNodeWithText(context.getString(R.string.welcome_support_title)).assertIsDisplayed()
-        composeRule.onNodeWithText(context.getString(R.string.welcome_open_sponsor)).assertIsDisplayed()
-        composeRule.onNodeWithText(context.getString(R.string.welcome_start_using)).assertIsDisplayed()
-        composeRule.onNodeWithText("☕").assertDoesNotExist()
-        composeRule.onNodeWithText("✨").assertDoesNotExist()
-        composeRule.onNodeWithText("💗").assertDoesNotExist()
-    }
-
-    private fun walkThroughStories(context: android.content.Context) {
-        composeRule.onNodeWithText(context.getString(R.string.welcome_story_journal_title)).assertIsDisplayed()
-        composeRule.onNodeWithTag("welcome-story-next").performClick()
-        composeRule.onNodeWithText(context.getString(R.string.welcome_story_listening_title)).assertIsDisplayed()
-        composeRule.onNodeWithTag("welcome-story-next").performClick()
-        composeRule.onNodeWithText(context.getString(R.string.welcome_story_stats_title)).assertIsDisplayed()
-        composeRule.onNodeWithTag("welcome-story-next").performClick()
+        composeRule.onNodeWithText(context.getString(R.string.welcome_update_title)).assertIsDisplayed()
+        composeRule.onNodeWithText(context.getString(R.string.welcome_support_title)).assertDoesNotExist()
+        composeRule.onNodeWithText(context.getString(R.string.welcome_open_sponsor)).assertDoesNotExist()
     }
 
     private fun showWelcome(
         isNewInstallation: Boolean,
         startOnIntroduction: Boolean = false,
-        startOnSupport: Boolean = false
+        startOnSupport: Boolean = false,
+        onFinished: () -> Unit = {}
     ) {
         composeRule.setContent {
             EBookReaderTheme(
@@ -103,7 +90,7 @@ class WelcomeScreenInstrumentedTest {
                     isEInkMode = false,
                     isDark = false,
                     isLiquidGlass = false,
-                    onFinished = {},
+                    onFinished = onFinished,
                     onOpenSponsor = {},
                     onLanguageSetupComplete = { _, _ -> },
                     startOnIntroduction = startOnIntroduction,

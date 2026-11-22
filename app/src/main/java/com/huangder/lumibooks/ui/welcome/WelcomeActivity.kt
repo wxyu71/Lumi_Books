@@ -1,7 +1,6 @@
 package com.huangder.lumibooks.ui.welcome
 
 import com.huangder.lumibooks.util.diagnostics.StartupTrace
-import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -19,7 +18,6 @@ import androidx.lifecycle.lifecycleScope
 import com.huangder.lumibooks.BuildConfig
 import com.huangder.lumibooks.data.local.DataStoreManager
 import com.huangder.lumibooks.ui.components.LocalPredictiveBackEnabled
-import com.huangder.lumibooks.ui.settings.SponsorActivity
 import com.huangder.lumibooks.ui.theme.EBookReaderTheme
 import com.huangder.lumibooks.ui.theme.MotionPreference
 import com.huangder.lumibooks.ui.theme.rememberLiquidGlassCapability
@@ -34,7 +32,7 @@ import javax.inject.Inject
  * 欢迎页独立 Activity，与主页 Compose 树完全隔离，从根本上避免 TabBar 穿透问题。
  *
  * 首次安装显示常规欢迎页，覆盖安装或版本更新显示更新欢迎页。
- * 每次安装只展示一次，完成支持项目页后再跳转 MainActivity。
+ * 使用者同意条款后直接进入 MainActivity，不再进入上游赞助流程。
  */
 @AndroidEntryPoint
 class WelcomeActivity : ComponentActivity() {
@@ -176,9 +174,8 @@ class WelcomeActivity : ComponentActivity() {
                                         }
                                     }
                                 },
-                                onOpenSponsor = {
-                                    startActivity(Intent(this@WelcomeActivity, SponsorActivity::class.java))
-                                },
+                                // Community welcomePages never includes SUPPORT; no upstream sponsor action.
+                                onOpenSponsor = {},
                                 onLanguageSetupComplete = { language, eInkEnabled ->
                                     if (isDebugWelcomePreview) {
                                         startMainActivity(splashEnabled)
