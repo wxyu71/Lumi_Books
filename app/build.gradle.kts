@@ -1,5 +1,5 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.gradle.api.tasks.Copy
+import org.gradle.api.tasks.WriteProperties
 import org.gradle.api.tasks.testing.Test
 
 plugins {
@@ -160,10 +160,12 @@ android {
                     if (System.getenv("LUMI_ROBOLECTRIC_LEGACY") != "1") {
                         it.systemProperty("robolectric.enabledSdks", "33,35,36")
                     }
-                    // Local SDK jars are prepared by Gradle before tests start;
-                    // avoid Robolectric's independent Maven downloader in CI.
-                    it.systemProperty("robolectric.dependency.dir",
-                        layout.buildDirectory.dir("robolectric-sdks").get().asFile.absolutePath)
+                    // Resolve SDKs with Gradle, then point Robolectric at the exact cached
+                    // artifacts through its standard dependency-properties mechanism.
+                    it.systemProperty(
+                        "robolectric-deps.properties",
+                        layout.buildDirectory.file("robolectric-deps.properties").get().asFile.absolutePath
+                    )
                 }
                 // Optional host JNI build for real Kindle reconstruction tests, never packaged.
                 System.getenv("LUMI_KINDLE_NATIVE_DIR")?.let { nativeDirectory ->
@@ -315,25 +317,36 @@ val robolectricSdkVersions = if (System.getenv("LUMI_ROBOLECTRIC_LEGACY") == "1"
 } else {
     modernRobolectricSdks
 }
-val robolectricSdkJarConfigurations = robolectricSdkVersions.mapIndexed { index, version ->
-    configurations.create("robolectricSdkJar$index") {
+val robolectricSdkDownload = tasks.register<WriteProperties>("robolectricSdkDownload") {
+    group = "Dependencies"
+    description = "Resolve Robolectric SDKs with Gradle and write their cached paths"
+    destinationFile = layout.buildDirectory.file("robolectric-deps.properties")
+}
+
+// Keep one Gradle configuration per SDK so version conflict resolution cannot discard
+// historical runtimes. This follows Robolectric's dependency-properties contract and
+// the pattern used by AnkiDroid for Robolectric 4.16.x.
+robolectricSdkVersions.forEachIndexed { index, version ->
+    val config = configurations.create("robolectricSdkJar$index") {
         isCanBeResolved = true
         isCanBeConsumed = false
         isTransitive = false
-    }.also { config ->
-        dependencies.add(config.name, "org.robolectric:android-all-instrumented:$version@jar")
     }
-}
-val prepareRobolectricSdkJars = tasks.register<Copy>("prepareRobolectricSdkJars") {
-    from(robolectricSdkJarConfigurations)
-    into(layout.buildDirectory.dir("robolectric-sdks"))
+    dependencies.add(config.name, "org.robolectric:android-all-instrumented:$version")
+    robolectricSdkDownload.configure {
+        inputs.files(config).withPropertyName(version)
+        property(
+            "org.robolectric:android-all-instrumented:$version",
+            config.elements.map { elements -> elements.single().asFile.absolutePath }
+        )
+    }
 }
 
 // CI uses the normal Android Gradle Plugin unit-test task. Keep the execution
 // model conventional: Robolectric SDK selection is the only CI-specific input;
 // Gradle/JUnit remain authoritative for discovery, failures and reports.
 tasks.withType<Test>().configureEach {
-    if (System.getenv("CI") == "true") dependsOn(prepareRobolectricSdkJars)
+    if (System.getenv("CI") == "true") dependsOn(robolectricSdkDownload)
     if (name == "testDebugUnitTest" && System.getenv("CI") == "true") {
         // A single fork at a time protects the hosted runner from Gradle + Robolectric OOM.
         // A bounded worker lifetime prevents one test's static state leaking indefinitely.

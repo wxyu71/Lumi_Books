@@ -101,7 +101,7 @@ jobs:
           mkdir -p test-logs/compile
           ./gradlew --no-daemon --console=plain --stacktrace --max-workers=2 \
             :app:compileDebugKotlin :app:compileDebugUnitTestKotlin \
-            :app:prepareRobolectricSdkJars 2>&1 | tee test-logs/compile/gradle.log
+            :app:robolectricSdkDownload 2>&1 | tee test-logs/compile/gradle.log
 
       - name: Smoke-test Robolectric API 33 runtime
         shell: bash
