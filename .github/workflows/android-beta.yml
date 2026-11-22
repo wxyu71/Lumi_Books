@@ -33,8 +33,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # Docker confirmed this immutable v1.7.12 manifest in CI #136.
+          # Only Style/Info are advisory; ShellCheck Warning/Error stay fatal.
           docker run --rm -v "$PWD:/repo:ro" -w /repo \
-            rhysd/actionlint:1.7.12 -color
+            rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 \
+              -shellcheck='shellcheck -S warning' -color
 
       - name: Check community restrictions, localization and test partitioning
         shell: bash

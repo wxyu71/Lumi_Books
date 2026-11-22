@@ -9,7 +9,8 @@ EXTENDED = (ROOT / ".github/workflows/android-emulator-extended.yml").read_text(
 
 class WorkflowBuildAndTestContract(unittest.TestCase):
     def test_fast_checks_and_compilation_precede_apk_packaging(self):
-        self.assertIn("rhysd/actionlint:1.7.12", CI)
+        self.assertIn("rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667", CI)
+        self.assertIn("-shellcheck='shellcheck -S warning'", CI)
         self.assertIn("shellcheck --severity=error", CI)
         verify = CI.split("\n  verify:\n", 1)[1].split("\n  quality:\n", 1)[0]
         for check in (":app:compileDebugKotlin", ":app:compileDebugUnitTestKotlin",
