@@ -1267,7 +1267,7 @@ class ContinuousScrollReaderTest {
         }
     }
 
-    @Test fun comicImagePixelsUpdateWithoutMovingOrResizingThePage() {
+    @Test fun comicImageColorAdjustmentsUpdateWithoutMovingOrResizingThePage() {
         currentChapter = 0
         chapterCount = 1
         val settings = mutableStateOf(ReaderImageAdjustments())
@@ -1314,18 +1314,13 @@ class ContinuousScrollReaderTest {
         compose.waitForIdle()
         compose.runOnIdle {
             assertTrue(pixels() < 80)
-            settings.value = ReaderImageAdjustments(sharpen = 1f)
+            settings.value = ReaderImageAdjustments()
         }
-        // Contrast and sharpen are both darker at this sample, so "< 80" was not a
-        // synchronization barrier. The sharpened edge is exactly 40 for this fixture;
-        // observing it proves the async sharpen generation was actually published.
-        compose.waitUntil(10_000) { pixels() == 40 }
-        compose.runOnIdle { settings.value = ReaderImageAdjustments() }
         compose.waitForIdle()
         compose.runOnIdle {
-            // Reset is synchronous once the AndroidView update consumes the neutral settings.
-            // The generation guard in AdjustedReaderDrawable prevents the old sharpen result
-            // from publishing after this point.
+            // Brightness/contrast are synchronous drawable state. Async sharpen completion
+            // and stale-result rejection are covered directly by ReaderImageAdjustmentsTest;
+            // this AndroidView test owns only pixel propagation and viewport geometry.
             assertEquals(80, pixels())
             assertEquals(originalHeight, list.layoutInfo.visibleItemsInfo.first().size)
             assertEquals(0, list.firstVisibleItemScrollOffset)
