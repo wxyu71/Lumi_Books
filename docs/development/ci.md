@@ -13,7 +13,7 @@ CI 的事实来源是 [Android Community Beta](../../.github/workflows/android-b
 | Emulator | API 33/35 的真实 `connectedDebugAndroidTest`、UI/Room/截图测试 |
 | Required CI summary | 汇总上述 workflow job 结果；不承担仓库权限/分支规则职责 |
 
-APK、Diagnostic、Release 都必须等 JVM 与 Lint 成功后才启动；emulator 再等待全部 P3 构建成功。
+APK、Diagnostic、Release 都必须等 JVM 与 Lint 成功后才启动；emulator 再等待全部 P3 构建成功。main 的 P3 Release job 还会验证并上传唯一的 unsigned universal APK；完整 gate 通过后，发布 workflow 直接签名这一同-run不可变 artifact，不再二次构建。
 
 ## 社区工具而非自建解析器
 
