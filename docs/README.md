@@ -1,16 +1,22 @@
 # 文档导航
 
-本 Fork 由一人维护。这里按**用途**查资料，不把 CI 运行日志、Agent 交接和历史任务备忘当作架构文档。项目介绍与安装入口在 [README](../README.md)，Fork 的功能边界在 [COMMUNITY](../COMMUNITY.md)，Agent 行为规则在 [AGENTS](../AGENTS.md)。
+项目介绍与安装入口在 [README](../README.md)，Fork 身份与功能边界在 [COMMUNITY](../COMMUNITY.md)。贡献流程见 [CONTRIBUTING](../CONTRIBUTING.md)，安全报告见 [SECURITY](../SECURITY.md)，自动化 Agent 约束见 [AGENTS](../AGENTS.md)。
 
-## 开发操作（How-to）
+## Architecture
+
+| 文档 | 内容 |
+| --- | --- |
+| [架构总览](architecture/overview.md) | 模块/source set、代码分层、Community feature 放置、测试和发布边界 |
+
+## Development
 
 | 文档 | 何时阅读 |
 | --- | --- |
-| [本地构建](development/build.md) | 准备 Android 环境、修改源码、运行测试 |
-| [CI 检查](development/ci.md) | 定位 PR 失败的具体检查，理解 Required Gate |
-| [发布个人 Beta](development/release.md) | 改版本、合并、从 GitHub Pre-release 下载 APK |
+| [本地构建](development/build.md) | 准备 Android 环境、修改源码、运行真实 Gradle 测试 |
+| [CI](development/ci.md) | 理解检查分层和失败定位 |
+| [发布 Community Beta](development/release.md) | 版本、固定签名、两阶段 Pre-release 发布 |
 
-## 长期技术参考（Reference）
+## Reference
 
 | 领域 | 当前实现与边界 |
 | --- | --- |
@@ -24,4 +30,4 @@
 | [Markdown 阅读](reference/markdown-reading.md) | 本地渲染与存储 |
 | [PDF 文字标注](reference/pdf-annotations.md) | PDF 选词与标注路径 |
 
-真实行为最终以代码、测试和 Actions 为准。需要调查一次故障时优先使用 PR/Issue/Actions 和提交历史，不新增 `handoff-*.md`、`project-status.md` 或“最终设计”文件。该索引只列仍在维护的资料，避免一次变更在多个地方重复记载。
+长期文档只描述仍在维护的架构、操作和参考。单次故障、handoff、临时研究和 CI 运行证据留在 Git 历史、PR、Issue 与 Actions；不要为一次任务新增平行的“最终设计”或状态文件。

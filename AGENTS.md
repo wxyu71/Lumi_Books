@@ -1,21 +1,39 @@
 # AGENTS.md — Lumi Community
 
-本仓库是 `wxyu71/Lumi_Books` 的单人维护、个人使用的非官方 OSS Fork。先检查当前任务的 PR、base/head、分支 SHA。未经维护者明确要求，不直接修改 `main`、合并 PR 或公开发布；不可删除上游的合法版权/许可证。项目定位见 [COMMUNITY.md](COMMUNITY.md)，开发入口见 [docs/README.md](docs/README.md)。
+本仓库是 `wxyu71/Lumi_Books` 的单人维护、个人使用的非官方 OSS Fork。开始工作前先确认 PR、base/head 和分支 SHA。未经维护者明确要求，不修改 `main`、合并 PR 或公开发布；不可删除合法的上游版权和许可证。
 
-## 代码与 CI
+项目边界见 [COMMUNITY.md](COMMUNITY.md)，架构见 [docs/architecture/overview.md](docs/architecture/overview.md)，开发入口见 [docs/README.md](docs/README.md)。
 
-- 一个 commit 对应一个完整逻辑变化，包含相关测试；不要对每个文件各 commit / push 一次。开发可积累多个本地 commit，然后一次 push。
-- **仅有 GitHub 插件时**：读取 head 和 base tree → 准备全部文件 → `create_tree` → `create_commit`（可多个逻辑 commit）→ 最后 **一次** `update_ref(expected_sha=<起始 head>, force=false)`。遇到冲突重新读取并重建，不要强推。
-- 推送前先收集整轮 CI 失败和必要代码变更；有本地环境则运行相关测试。GitHub 插件环境没有构建能力时必须如实说明，**不得把静态审查等同于 Android CI 成功**。
-- 保留正常 PR 的 Required Gate（Policy、APK/JVM、Lint、模拟器与 `Required CI summary`）；不使用 `[skip ci]` 绕过必需检查。查看日志后批量修复，不用重复推送试错。每次验证绑定精确 head SHA。
+## 代码与测试
 
-## 发布（简化的个人 Beta）
+- 把代码放到已有 feature/layer。Community-only UI 仍应进入 `ui/<feature>/`；`edition/` 只做薄适配，不承载大型页面、Repository 或数据模型。
+- 优先复用现有 Room、Repository、domain model、导航和 UI 组件，不为 Community 功能建立平行存储或第二套框架。
+- 行为变化使用真实 Kotlin/JUnit/Robolectric/instrumentation 测试。禁止用读取 Kotlin/YAML/Markdown 后 `assertIn` 某段文本的“contract test”替代行为验证。
+- 通用仓库检查交给现有轮子：actionlint/ShellCheck/zizmor、Android Lint、markdownlint-cli2/Lychee、Gradle/JUnit/AndroidJUnitRunner。项目自有脚本只保留这些工具无法表达的发行边界或证据收集。
+- 不通过测试重试、排除或放宽断言把真实失败变绿。先定位根因，再修产品或测试同步。
 
-- 只有 `main` 的 **新版**在正常 CI 成功后才能自动发布 Pre-release；操作方法见 [docs/development/release.md](docs/development/release.md)。
-- 自动发布只需要预先配置的两项 Repository Secrets：`LUMI_BETA_KEYSTORE_BASE64`、`LUMI_BETA_KEYSTORE_PASSWORD`；不需要 Environment 审批、人工 Tag 或第二次完整 CI。**始终使用原固定签名密钥**，不可在 CI 中重新生成以免破坏覆盖升级；首次从 Debug/临时签名迁移须备份后重装。
-- 可以通过 GitHub 插件编辑并提交版本修改，正式合并需用户明确要求；若当前连接不能直接创建 Release，以已合并版本触发的 Actions 自动发布，不伪称已经发布。
+## GitHub 与 CI
 
-## 文档维护
+- 先收集一轮失败日志再修改；每次结论绑定精确 head SHA。
+- 仅有 GitHub 插件时，优先用 Git tree/commit 一次提交同一逻辑变更，并用 `update_ref(expected_sha=...)` 防止覆盖并发更新；不要强推。
+- CI 顺序为静态分析 → 编译/Robolectric/JVM → Android Lint → APK/Diagnostic/Release → emulator → workflow summary。分支保护不是本仓库 CI 重构的验收目标。
+- GitHub 插件环境没有 Android 构建能力时必须如实说明，不能把静态审查当作 CI 成功。
 
-- 全部开发文档从 [docs/README.md](docs/README.md) 导航。用户说明更新 README，开发操作更新 `docs/development/`，长期技术行为更新 `docs/reference/`，产品边界更新 `COMMUNITY.md`。
-- 不创建 handoff、某次 CI 记录、过时计划和空目录；任务证据留在 PR/Actions。旧资料由 Git 历史保留，不作为未来 Agent 指令。
+## 发布
+
+- 只有 `main` 的新版在正常 CI 成功后才能自动发布 Pre-release；见 [docs/development/release.md](docs/development/release.md)。
+- Release build 与 privileged signing/publish 分离：前者无 Secrets/写权限，后者只签名前者 artifact 并发布，不重新运行 Gradle。
+- 固定签名只使用 `LUMI_BETA_KEYSTORE_BASE64` 和 `LUMI_BETA_KEYSTORE_PASSWORD`；不能在 CI 中生成新密钥。
+- 正式合并或发布需用户明确要求；不得伪称未发生的 Release。
+
+## 文档
+
+- 用户说明：`README*.md`
+- Fork 边界：`COMMUNITY.md`
+- 人类贡献：`CONTRIBUTING.md`
+- 安全：`SECURITY.md`
+- 架构：`docs/architecture/`
+- 操作手册：`docs/development/`
+- 长期实现参考：`docs/reference/`
+
+不要创建 handoff、某次 CI 状态、过时计划或重复的权威文档；这些历史由 Git、PR/Issue 和 Actions 保存。
