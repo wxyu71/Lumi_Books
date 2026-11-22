@@ -117,6 +117,9 @@ internal class AdjustedReaderDrawable(val source: Drawable) : Drawable(), Inline
     private var originalPixels: Bitmap? = null
     private var job: Job? = null
     private var requestedSharpness = -1f
+    // Cancellation alone is not a publication barrier: a tiny sharpen job can finish
+    // while a newer setting is being applied. Only the newest generation may publish.
+    private var sharpenGeneration = 0L
     private var onPixelsChanged: () -> Unit = {}
     private var imageScope: CoroutineScope? = null
     private var retryJob: Job? = null
@@ -136,6 +139,7 @@ internal class AdjustedReaderDrawable(val source: Drawable) : Drawable(), Inline
         val strength = settings.sharpen
         if (requestedSharpness != strength || (strength > 0f && rendered == null && job?.isActive != true)) {
             requestedSharpness = strength
+            val generation = ++sharpenGeneration
             job?.cancel()
             if (strength == 0f) rendered = null
             if (strength > 0f) {
@@ -170,6 +174,10 @@ internal class AdjustedReaderDrawable(val source: Drawable) : Drawable(), Inline
                         val result = withContext(Dispatchers.Default) {
                             val coroutineContext = currentCoroutineContext()
                             sharpenReaderBitmap(original, strength) { coroutineContext.ensureActive() }
+                        }
+                        if (generation != sharpenGeneration || requestedSharpness != strength) {
+                            result.recycle()
+                            return@launch
                         }
                         rendered = result
                         invalidateSelf()
