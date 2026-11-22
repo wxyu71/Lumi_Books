@@ -324,39 +324,20 @@ val prepareRobolectricSdkJars = tasks.register<Copy>("prepareRobolectricSdkJars"
     into(layout.buildDirectory.dir("robolectric-sdks"))
 }
 
-// Keep local IDE runs unchanged; CI partitions the existing JVM tests by package.
-// Each test class belongs to exactly one shard: reader, other UI, or core/data.
-// This is the SAME testDebugUnitTest suite, not a smaller or duplicate subset.
-val communityTestShard = providers.gradleProperty("lumi.testShard").orNull
-require(communityTestShard == null || communityTestShard in setOf("reader", "ui", "core")) {
-    "lumi.testShard must be reader, ui or core"
-}
+// CI uses the normal Android Gradle Plugin unit-test task. Keep the execution
+// model conventional: Robolectric SDK selection is the only CI-specific input;
+// Gradle/JUnit remain authoritative for discovery, failures and reports.
 tasks.withType<Test>().configureEach {
     if (System.getenv("CI") == "true") dependsOn(prepareRobolectricSdkJars)
-    if (name == "testDebugUnitTest") {
-        communityTestShard?.let { shard ->
-            filter {
-                when (shard) {
-                    "reader" -> includeTestsMatching("com.huangder.lumibooks.ui.reader.*")
-                    "ui" -> {
-                        includeTestsMatching("com.huangder.lumibooks.ui.*")
-                        excludeTestsMatching("com.huangder.lumibooks.ui.reader.*")
-                    }
-                    "core" -> excludeTestsMatching("com.huangder.lumibooks.ui.*")
-                }
-            }
-        }
-        if (System.getenv("CI") == "true") {
-            // A single fork at a time protects the hosted runner from Gradle + Robolectric OOM.
-            // A bounded worker lifetime prevents one test's static state leaking indefinitely.
-            maxParallelForks = 1
-            forkEvery = 100
-            maxHeapSize = "1536m"
-            // STARTED is essential: the last emitted test identifies a stalled class.
-            testLogging {
-                events("started", "passed", "skipped", "failed")
-                showStandardStreams = false
-            }
+    if (name == "testDebugUnitTest" && System.getenv("CI") == "true") {
+        // A single fork at a time protects the hosted runner from Gradle + Robolectric OOM.
+        // A bounded worker lifetime prevents one test's static state leaking indefinitely.
+        maxParallelForks = 1
+        forkEvery = 100
+        maxHeapSize = "1536m"
+        testLogging {
+            events("started", "passed", "skipped", "failed")
+            showStandardStreams = false
         }
     }
 }
