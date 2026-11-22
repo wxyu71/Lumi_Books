@@ -4,11 +4,16 @@
     "MD013": false,
     "MD024": { "siblings_only": true },
     "MD033": false,
-    "MD041": false
+    "MD041": false,
+    "MD060": false
   },
   "globs": [
-    "**/*.md",
-    "!third_party/**",
-    "!**/build/**"
+    "README*.md",
+    "AGENTS.md",
+    "COMMUNITY.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md",
+    "docs/**/*.md",
+    "app/src/main/assets/changelog.md"
   ]
 }
