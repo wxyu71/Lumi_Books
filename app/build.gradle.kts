@@ -278,20 +278,34 @@ dependencies {
 }
 
 
-// Robolectric 4.16.1 uses this Android 15 (API 35) instrumented runtime for
-// the current JVM tests. Resolve it with Gradle before executing tests so its
-// large JAR uses the configured Maven mirrors, dependency cache and bounded retry.
-// Keep the version aligned with Robolectric when updating the test framework.
-val robolectricSdkJars = configurations.create("robolectricSdkJars") {
-    isCanBeResolved = true
-    isCanBeConsumed = false
-}
-dependencies.add(
-    robolectricSdkJars.name,
-    "org.robolectric:android-all-instrumented:15-robolectric-13954326-i7@jar"
+// Robolectric's @Config(sdk) tests require all these pinned Android runtimes.
+// Prefetch through Gradle mirrors/cache; the Robolectric runtime downloader
+// otherwise bypasses Gradle and can receive Maven Central HTTP 429.
+// Use one configuration per version: a single configuration would perform
+// version conflict resolution and discard nine of these SDK artifacts.
+val robolectricSdkVersions = listOf(
+    "8.0.0_r4-robolectric-r1-i7",
+    "9-robolectric-4913185-2-i7",
+    "10-robolectric-5803371-i7",
+    "11-robolectric-6757853-i7",
+    "12-robolectric-7732740-i7",
+    "12.1-robolectric-8229987-i7",
+    "13-robolectric-9030017-i7",
+    "14-robolectric-10818077-i7",
+    "15-robolectric-13954326-i7",
+    "16-robolectric-13921718-i7"
 )
+val robolectricSdkJarConfigurations = robolectricSdkVersions.mapIndexed { index, version ->
+    configurations.create("robolectricSdkJar$index") {
+        isCanBeResolved = true
+        isCanBeConsumed = false
+        isTransitive = false
+    }.also { config ->
+        dependencies.add(config.name, "org.robolectric:android-all-instrumented:$version@jar")
+    }
+}
 val prepareRobolectricSdkJars = tasks.register<Copy>("prepareRobolectricSdkJars") {
-    from(robolectricSdkJars)
+    from(robolectricSdkJarConfigurations)
     into(layout.buildDirectory.dir("robolectric-sdks"))
 }
 

@@ -35,12 +35,29 @@ class HiltRepositoryRoutingTest(unittest.TestCase):
         self.assertNotIn('includeGroupByRegex("org[.]robolectric[.].*")', self.settings)
 
     def test_robolectric_sdk_is_prefetched_before_any_jvm_test(self):
-        # Run #133: 261 Robolectric class setup failures all shared a 429
-        # from Robolectric's own MavenArtifactFetcher, not Gradle resolution.
-        self.assertIn('org.robolectric:android-all-instrumented:15-robolectric-13954326-i7@jar',
+        # #133: runtime Maven 429s; #134: the first offline SDK worked,
+        # but 159 tests needed nine additional Android SDK versions.
+        versions = (
+            "8.0.0_r4-robolectric-r1-i7",
+            "9-robolectric-4913185-2-i7",
+            "10-robolectric-5803371-i7",
+            "11-robolectric-6757853-i7",
+            "12-robolectric-7732740-i7",
+            "12.1-robolectric-8229987-i7",
+            "13-robolectric-9030017-i7",
+            "14-robolectric-10818077-i7",
+            "15-robolectric-13954326-i7",
+            "16-robolectric-13921718-i7",
+        )
+        for version in versions:
+            self.assertIn('"' + version + '"', self.app_build)
+        self.assertIn('val robolectricSdkJarConfigurations = robolectricSdkVersions.mapIndexed',
                       self.app_build)
-        self.assertIn('val robolectricSdkJars = configurations.create("robolectricSdkJars")',
+        self.assertIn('configurations.create("robolectricSdkJar$index")', self.app_build)
+        self.assertIn('isTransitive = false', self.app_build)
+        self.assertIn('org.robolectric:android-all-instrumented:$version@jar',
                       self.app_build)
+        self.assertIn('from(robolectricSdkJarConfigurations)', self.app_build)
         self.assertIn('val prepareRobolectricSdkJars = tasks.register<Copy>', self.app_build)
         self.assertIn('dependsOn(prepareRobolectricSdkJars)', self.app_build)
         self.assertIn('it.systemProperty("robolectric.dependency.dir",', self.app_build)
