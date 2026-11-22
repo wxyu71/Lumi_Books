@@ -89,10 +89,6 @@ jobs:
           # Fork PRs read only; GitHub scopes each PR cache to refs/pull/N/merge.
           cache-read-only: 'true'
 
-      - name: Prepare Gradle wrapper
-        shell: bash
-        run: chmod +x ./gradlew
-
       # Resolve external dependencies with bounded retry, following the same pattern
       # used by AnkiDroid: network/bootstrap failures may retry, compilation and tests do not.
       - name: Resolve Gradle and Robolectric dependencies with bounded retry

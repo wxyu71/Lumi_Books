@@ -45,7 +45,6 @@ jobs:
         run: |
           set -euo pipefail
           python3 tools/check_community_policy.py
-          chmod +x ./gradlew
 
       - name: Enable KVM for hardware-accelerated emulator
         shell: bash
@@ -110,10 +109,6 @@ jobs:
         with:
           java-version: '21'
           cache-read-only: 'true'
-
-      - name: Prepare Gradle wrapper
-        shell: bash
-        run: chmod +x ./gradlew
 
       - name: Resolve all legacy Robolectric SDKs with bounded retry
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
