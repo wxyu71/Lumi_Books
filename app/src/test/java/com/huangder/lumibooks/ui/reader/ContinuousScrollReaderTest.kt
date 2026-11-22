@@ -622,6 +622,15 @@ class ContinuousScrollReaderTest {
             font.value = 26f
         }
         compose.waitForIdle()
+        // Font reflow restores the captured character anchor from a LaunchedEffect after
+        // AndroidView has measured the new text. A single idle turn is not that completion
+        // signal, so wait for the observable viewport to reach the same character geometry.
+        compose.waitUntil(15_000) {
+            visibleTextViewOrNull()?.layout?.let { layout ->
+                val expected = layout.getLineTop(layout.getLineForOffset(character))
+                kotlin.math.abs(expected - list.firstVisibleItemScrollOffset) <= 2
+            } == true
+        }
         compose.runOnIdle {
             val layout = visibleTextView().layout
             val expected = layout.getLineTop(layout.getLineForOffset(character))
