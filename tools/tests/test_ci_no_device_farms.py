@@ -23,7 +23,7 @@ class GitHubOnlyAndroidCIContract(unittest.TestCase):
         self.assertIn("api: [33, 35]", required)
         self.assertIn("Lumi-Community-Emulator-API", required)
         self.assertIn("bash tools/ci_run_device_smoke.sh", required)
-        self.assertIn("needs: [policy, verify, quality, device-smoke]", required)
+        self.assertIn("needs: [policy, verify, quality, apk, diagnostic, release, device-smoke]", required)
         emulator = (ROOT / "tools/ci_run_device_smoke.sh").read_text()
         self.assertIn("icon-style-before.png", emulator)
         self.assertIn("icon-style-after.png", emulator)
