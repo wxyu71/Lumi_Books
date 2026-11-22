@@ -183,7 +183,11 @@ class ContinuousScrollReaderTest {
         chapterCount = 1
         val requestedLineHeight = 1.7f
         show(lineHeight = requestedLineHeight)
-        compose.waitUntil(15_000) { restored }
+        compose.waitUntil(15_000) {
+            restored && descendants(composeRoot.rootView)
+                .filterIsInstance<ContinuousSelectableTextView>()
+                .any { it.isAttachedToWindow && it.text.isNotEmpty() && it.layout?.lineCount ?: 0 > 1 }
+        }
 
         compose.runOnIdle {
             val view = visibleTextView()
