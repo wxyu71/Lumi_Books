@@ -1299,6 +1299,10 @@ class ContinuousScrollReaderTest {
         compose.runOnIdle { assertTrue(pixels() < 80); settings.value = ReaderImageAdjustments(sharpen = 1f) }
         compose.waitUntil(10_000) { pixels() < 80 }
         compose.runOnIdle { settings.value = ReaderImageAdjustments() }
+        // State mutation schedules recomposition; runOnIdle alone does not guarantee that
+        // AdjustedReaderDrawable.update has consumed the new settings yet. Wait for the
+        // user-visible pixels to return to their original value, then assert geometry.
+        compose.waitUntil(10_000) { pixels() == 80 }
         compose.runOnIdle {
             assertEquals(80, pixels())
             assertEquals(originalHeight, list.layoutInfo.visibleItemsInfo.first().size)
