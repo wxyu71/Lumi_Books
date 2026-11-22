@@ -58,6 +58,20 @@ class GradleRetryExecutionTest(unittest.TestCase):
         self.assertIn("--refresh-dependencies", calls[1])
         self.assertIn("retrying with --refresh-dependencies", log)
 
+    def test_robolectric_429_in_unit_test_classpath_is_retried(self):
+        failure = (
+            "> Task :app:hiltAggregateDepsDebugUnitTest FAILED\n"
+            "Could not resolve all files for configuration ':app:debugUnitTestRuntimeClasspath'.\n"
+            "Could not GET 'https://repo.maven.apache.org/maven2/org/robolectric/"
+            "nativeruntime-dist-compat/1.0.18/nativeruntime-dist-compat-1.0.18.jar'. "
+            "Received status code 429 from server: Too Many Requests\n"
+            "BUILD FAILED in 1m 15s"
+        )
+        rc, calls, log = self.run_fake(failure)
+        self.assertEqual(0, rc, log)
+        self.assertEqual(2, len(calls))
+        self.assertIn("--refresh-dependencies", calls[1])
+
     def test_compiler_failure_remains_fatal_without_retry(self):
         rc, calls, _ = self.run_fake("e: file:///app/src/main/Kotlin.kt:1:1 compilation failed")
         self.assertNotEqual(0, rc)

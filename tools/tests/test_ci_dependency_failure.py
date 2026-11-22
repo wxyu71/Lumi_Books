@@ -25,6 +25,26 @@ class CiDependencyFailureTest(unittest.TestCase):
             with self.subTest(detail=detail):
                 self.assertTrue(is_retryable_resolution_failure(detail))
 
+    def test_robolectric_429_after_unit_test_task_failure_is_network_retryable(self):
+        # Actual run #132: the Hilt test classpath needs a large published
+        # Robolectric artifact, and Maven Central returned HTTP 429.
+        log = """ > Task :app:hiltAggregateDepsDebugUnitTest FAILED
+        Execution failed for task ':app:hiltAggregateDepsDebugUnitTest'.
+        Could not resolve all files for configuration ':app:debugUnitTestRuntimeClasspath'.
+        Could not download nativeruntime-dist-compat-1.0.18.jar
+        (org.robolectric:nativeruntime-dist-compat:1.0.18)
+        Could not GET 'https://repo.maven.apache.org/maven2/org/robolectric/nativeruntime-dist-compat/1.0.18/nativeruntime-dist-compat-1.0.18.jar'.
+        Received status code 429 from server: Too Many Requests
+        BUILD FAILED in 1m 15s"""
+        self.assertTrue(is_retryable_resolution_failure(log))
+        self.assertFalse(is_retryable_resolution_failure(
+            "> Task :app:hiltAggregateDepsDebugUnitTest FAILED\\n"
+            "BUILD FAILED in 1m 15s"
+        ))
+        self.assertFalse(is_retryable_resolution_failure(
+            log + "\\n200 tests completed, 1 failed"
+        ))
+
     def test_never_retry_compiler_test_or_success(self):
         for detail in ("e: file:///src/Book.kt:1:1 Unresolved reference",
                        "Compilation error. See log for more details",

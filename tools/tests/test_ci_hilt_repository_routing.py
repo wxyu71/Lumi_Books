@@ -28,6 +28,12 @@ class HiltRepositoryRoutingTest(unittest.TestCase):
         self.assertIn("gradlePluginPortal()", self.settings)
         self.assertIn('useModule("com.google.dagger:hilt-android-gradle-plugin:${requested.version}")', self.settings)
 
+    def test_robolectric_runtime_mirrors_are_scoped_to_jvm_test_group(self):
+        # Avoid a blanket mirror; only the published Robolectric group gets
+        # alternate Maven Central endpoints if the canonical CDN is throttled.
+        self.assertEqual(2, self.settings.count('includeGroup("org.robolectric")'))
+        self.assertNotIn('includeGroupByRegex("org[.]robolectric[.].*")', self.settings)
+
     def test_jetbrains_compose_mirrors_are_limited_to_compose_groups(self):
         self.assertEqual(2, self.settings.count(
             'includeGroupByRegex("org[.]jetbrains[.]compose[.].*")'

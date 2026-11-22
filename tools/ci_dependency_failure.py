@@ -13,9 +13,11 @@ NETWORK_MARKERS = re.compile(
 
 def is_retryable_resolution_failure(log: str) -> bool:
     """Never rerun compile/test errors to manufacture a green build."""
+    # Do not interpret Gradle task names such as :app:hiltAggregateDepsDebugUnitTest FAILED
+    # as a failed test assertion; those tasks may fail while resolving a dependency.
     if re.search(
         r"(?:e:\s+file:/|Compilation error\.|There were failing tests|"
-        r"\d+\s+tests completed,?\s+\d+\s+failed|AssertionError|Test failed|BUILD SUCCESSFUL)",
+        r"\d+\s+tests completed,?\s+\d+\s+failed|AssertionError|\bTest failed\b|BUILD SUCCESSFUL)",
         log, re.IGNORECASE,
     ):
         return False
