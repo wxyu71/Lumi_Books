@@ -111,13 +111,26 @@ jobs:
           java-version: '21'
           cache-read-only: 'true'
 
-      - name: Compile tests and prefetch all explicitly tested legacy SDK jars
+      - name: Prepare Gradle wrapper
+        shell: bash
+        run: chmod +x ./gradlew
+
+      - name: Resolve all legacy Robolectric SDKs with bounded retry
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          timeout_minutes: 10
+          retry_wait_seconds: 60
+          max_attempts: 3
+          command: >
+            ./gradlew --no-daemon --console=plain --stacktrace --max-workers=2
+            :app:robolectricSdkDownload
+
+      - name: Compile legacy JVM test sources
         shell: bash
         run: |
           set -euo pipefail
-          chmod +x ./gradlew
           ./gradlew --no-daemon --console=plain --stacktrace --max-workers=2 \
-            :app:compileDebugUnitTestKotlin :app:robolectricSdkDownload
+            :app:compileDebugUnitTestKotlin
 
       - name: Run the complete historical JVM suite
         id: legacy_jvm_test
