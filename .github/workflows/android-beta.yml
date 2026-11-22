@@ -93,15 +93,28 @@ jobs:
         shell: bash
         run: chmod +x ./gradlew
 
-      # Check source/test compilation and Robolectric classpath before APK packaging.
-      - name: Compile app + JVM test sources; prefetch modern Robolectric SDKs
+      # Resolve external dependencies with bounded retry, following the same pattern
+      # used by AnkiDroid: network/bootstrap failures may retry, compilation and tests do not.
+      - name: Resolve Gradle and Robolectric dependencies with bounded retry
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          timeout_minutes: 10
+          retry_wait_seconds: 60
+          max_attempts: 3
+          command: >
+            ./gradlew --no-daemon --console=plain --stacktrace --max-workers=2
+            :app:robolectricSdkDownload
+
+      # Check source/test compilation only after the dependency/bootstrap stage is ready.
+      # Real compilation failures are terminal and are never retried.
+      - name: Compile app + JVM test sources
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p test-logs/compile
           ./gradlew --no-daemon --console=plain --stacktrace --max-workers=2 \
             :app:compileDebugKotlin :app:compileDebugUnitTestKotlin \
-            :app:robolectricSdkDownload 2>&1 | tee test-logs/compile/gradle.log
+            2>&1 | tee test-logs/compile/gradle.log
 
       - name: Smoke-test Robolectric API 33 runtime
         shell: bash
