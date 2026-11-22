@@ -52,7 +52,7 @@ jobs:
           python3 -m unittest discover -s tools/tests -p 'test_*.py' -v
 
   verify:
-    name: OSS APK + JVM reader/ui/core (JDK 21)
+    name: JVM compile + Robolectric reader/ui/core (JDK 21)
     needs: policy
     runs-on: ubuntu-24.04
     timeout-minutes: 100
@@ -68,7 +68,7 @@ jobs:
           java-version: '21'
           # Only trusted same-repo PRs or main builds write a Gradle cache.
           # Fork PRs read only; GitHub scopes each PR cache to refs/pull/N/merge.
-          cache-read-only: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
+          cache-read-only: 'true'
 
       - name: Verify community-only inputs
         shell: bash
@@ -111,7 +111,63 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
-      # Tests failed? No APK packaging; retain test diagnostics above.
+
+  quality:
+    name: Android Lint — zero errors
+    needs: [policy, verify]
+    if: ${{ needs.policy.result == 'success' && needs.verify.result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 65
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Android Gradle toolchain (JDK 21)
+        uses: ./.github/actions/setup-android-toolchain
+        with:
+          java-version: '21'
+          cache-read-only: 'true'
+
+      - name: Full Android Lint — zero errors required
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p test-logs/lint
+          ./gradlew --no-daemon --console=plain --stacktrace --max-workers=2 \
+            :app:lintDebug 2>&1 | tee test-logs/lint/gradle.log
+
+      - name: Upload Lint reports (including failures)
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: Lumi-Community-Lint-${{ github.run_number }}-${{ github.run_attempt }}
+          path: |
+            app/build/oss/reports/lint-results*
+            test-logs/lint/
+          if-no-files-found: warn
+          retention-days: 14
+
+  apk:
+    name: Debug APK package + metadata
+    needs: [policy, verify, quality]
+    if: ${{ needs.policy.result == 'success' && needs.verify.result == 'success' && needs.quality.result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Android Gradle toolchain (JDK 21)
+        uses: ./.github/actions/setup-android-toolchain
+        with:
+          java-version: '21'
+          cache-read-only: ${{ github.event_name != 'push' || github.ref != 'refs/heads/main' }}
+
+# P3 starts only after compile, Robolectric/JVM and Android Lint have passed.
       - name: Assemble debug-signed community APK after JVM passes
         id: build_apk
         shell: bash
@@ -190,60 +246,78 @@ jobs:
           retention-days: 14
 
 
-  quality:
-    name: Android Lint + release/diagnostic variants
-    needs: [policy, verify]
-    if: ${{ needs.policy.result == 'success' && needs.verify.result == 'success' }}
+
+  diagnostic:
+    name: Diagnostic build
+    needs: [policy, verify, quality]
+    if: ${{ needs.policy.result == 'success' && needs.verify.result == 'success' && needs.quality.result == 'success' }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 75
+    timeout-minutes: 45
     steps:
       - name: Checkout sources
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-
       - name: Set up Android Gradle toolchain (JDK 21)
         uses: ./.github/actions/setup-android-toolchain
         with:
           java-version: '21'
           cache-read-only: 'true'
-
-      - name: Full Android Lint — zero errors required
+      - name: Assemble diagnostic independently
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p test-logs/quality
+          mkdir -p test-logs/diagnostic
           ./gradlew --no-daemon --console=plain --stacktrace --max-workers=2 \
-            :app:lintDebug 2>&1 | tee test-logs/quality/lint.log
-
-      # Avoid packageDiagnostic OOM by separating packaging worker lifetimes.
-      - name: Assemble diagnostic then unsigned release in separate Gradle invocations
-        shell: bash
-        run: |
-          set -euo pipefail
-          ./gradlew --no-daemon --console=plain --stacktrace --max-workers=2 \
-            :app:assembleDiagnostic 2>&1 | tee test-logs/quality/diagnostic.log
-          ./gradlew --no-daemon --console=plain --stacktrace --max-workers=2 \
-            :app:assembleRelease 2>&1 | tee test-logs/quality/release.log
-          test -d app/build/oss/outputs/apk/release
-          find app/build/oss/outputs/apk/release -name '*.apk' -type f | grep -q '.'
-
-      - name: Upload lint and variant reports (including failures)
+            :app:assembleDiagnostic 2>&1 | tee test-logs/diagnostic/gradle.log
+          find app/build/oss/outputs/apk/diagnostic -name '*.apk' -type f | grep -q '.'
+      - name: Upload diagnostic build log
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: Lumi-Community-Quality-${{ github.run_number }}-${{ github.run_attempt }}
-          path: |
-            app/build/oss/reports/lint-results*
-            app/build/oss/outputs/mapping/
-            test-logs/quality/
+          name: Lumi-Community-Diagnostic-${{ github.run_number }}-${{ github.run_attempt }}
+          path: test-logs/diagnostic/
           if-no-files-found: warn
           retention-days: 14
 
-  device-smoke:
-    name: Emulator API ${{ matrix.api }} integration + UI + screenshots
+  release:
+    name: Unsigned Release build
     needs: [policy, verify, quality]
     if: ${{ needs.policy.result == 'success' && needs.verify.result == 'success' && needs.quality.result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Android Gradle toolchain (JDK 21)
+        uses: ./.github/actions/setup-android-toolchain
+        with:
+          java-version: '21'
+          cache-read-only: 'true'
+      - name: Assemble unsigned release independently
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p test-logs/release
+          ./gradlew --no-daemon --console=plain --stacktrace --max-workers=2 \
+            :app:assembleRelease 2>&1 | tee test-logs/release/gradle.log
+          find app/build/oss/outputs/apk/release -name '*.apk' -type f | grep -q '.'
+      - name: Upload release build log and mapping
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: Lumi-Community-Release-${{ github.run_number }}-${{ github.run_attempt }}
+          path: |
+            test-logs/release/
+            app/build/oss/outputs/mapping/
+          if-no-files-found: warn
+          retention-days: 14
+  device-smoke:
+    name: Emulator API ${{ matrix.api }} integration + UI + screenshots
+    needs: [policy, verify, quality, apk, diagnostic, release]
+    if: ${{ needs.policy.result == 'success' && needs.verify.result == 'success' && needs.quality.result == 'success' && needs.apk.result == 'success' && needs.diagnostic.result == 'success' && needs.release.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 80
     strategy:
@@ -299,7 +373,7 @@ jobs:
   ci-gate:
     name: Required CI summary
     if: always()
-    needs: [policy, verify, quality, device-smoke]
+    needs: [policy, verify, quality, apk, diagnostic, release, device-smoke]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -309,6 +383,9 @@ jobs:
           POLICY: ${{ needs.policy.result }}
           VERIFY: ${{ needs.verify.result }}
           QUALITY: ${{ needs.quality.result }}
+          APK: ${{ needs.apk.result }}
+          DIAGNOSTIC: ${{ needs.diagnostic.result }}
+          RELEASE: ${{ needs.release.result }}
           DEVICE: ${{ needs.device-smoke.result }}
         run: |
           set -euo pipefail
@@ -317,8 +394,13 @@ jobs:
             echo "| Stage | Result |"
             echo "| --- | --- |"
             echo "| Community policy and test inventory | $POLICY |"
-            echo "| OSS APK, SHA-256, Reader/UI/Core JVM | $VERIFY |"
-            echo "| Android Lint, release/diagnostic variants | $QUALITY |"
+            echo "| Kotlin/test compile + Robolectric API 33/35/36 JVM scope | $VERIFY |"
+            echo "| Android Lint (zero errors) | $QUALITY |"
+            echo "| Debug APK + metadata/SHA-256 | $APK |"
+            echo "| Diagnostic build | $DIAGNOSTIC |"
+            echo "| Unsigned Release build | $RELEASE |"
             echo "| Emulator API 33 + 35 integration/UI/screenshot | $DEVICE |"
+            echo
+            echo "PR JVM scope is Android 13+ (API 33/35/36). Historical explicit SDK cases are not claimed here; the weekly legacy lane runs API 26–36 and enforces its own JUnit skip budget."
           } >> "$GITHUB_STEP_SUMMARY"
-          [[ "$POLICY" == success && "$VERIFY" == success && "$QUALITY" == success && "$DEVICE" == success ]]
+          [[ "$POLICY" == success && "$VERIFY" == success && "$QUALITY" == success && "$APK" == success && "$DIAGNOSTIC" == success && "$RELEASE" == success && "$DEVICE" == success ]]
