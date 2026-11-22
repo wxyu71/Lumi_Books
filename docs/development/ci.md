@@ -26,6 +26,7 @@ APK、Diagnostic、Release 都必须等 JVM 与 Lint 成功后才启动；emulat
 - **Gradle / AGP / Android Lint**：依赖解析、编译、资源与 Android 静态分析。
 - **JUnit / Robolectric / AndroidJUnitRunner**：真实测试发现、执行和失败状态。
 - **action-junit-report**：读取 Gradle 已生成的标准 JUnit 报告并在 Actions 中展示，不重新定义“哪些测试算通过”。
+- **nick-fields/retry**：只包住 Gradle/Robolectric 依赖准备阶段的瞬时网络失败；真实 Kotlin 编译、Robolectric smoke、JUnit 断言和 Android instrumentation 从不重试。
 
 仓库不维护工作流 YAML 文本捕捉测试、测试源文件库存脚本、自定义 JUnit XML 判定器或 Maven HTTP 探针。
 
@@ -46,7 +47,7 @@ API 26/33/36 的扩展 emulator、完整历史 Robolectric 和可选 Macrobenchm
 1. 绑定当前 head SHA，先看最早失败 job。
 2. 静态分析失败就修 workflow/docs，不启动 Android 重任务。
 3. 编译失败先修编译；Robolectric/JUnit 失败读取真实测试名、stack trace 和原生 XML/HTML 报告。
-4. 网络/CDN 失败与业务断言分开处理；不要重试断言来制造绿色结果。
-5. 只有确认是 GitHub/网络瞬时故障时，才重跑失败 job。
+4. 网络/CDN 失败与业务断言分开处理。Gradle Wrapper 使用 60 秒网络超时；dependency/bootstrap 阶段最多由 `nick-fields/retry` 重试 3 次、间隔 60 秒。
+5. Kotlin 编译、Robolectric smoke、JUnit 断言、Lint 和 instrumentation 不使用自动重试；这些失败必须按真实根因修复。
 
 发布权限和签名边界见 [发布指南](release.md)。
