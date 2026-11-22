@@ -96,7 +96,6 @@ Lumi is a local e-book reader for Android. Books and reading data are stored on 
 
 Signed Community Beta APKs and `SHA256SUMS.txt` are published as **Pre-releases** at [this fork's GitHub Releases](https://github.com/wxyu71/Lumi_Books/releases). There is no publicly downloadable official Community Beta until its verified release workflow succeeds. Do not install an upstream or mirror APK as a Community Beta.
 
-
 **Signing and upgrades:** Community Betas use one persistent signing key, allowing in-place upgrades with increasing `versionCode`. When switching from an older debug or temporary-signed build, back up data before uninstalling it and installing the fixed-key release.
 
 ## Community Beta
@@ -114,4 +113,4 @@ Lumi's original code is open-sourced under the [Apache License 2.0](LICENSE). Th
 - Community repository: [wxyu71/Lumi_Books](https://github.com/wxyu71/Lumi_Books)
 - Original author's website: [huangder.top](https://huangder.top)
 - Upstream source: [huangder/Lumi_Books](https://github.com/huangder/Lumi_Books)
-- Original author's email: huangder0104@126.com
+- Original author's email: <huangder0104@126.com>
