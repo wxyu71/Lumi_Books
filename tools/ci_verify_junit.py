@@ -8,12 +8,15 @@ import xml.etree.ElementTree as ET
 
 SHARDS = ("reader", "ui", "core")
 MIN_EXECUTED = {
-    "reader": 900,
-    "ui": 600,
-    "core": 900,
+    # Audited from the API 33/35/36 PR lane. Small margins allow deliberate
+    # test maintenance, while a broad discovery/filtering regression fails.
+    "modern": {"reader": 1125, "ui": 765, "core": 1160},
+    # The historical lane must recover the explicit older-SDK cases instead
+    # of silently accepting the smaller modern-lane population.
+    "legacy": {"reader": 1145, "ui": 790, "core": 1195},
 }
 MAX_SKIPPED = {
-    "modern": {"reader": 250, "ui": 250, "core": 250},
+    "modern": {"reader": 20, "ui": 20, "core": 20},
     "legacy": {"reader": 20, "ui": 20, "core": 20},
 }
 
@@ -57,10 +60,10 @@ def verify(shard, folder, lane):
         raise ValueError(
             f"{shard} ({lane}): {executed} executed, {skipped} skipped, {failures} failures"
         )
-    if executed < MIN_EXECUTED[shard]:
+    if executed < MIN_EXECUTED[lane][shard]:
         raise ValueError(
             f"{shard} ({lane}): only {executed} executed; minimum is "
-            f"{MIN_EXECUTED[shard]} (skipped={skipped})"
+            f"{MIN_EXECUTED[lane][shard]} (skipped={skipped})"
         )
     if skipped > MAX_SKIPPED[lane][shard]:
         raise ValueError(
@@ -83,7 +86,7 @@ def main(argv=None):
     print(
         f"{shard} ({lane}): {executed} executed, {skipped} JUnit-reported skipped, "
         f"zero failures; {reports} JUnit XML reports; "
-        f"minimum executed={MIN_EXECUTED[shard]}, max skipped={MAX_SKIPPED[lane][shard]}"
+        f"minimum executed={MIN_EXECUTED[lane][shard]}, max skipped={MAX_SKIPPED[lane][shard]}"
     )
 
 
