@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.gradle.api.tasks.Copy
 import org.gradle.api.tasks.testing.Test
 
 plugins {
@@ -144,7 +145,11 @@ android {
             isIncludeAndroidResources = true
             all {
                 it.maxHeapSize = "2g"
-                it.systemProperty("robolectric.dependency.repo.url", "https://repo.maven.apache.org/maven2")
+                // Robolectric otherwise downloads huge Android SDK jars at test runtime,
+                // bypassing Gradle mirrors/retries (and failing with HTTP 429 on CI).
+                // The preparation task below makes the exact SDK jar available locally.
+                it.systemProperty("robolectric.dependency.dir",
+                    layout.buildDirectory.dir("robolectric-sdks").get().asFile.absolutePath)
                 // Optional host JNI build for real Kindle reconstruction tests, never packaged.
                 System.getenv("LUMI_KINDLE_NATIVE_DIR")?.let { nativeDirectory ->
                     it.systemProperty("java.library.path", nativeDirectory)
@@ -273,6 +278,23 @@ dependencies {
 }
 
 
+// Robolectric 4.16.1 uses this Android 15 (API 35) instrumented runtime for
+// the current JVM tests. Resolve it with Gradle before executing tests so its
+// large JAR uses the configured Maven mirrors, dependency cache and bounded retry.
+// Keep the version aligned with Robolectric when updating the test framework.
+val robolectricSdkJars = configurations.create("robolectricSdkJars") {
+    isCanBeResolved = true
+    isCanBeConsumed = false
+}
+dependencies.add(
+    robolectricSdkJars.name,
+    "org.robolectric:android-all-instrumented:15-robolectric-13954326-i7@jar"
+)
+val prepareRobolectricSdkJars = tasks.register<Copy>("prepareRobolectricSdkJars") {
+    from(robolectricSdkJars)
+    into(layout.buildDirectory.dir("robolectric-sdks"))
+}
+
 // Keep local IDE runs unchanged; CI partitions the existing JVM tests by package.
 // Each test class belongs to exactly one shard: reader, other UI, or core/data.
 // This is the SAME testDebugUnitTest suite, not a smaller or duplicate subset.
@@ -281,6 +303,7 @@ require(communityTestShard == null || communityTestShard in setOf("reader", "ui"
     "lumi.testShard must be reader, ui or core"
 }
 tasks.withType<Test>().configureEach {
+    dependsOn(prepareRobolectricSdkJars)
     if (name == "testDebugUnitTest") {
         communityTestShard?.let { shard ->
             filter {

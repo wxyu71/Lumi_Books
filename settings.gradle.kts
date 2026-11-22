@@ -43,9 +43,8 @@ dependencyResolutionManagement {
         maven(url = "https://repo1.maven.org/maven2") {
             content {
                 includeGroup("com.google.dagger")
-                // The published Robolectric native runtime is a large JVM-test
-                // dependency; GitHub-hosted runners can hit Maven Central 429s.
-                includeGroup("org.robolectric")
+                // Use the GCS Maven Central mirror for large Robolectric JARs.
+                // Avoid the repo1 endpoint for large Robolectric downloads; it can also be throttled.
                 // Haze's transitive JetBrains Compose 1.7.1 dependencies may
                 // resolve differently across GitHub-hosted emulator runners.
                 includeGroupByRegex("org[.]jetbrains[.]compose[.].*")

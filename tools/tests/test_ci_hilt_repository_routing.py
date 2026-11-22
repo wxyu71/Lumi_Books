@@ -31,8 +31,20 @@ class HiltRepositoryRoutingTest(unittest.TestCase):
     def test_robolectric_runtime_mirrors_are_scoped_to_jvm_test_group(self):
         # Avoid a blanket mirror; only the published Robolectric group gets
         # alternate Maven Central endpoints if the canonical CDN is throttled.
-        self.assertEqual(2, self.settings.count('includeGroup("org.robolectric")'))
+        self.assertEqual(1, self.settings.count('includeGroup("org.robolectric")'))
         self.assertNotIn('includeGroupByRegex("org[.]robolectric[.].*")', self.settings)
+
+    def test_robolectric_sdk_is_prefetched_before_any_jvm_test(self):
+        # Run #133: 261 Robolectric class setup failures all shared a 429
+        # from Robolectric's own MavenArtifactFetcher, not Gradle resolution.
+        self.assertIn('org.robolectric:android-all-instrumented:15-robolectric-13954326-i7@jar',
+                      self.app_build)
+        self.assertIn('val robolectricSdkJars = configurations.create("robolectricSdkJars")',
+                      self.app_build)
+        self.assertIn('val prepareRobolectricSdkJars = tasks.register<Copy>', self.app_build)
+        self.assertIn('dependsOn(prepareRobolectricSdkJars)', self.app_build)
+        self.assertIn('it.systemProperty("robolectric.dependency.dir",', self.app_build)
+        self.assertNotIn('it.systemProperty("robolectric.dependency.repo.url"', self.app_build)
 
     def test_jetbrains_compose_mirrors_are_limited_to_compose_groups(self):
         self.assertEqual(2, self.settings.count(
