@@ -116,8 +116,11 @@ private sealed interface TagTask {
 }
 
 @Composable
-internal fun CommunityTagManagementScreen(type: String, onBack: () -> Unit) {
-    val repository = rememberTagPickerRepository()
+internal fun CommunityTagManagementScreen(
+    type: String,
+    onBack: () -> Unit,
+    repository: com.huangder.lumibooks.data.repository.TagManagementRepository? = rememberTagPickerRepository()
+) {
     val groups by remember(repository, type) {
         repository?.observeGroups(type) ?: flowOf(emptyList<TagGroupEntity>())
     }.collectAsState(initial = emptyList())
