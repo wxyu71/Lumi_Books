@@ -4,7 +4,9 @@ import android.app.Application
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
 import com.huangder.lumibooks.R
 import com.huangder.lumibooks.domain.model.TagTypes
@@ -30,24 +32,26 @@ class CommunityTagManagementScreenTest {
             }
         }
 
+        compose.onNodeWithText(context.getString(R.string.community_no_tags))
+            .assertIsDisplayed()
+
+        // The page body contains only data/empty state. Creation and selection are page actions,
+        // not another settings card competing with the tag hierarchy.
+        for (text in listOf(
+            context.getString(R.string.community_create_tag),
+            context.getString(R.string.community_create_group),
+            context.getString(R.string.community_tag_count, 0),
+            context.getString(R.string.tag_picker_uncategorized),
+            context.getString(R.string.community_select_tags)
+        )) {
+            assertTrue(compose.onAllNodesWithText(text).fetchSemanticsNodes().isEmpty())
+        }
+
+        compose.onNodeWithContentDescription(context.getString(R.string.annotation_tag_manage))
+            .performClick()
         compose.onNodeWithText(context.getString(R.string.community_create_tag))
             .assertIsDisplayed()
         compose.onNodeWithText(context.getString(R.string.community_create_group))
             .assertIsDisplayed()
-        compose.onNodeWithText(context.getString(R.string.community_no_tags))
-            .assertIsDisplayed()
-
-        assertTrue(
-            compose.onAllNodesWithText(context.getString(R.string.community_tag_count, 0))
-                .fetchSemanticsNodes().isEmpty()
-        )
-        assertTrue(
-            compose.onAllNodesWithText(context.getString(R.string.tag_picker_uncategorized))
-                .fetchSemanticsNodes().isEmpty()
-        )
-        assertTrue(
-            compose.onAllNodesWithText(context.getString(R.string.community_select_tags))
-                .fetchSemanticsNodes().isEmpty()
-        )
     }
 }

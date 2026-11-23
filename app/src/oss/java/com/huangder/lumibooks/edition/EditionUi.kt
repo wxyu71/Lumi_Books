@@ -14,31 +14,44 @@ internal fun EditionMembershipEntry() = Unit
 @Composable
 internal fun EditionTagManagementSettingsEntry() {
     val context = androidx.compose.ui.platform.LocalContext.current
-    com.huangder.lumibooks.ui.components.GroupedCard {
-        com.huangder.lumibooks.ui.settings.CategoryItem(
-            icon = com.huangder.lumibooks.ui.icons.AppIcons.Tag,
-            label = androidx.compose.ui.res.stringResource(com.huangder.lumibooks.R.string.community_manage_book_tags),
-            grouped = true,
-            tileColor = com.huangder.lumibooks.ui.components.SettingsTileColors.Blue
-        ) {
-            context.startActivity(
-                com.huangder.lumibooks.ui.settings.DetailActivity.createIntent(context, "book_tags")
-            )
-        }
-        com.huangder.lumibooks.ui.components.GroupedRowDivider(
-            startInset = com.huangder.lumibooks.ui.theme.AppSpace.md +
-                com.huangder.lumibooks.ui.components.SettingsIconTileSize +
-                com.huangder.lumibooks.ui.components.SettingsIconTileGap
+    com.huangder.lumibooks.ui.settings.CategoryItem(
+        icon = com.huangder.lumibooks.ui.icons.AppIcons.Tag,
+        label = androidx.compose.ui.res.stringResource(com.huangder.lumibooks.R.string.annotation_tag_manage),
+        tileColor = com.huangder.lumibooks.ui.components.SettingsTileColors.Blue
+    ) {
+        context.startActivity(
+            com.huangder.lumibooks.ui.settings.DetailActivity.createIntent(context, "tag_management")
         )
-        com.huangder.lumibooks.ui.settings.CategoryItem(
-            icon = com.huangder.lumibooks.ui.icons.AppIcons.Tag,
-            label = androidx.compose.ui.res.stringResource(com.huangder.lumibooks.R.string.community_manage_annotation_tags),
-            grouped = true,
-            tileColor = com.huangder.lumibooks.ui.components.SettingsTileColors.Indigo
-        ) {
-            context.startActivity(
-                com.huangder.lumibooks.ui.settings.DetailActivity.createIntent(context, "annotation_tags")
-            )
+    }
+}
+
+@Composable
+internal fun EditionTagManagementOverview(onBack: () -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    com.huangder.lumibooks.ui.settings.DetailPage(
+        title = androidx.compose.ui.res.stringResource(com.huangder.lumibooks.R.string.annotation_tag_manage),
+        onBack = onBack
+    ) {
+        com.huangder.lumibooks.ui.settings.SettingsCategoryGroup {
+            com.huangder.lumibooks.ui.settings.CategoryItem(
+                icon = com.huangder.lumibooks.ui.icons.AppIcons.Tag,
+                label = androidx.compose.ui.res.stringResource(com.huangder.lumibooks.R.string.community_manage_book_tags),
+                grouped = true
+            ) {
+                context.startActivity(
+                    com.huangder.lumibooks.ui.settings.DetailActivity.createIntent(context, "book_tags")
+                )
+            }
+            com.huangder.lumibooks.ui.settings.SettingsGroupDivider()
+            com.huangder.lumibooks.ui.settings.CategoryItem(
+                icon = com.huangder.lumibooks.ui.icons.AppIcons.Tag,
+                label = androidx.compose.ui.res.stringResource(com.huangder.lumibooks.R.string.community_manage_annotation_tags),
+                grouped = true
+            ) {
+                context.startActivity(
+                    com.huangder.lumibooks.ui.settings.DetailActivity.createIntent(context, "annotation_tags")
+                )
+            }
         }
     }
 }

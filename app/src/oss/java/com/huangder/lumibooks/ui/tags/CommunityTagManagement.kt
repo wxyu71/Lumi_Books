@@ -139,6 +139,7 @@ internal fun CommunityTagManagementScreen(type: String, onBack: () -> Unit) {
 
     var selecting by rememberSaveable(type) { mutableStateOf(false) }
     var selected by rememberSaveable(type) { mutableStateOf(emptySet<String>()) }
+    var showPageActions by remember { mutableStateOf(false) }
     var task by remember { mutableStateOf<TagTask?>(null) }
     var actionTag by remember { mutableStateOf<ManagedTag?>(null) }
     var actionGroup by remember { mutableStateOf<TagGroupEntity?>(null) }
@@ -198,70 +199,48 @@ internal fun CommunityTagManagementScreen(type: String, onBack: () -> Unit) {
 
     CollapsingSettingsScaffold(
         title = title,
-        onBack = { if (!busy) onBack() },
+        onBack = {
+            when {
+                busy -> Unit
+                selecting -> {
+                    selecting = false
+                    selected = emptySet()
+                }
+                else -> onBack()
+            }
+        },
+        actions = {
+            if (selecting) {
+                LiquidGlassIconButton(
+                    imageVector = AppIcons.Folder,
+                    contentDescription = stringResource(R.string.community_move_selected),
+                    onClick = { start(TagTask.Move(selected.toList())) },
+                    enabled = selected.isNotEmpty() && !busy,
+                    size = 40.dp,
+                    iconSize = 18.dp
+                )
+                LiquidGlassIconButton(
+                    imageVector = AppIcons.Trash,
+                    contentDescription = stringResource(R.string.community_delete_selected),
+                    onClick = { start(TagTask.DeleteMany(selected.toList())) },
+                    enabled = selected.isNotEmpty() && !busy,
+                    size = 40.dp,
+                    iconSize = 18.dp,
+                    contentColor = AppColors.Destructive
+                )
+            } else {
+                LiquidGlassIconButton(
+                    imageVector = AppIcons.DotsThreeVertical,
+                    contentDescription = stringResource(R.string.annotation_tag_manage),
+                    onClick = { if (!busy) showPageActions = true },
+                    enabled = repository != null && !busy,
+                    size = 40.dp,
+                    iconSize = 18.dp
+                )
+            }
+        },
         lazyListState = listState,
         lazyContent = {
-            item(key = "tag-actions") {
-                GroupedCard {
-                    LumiRow(
-                        title = stringResource(R.string.community_create_tag),
-                        icon = AppIcons.Tag,
-                        enabled = repository != null && !busy,
-                        onClick = { start(TagTask.CreateTag) }
-                    )
-                    GroupedRowDivider()
-                    LumiRow(
-                        title = stringResource(R.string.community_create_group),
-                        icon = AppIcons.Folder,
-                        enabled = repository != null && !busy,
-                        onClick = { start(TagTask.CreateGroup) }
-                    )
-                    if (tags.isNotEmpty()) {
-                        GroupedRowDivider()
-                        if (selecting) {
-                            LumiRow(
-                                title = stringResource(R.string.cancel),
-                                subtitle = stringResource(R.string.community_selected_count, selected.size),
-                                icon = AppIcons.Tag,
-                                enabled = !busy,
-                                onClick = {
-                                    selecting = false
-                                    selected = emptySet()
-                                }
-                            )
-                        } else {
-                            LumiRow(
-                                title = stringResource(R.string.community_select_tags),
-                                icon = AppIcons.Tag,
-                                enabled = !busy,
-                                onClick = { selecting = true }
-                            )
-                        }
-                    }
-                }
-            }
-
-            if (selecting && selected.isNotEmpty()) {
-                item(key = "batch-actions") {
-                    Spacer(Modifier.height(AppSpace.md))
-                    GroupedCard {
-                        LumiRow(
-                            title = stringResource(R.string.community_move_selected),
-                            icon = AppIcons.Folder,
-                            enabled = !busy,
-                            onClick = { start(TagTask.Move(selected.toList())) }
-                        )
-                        GroupedRowDivider()
-                        LumiRow(
-                            title = stringResource(R.string.community_delete_selected),
-                            icon = AppIcons.Trash,
-                            enabled = !busy,
-                            onClick = { start(TagTask.DeleteMany(selected.toList())) }
-                        )
-                    }
-                }
-            }
-
             if (tags.isEmpty() && groups.isEmpty()) {
                 item(key = "empty") {
                     EmptyState(
@@ -306,16 +285,68 @@ internal fun CommunityTagManagementScreen(type: String, onBack: () -> Unit) {
         }
     )
 
+    if (showPageActions) {
+        LiquidGlassAlertDialog(
+            onDismissRequest = { showPageActions = false },
+            titleText = title,
+            actions = buildList {
+                add(
+                    AppDialogAction(
+                        text = stringResource(R.string.community_create_tag),
+                        onClick = {
+                            showPageActions = false
+                            start(TagTask.CreateTag)
+                        }
+                    )
+                )
+                add(
+                    AppDialogAction(
+                        text = stringResource(R.string.community_create_group),
+                        onClick = {
+                            showPageActions = false
+                            start(TagTask.CreateGroup)
+                        },
+                        role = AppDialogActionRole.Secondary
+                    )
+                )
+                if (tags.isNotEmpty()) {
+                    add(
+                        AppDialogAction(
+                            text = stringResource(R.string.community_select_tags),
+                            onClick = {
+                                showPageActions = false
+                                selecting = true
+                                selected = emptySet()
+                            },
+                            role = AppDialogActionRole.Secondary
+                        )
+                    )
+                }
+                add(
+                    AppDialogAction(
+                        text = stringResource(R.string.cancel),
+                        onClick = { showPageActions = false },
+                        role = AppDialogActionRole.Cancel
+                    )
+                )
+            }
+        )
+    }
+
     actionGroup?.let { group ->
         val memberCount = tags.count { it.groupId == group.id }
         LiquidGlassAlertDialog(
             onDismissRequest = { if (!busy) actionGroup = null },
             titleText = group.name,
-            text = {
-                Text(
-                    stringResource(R.string.community_tag_count, memberCount),
-                    color = AppColors.TextSecondary
-                )
+            text = if (memberCount > 0) {
+                {
+                    Text(
+                        stringResource(R.string.community_tag_count, memberCount),
+                        color = AppColors.TextSecondary
+                    )
+                }
+            } else {
+                null
             },
             actions = listOf(
                 AppDialogAction(
