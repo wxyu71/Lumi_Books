@@ -8,7 +8,7 @@ import com.huangder.lumibooks.ui.components.GroupedRowDivider
 /** Group and inset shared by Settings rows across the app's secondary pages. */
 @Composable
 internal fun SettingsCategoryGroup(content: @Composable () -> Unit) {
-    GroupedCard(content = content)
+    GroupedCard { content() }
 }
 
 @Composable
