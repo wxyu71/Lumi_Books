@@ -19,6 +19,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.toggleableState
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogProperties
 import com.huangder.lumibooks.R
 import com.huangder.lumibooks.data.local.entity.TagGroupEntity
 import com.huangder.lumibooks.data.repository.TagManagementRepository
@@ -448,6 +449,12 @@ internal fun CommunityTagManagementScreen(
                     LiquidGlassAlertDialog(
                         onDismissRequest = { if (!busy) { task = null; error = null } },
                         titleText = name,
+                        // Robolectric's default-width Dialog can remeasure an editable
+                        // BasicTextField forever on 340dp+ windows. Keep the actual
+                        // phone-size test viewport and constrain this dialog explicitly.
+                        // The same width policy also works for real phones and tablets.
+                        properties = DialogProperties(usePlatformDefaultWidth = false),
+                        modifier = Modifier.widthIn(max = AppPresentation.AlertMaxWidth),
                         text = {
                             Column(verticalArrangement = Arrangement.spacedBy(AppSpace.sm)) {
                                 when (current) {
