@@ -1440,7 +1440,7 @@
     <string name="use_epub_css">使用书籍 CSS 样式</string>
     <string name="use_epub_css_hint">加载书籍自带的排版样式，装帧精良的书效果更好</string>
     <string name="page_transition_label">翻页效果</string>
-    <string name="welcome_brand_name">LUMI Community</string>
+    <string name="welcome_brand_name">Lumi Books</string>
     <string name="welcome_major_version">2</string>
     <string name="pdf_text_selection_unavailable">当前 PDF 暂不支持文字选择</string>
     <string name="pdf_notes_hint">长按 PDF 文字即可复制、添加高亮或划线</string>
