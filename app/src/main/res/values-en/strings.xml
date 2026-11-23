@@ -1539,7 +1539,7 @@
     <string name="use_epub_css">Use book CSS styles</string>
     <string name="use_epub_css_hint">Load the layout styles included with the book; best for carefully designed books</string>
     <string name="page_transition_label">Page turn effect</string>
-    <string name="welcome_brand_name">LUMI Community</string>
+    <string name="welcome_brand_name">Lumi Books</string>
     <string name="welcome_major_version">2</string>
     <string name="pdf_text_selection_unavailable">Text selection is not currently available for this PDF</string>
     <string name="pdf_notes_hint">Touch and hold PDF text to copy, highlight, or underline</string>
