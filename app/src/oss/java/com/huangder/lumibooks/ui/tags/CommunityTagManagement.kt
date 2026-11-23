@@ -8,18 +8,15 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.toggleableState
 import androidx.compose.ui.state.ToggleableState
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.huangder.lumibooks.R
 import com.huangder.lumibooks.data.local.entity.TagGroupEntity
@@ -270,104 +267,104 @@ internal fun CommunityTagManagementScreen(
     }
 
     LiquidGlassMenuHost(Modifier.fillMaxSize()) {
-    CollapsingSettingsScaffold(
-        title = title,
-        onBack = {
-            when {
-                busy -> Unit
-                selecting -> {
-                    selecting = false
-                    selected = emptySet()
+        CollapsingSettingsScaffold(
+            title = title,
+            onBack = {
+                when {
+                    busy -> Unit
+                    selecting -> {
+                        selecting = false
+                        selected = emptySet()
+                    }
+                    else -> onBack()
                 }
-                else -> onBack()
-            }
-        },
-        actions = {
-            if (selecting) {
-                LiquidGlassIconButton(
-                    imageVector = AppIcons.Folder,
-                    contentDescription = stringResource(R.string.community_move_selected),
-                    onClick = { start(TagTask.Move(selected.toList())) },
-                    enabled = selected.isNotEmpty() && !busy,
-                    size = 48.dp,
-                    iconSize = 18.dp
-                )
-                LiquidGlassIconButton(
-                    imageVector = AppIcons.Trash,
-                    contentDescription = stringResource(R.string.community_delete_selected),
-                    onClick = { start(TagTask.DeleteMany(selected.toList())) },
-                    enabled = selected.isNotEmpty() && !busy,
-                    size = 48.dp,
-                    iconSize = 18.dp,
-                    contentColor = AppColors.Destructive
-                )
-            } else {
-                val host = LocalLiquidGlassMenuHost.current
-                LaunchedEffect(pendingPageAction, host?.displayedMenu) {
-                    val action = pendingPageAction ?: return@LaunchedEffect
-                    if (host?.displayedMenu != null) return@LaunchedEffect
-                    pendingPageAction = null
-                    when (action) {
-                        TagPageAction.CreateTag -> start(TagTask.CreateTag)
-                        TagPageAction.CreateGroup -> start(TagTask.CreateGroup)
-                        TagPageAction.SelectTags -> {
-                            selecting = true
-                            selected = emptySet()
+            },
+            actions = {
+                if (selecting) {
+                    LiquidGlassIconButton(
+                        imageVector = AppIcons.Folder,
+                        contentDescription = stringResource(R.string.community_move_selected),
+                        onClick = { start(TagTask.Move(selected.toList())) },
+                        enabled = selected.isNotEmpty() && !busy,
+                        size = 48.dp,
+                        iconSize = 18.dp
+                    )
+                    LiquidGlassIconButton(
+                        imageVector = AppIcons.Trash,
+                        contentDescription = stringResource(R.string.community_delete_selected),
+                        onClick = { start(TagTask.DeleteMany(selected.toList())) },
+                        enabled = selected.isNotEmpty() && !busy,
+                        size = 48.dp,
+                        iconSize = 18.dp,
+                        contentColor = AppColors.Destructive
+                    )
+                } else {
+                    val host = LocalLiquidGlassMenuHost.current
+                    LaunchedEffect(pendingPageAction, host?.displayedMenu) {
+                        val action = pendingPageAction ?: return@LaunchedEffect
+                        if (host?.displayedMenu != null) return@LaunchedEffect
+                        pendingPageAction = null
+                        when (action) {
+                            TagPageAction.CreateTag -> start(TagTask.CreateTag)
+                            TagPageAction.CreateGroup -> start(TagTask.CreateGroup)
+                            TagPageAction.SelectTags -> {
+                                selecting = true
+                                selected = emptySet()
+                            }
                         }
                     }
-                }
-                TagPageActionsMenu(
-                    enabled = repository != null && !busy,
-                    showBatchSelection = tags.isNotEmpty(),
-                    onAction = { pendingPageAction = it }
-                )
-            }
-        },
-        lazyListState = listState,
-        lazyContent = {
-            if (tags.isEmpty() && groups.isEmpty()) {
-                item(key = "empty") {
-                    EmptyState(
-                        message = noTags,
-                        icon = AppIcons.Tag,
-                        modifier = Modifier.fillMaxWidth().padding(vertical = AppSpace.xl)
+                    TagPageActionsMenu(
+                        enabled = repository != null && !busy,
+                        showBatchSelection = tags.isNotEmpty(),
+                        onAction = { pendingPageAction = it }
                     )
                 }
-            } else {
-                if (ungrouped.isNotEmpty()) {
-                    item(key = "group:ungrouped") {
+            },
+            lazyListState = listState,
+            lazyContent = {
+                if (tags.isEmpty() && groups.isEmpty()) {
+                    item(key = "empty") {
+                        EmptyState(
+                            message = noTags,
+                            icon = AppIcons.Tag,
+                            modifier = Modifier.fillMaxWidth().padding(vertical = AppSpace.xl)
+                        )
+                    }
+                } else {
+                    if (ungrouped.isNotEmpty()) {
+                        item(key = "group:ungrouped") {
+                            Spacer(Modifier.height(AppSpace.md))
+                            CommunityTagGroupCard(
+                                group = null,
+                                members = ungrouped,
+                                selecting = selecting,
+                                selected = selected,
+                                onToggle = { tag ->
+                                    selected = if (tag.key in selected) selected - tag.key else selected + tag.key
+                                },
+                                onTagAction = { actionTag = it },
+                                onGroupAction = {}
+                            )
+                        }
+                    }
+                    items(groups, key = { "group:${it.id}" }) { group ->
+                        val members = tagsByGroup[group.id].orEmpty()
                         Spacer(Modifier.height(AppSpace.md))
                         CommunityTagGroupCard(
-                            group = null,
-                            members = ungrouped,
+                            group = group,
+                            members = members,
                             selecting = selecting,
                             selected = selected,
                             onToggle = { tag ->
                                 selected = if (tag.key in selected) selected - tag.key else selected + tag.key
                             },
                             onTagAction = { actionTag = it },
-                            onGroupAction = {}
+                            onGroupAction = { actionGroup = it }
                         )
                     }
                 }
-                items(groups, key = { "group:${it.id}" }) { group ->
-                    val members = tagsByGroup[group.id].orEmpty()
-                    Spacer(Modifier.height(AppSpace.md))
-                    CommunityTagGroupCard(
-                        group = group,
-                        members = members,
-                        selecting = selecting,
-                        selected = selected,
-                        onToggle = { tag ->
-                            selected = if (tag.key in selected) selected - tag.key else selected + tag.key
-                        },
-                        onTagAction = { actionTag = it },
-                        onGroupAction = { actionGroup = it }
-                    )
-                }
             }
-        }
-    )
+        )
     }
 
     actionGroup?.let { group ->
