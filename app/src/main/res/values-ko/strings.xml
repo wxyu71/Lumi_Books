@@ -697,13 +697,11 @@
     <string name="mineru_privacy_policy">OpenDataLab 개인정보 처리방침</string>
     <string name="mineru_api_limits">MinerU API 제한</string>
     <string name="mineru_consent_title">MinerU 클라우드 분석 사용</string>
-    <string name="mineru_consent_subtitle">아래 위험과 제3자 약관을 모두 읽어 주세요. 확인은 30초 후 활성화됩니다.</string>
     <string name="mineru_risk_upload">선택한 PDF의 본문, 이미지, 파일명과 문서 정보가 기기를 떠나 MinerU 및 OSS/CDN 저장소로 업로드됩니다.</string>
     <string name="mineru_risk_third_party">MinerU는 독립 제3자 서비스이며 보관, 삭제, 제한, 요금 및 서비스 변경은 운영자가 결정합니다.</string>
     <string name="mineru_risk_accuracy">클라우드 결과는 누락, 오인식 또는 레이아웃 변경이 있을 수 있습니다. LumiBooks는 정확성이나 지속적인 제공을 보장하지 않습니다.</string>
     <string name="mineru_risk_rights">처리 권한이 없는 파일, DRM 보호 파일, 민감한 개인정보, 영업 비밀 또는 엄격한 기밀 자료를 업로드하지 마세요.</string>
     <string name="mineru_consent_checkbox">제3자 약관을 읽었고 파일 업로드를 이해하며 선택한 파일을 처리할 권한이 있음을 확인합니다.</string>
-    <string name="mineru_consent_countdown">계속 읽어 주세요(%1$d초)</string>
     <string name="mineru_consent_accept">동의하고 사용</string>
     <string name="pdf_convert_choose_method_title">분석 방식 선택</string>
     <string name="pdf_convert_choose_method_body">로컬 분석은 파일을 업로드하지 않습니다. MinerU 분석은 PDF를 제3자 서비스로 전송합니다.</string>
@@ -795,13 +793,11 @@
     <string name="external_tts_third_party_title">타사 TTS 서비스 안내</string>
     <string name="external_tts_third_party_notice">타사 TTS 서비스는 사용자가 선택한 제공업체가 운영합니다. 사용하면 현재 낭독 중인 텍스트와 선택한 스타일 지침이 해당 제공업체로 전송됩니다. LumiBooks는 텍스트를 자체 서버로 전송하지 않으며 타사 서비스의 품질, 가용성, 요금 또는 정책 변경을 통제하지 않습니다. 이 안내는 귀하의 법적 권리에 영향을 주지 않습니다.</string>
     <string name="external_tts_consent_title">타사 TTS 서비스 사용</string>
-    <string name="external_tts_consent_subtitle">아래 위험 정보를 모두 읽어 주세요. 확인 버튼은 30초 후에 사용할 수 있습니다.</string>
     <string name="external_tts_risk_send">현재 낭독 중인 텍스트와 스타일 지침이 기기를 떠나 지정한 타사 TTS 서비스로 전송됩니다.</string>
     <string name="external_tts_risk_key">API 키는 이 기기의 Android KeyStore에만 암호화되어 저장되며 LumiBooks로 전송되지 않습니다.</string>
     <string name="external_tts_risk_third_party">선택한 TTS 서비스는 타사가 독립적으로 운영합니다. 가용성, 요금, 데이터 보관 및 정책 변경은 해당 제공업체가 결정합니다.</string>
     <string name="external_tts_risk_costs">타사 TTS 서비스를 사용하면 API 호출 요금이 발생할 수 있습니다. 미리 제공업체의 요금 정책을 확인하세요</string>
     <string name="external_tts_consent_checkbox">위 안내를 읽었으며 텍스트가 타사 서비스로 전송되고 관련 비용과 위험이 발생할 수 있음을 이해합니다.</string>
-    <string name="external_tts_consent_countdown">계속 읽어 주세요(%1$d초)</string>
     <string name="external_tts_consent_accept">동의하고 사용</string>
     <string name="external_tts_key_local">API 키는 Android KeyStore로 암호화되어 이 기기에만 저장됩니다.</string>
     <string name="external_tts_http_warning_title">보안 경고: HTTP는 평문으로 전송됩니다</string>
