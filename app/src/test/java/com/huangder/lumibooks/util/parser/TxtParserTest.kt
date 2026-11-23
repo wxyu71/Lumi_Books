@@ -319,21 +319,45 @@ class TxtParserTest {
         val parser = TxtParser().apply { parseFastOpen(file.absolutePath) }
         val key = parser.semanticIndexKey(file.absolutePath)
         val builds = AtomicInteger()
+        val started = CountDownLatch(1)
+        val release = CountDownLatch(1)
         TxtIndexCoordinator.clearForTesting()
 
-        val first = TxtIndexCoordinator.getOrBuild(key) {
-            builds.incrementAndGet()
-            parser.buildSemanticIndexSnapshot(file.absolutePath)
-        }
-        val second = TxtIndexCoordinator.getOrBuild(key) {
-            builds.incrementAndGet()
-            parser.buildSemanticIndexSnapshot(file.absolutePath)
-        }
+        try {
+            // Hold the first semantic scan in flight while a second caller arrives.
+            // Without this gate, a fast IO worker may finish and populate the
+            // completed cache before the second call, correctly returning a new
+            // completed Deferred rather than sharing the same in-flight Deferred.
+            val first = TxtIndexCoordinator.getOrBuild(key) {
+                builds.incrementAndGet()
+                started.countDown()
+                check(release.await(5, TimeUnit.SECONDS)) { "Timed out waiting to release semantic scan" }
+                parser.buildSemanticIndexSnapshot(file.absolutePath)
+            }
+            assertTrue("First semantic scan should start", started.await(5, TimeUnit.SECONDS))
+            val second = TxtIndexCoordinator.getOrBuild(key) {
+                builds.incrementAndGet()
+                parser.buildSemanticIndexSnapshot(file.absolutePath)
+            }
 
-        assertTrue(first === second)
-        assertEquals(first.await(), second.await())
-        assertEquals(1, builds.get())
-        TxtIndexCoordinator.clearForTesting()
+            assertTrue("Concurrent callers must share the in-flight Deferred", first === second)
+            assertEquals(1, builds.get())
+            release.countDown()
+            val snapshot = first.await()
+            assertEquals(snapshot, second.await())
+            assertEquals(snapshot, TxtIndexCoordinator.completed(key))
+            // A subsequent caller should reuse the completed snapshot without
+            // starting a second scan, even though the Deferred itself may differ.
+            assertEquals(snapshot, TxtIndexCoordinator.getOrBuild(key) {
+                builds.incrementAndGet()
+                parser.buildSemanticIndexSnapshot(file.absolutePath)
+            }.await())
+            assertEquals(1, builds.get())
+        } finally {
+            release.countDown()
+            TxtIndexCoordinator.clearForTesting()
+            parser.close()
+        }
     }
 
     @Test
