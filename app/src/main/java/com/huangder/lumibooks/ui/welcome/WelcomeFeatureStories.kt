@@ -164,7 +164,7 @@ internal fun WelcomeFeatureStoriesPage(
                 .widthIn(max = WelcomeStoriesMaxWidth)
                 .align(Alignment.TopCenter)
         ) {
-            // Top: "Filmy" (the landing spot of the intro's wordmark) and skip.
+            // Top: "Community" (the landing spot of the intro's wordmark) and skip.
             Row(
                 Modifier.fillMaxWidth().height(52.dp).padding(horizontal = 28.dp),
                 verticalAlignment = Alignment.CenterVertically
