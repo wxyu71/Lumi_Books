@@ -419,12 +419,12 @@ internal fun CategoryItem(
 }
 
 @Composable
-private fun SettingsCategoryGroup(content: @Composable () -> Unit) {
+internal fun SettingsCategoryGroup(content: @Composable () -> Unit) {
     GroupedCard { content() }
 }
 
 @Composable
-private fun SettingsGroupDivider() {
+internal fun SettingsGroupDivider() {
     GroupedRowDivider(startInset = 54.dp)
 }
 
