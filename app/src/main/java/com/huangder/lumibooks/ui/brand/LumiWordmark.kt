@@ -26,7 +26,7 @@ import kotlin.math.roundToInt
 
 /** The release codename shown under "Lumi". A brand word: never translated. */
 object LumiCodename {
-    const val CURRENT = "Filmy"
+    const val CURRENT = "Community"
 }
 
 private val TightLines = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.Both)
@@ -60,11 +60,11 @@ fun LumiWordmark(
     val lumiSize = if (compact) 12.sp else 20.sp
     val nameSize = if (compact) 30.sp else 60.sp
     Column(
-        modifier.clearAndSetSemantics { contentDescription = "Lumi $codename" },
+        modifier.clearAndSetSemantics { contentDescription = "LUMI $codename" },
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Lumi",
+            text = "LUMI",
             style = TextStyle(
                 fontWeight = FontWeight.Medium,
                 fontSize = lumiSize,
