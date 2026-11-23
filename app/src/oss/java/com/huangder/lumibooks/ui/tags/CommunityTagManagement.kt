@@ -21,6 +21,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.huangder.lumibooks.R
 import com.huangder.lumibooks.data.local.entity.TagGroupEntity
+import com.huangder.lumibooks.data.repository.TagManagementRepository
 import com.huangder.lumibooks.domain.model.ManagedTag
 import com.huangder.lumibooks.domain.model.TagOperationResult
 import com.huangder.lumibooks.domain.model.TagTypes
@@ -59,7 +60,7 @@ private fun CommunityTagGroupCard(
                     {
                         LiquidGlassIconButton(
                             imageVector = AppIcons.DotsThreeVertical,
-                            contentDescription = stringResource(R.string.annotation_tag_manage),
+                            contentDescription = stringResource(R.string.annotation_tag_manage) + " " + group.name,
                             onClick = { onGroupAction(group) },
                             size = 44.dp
                         )
@@ -93,7 +94,7 @@ private fun CommunityTagGroupCard(
                     } else {
                         LiquidGlassIconButton(
                             imageVector = AppIcons.DotsThreeVertical,
-                            contentDescription = stringResource(R.string.annotation_tag_manage),
+                            contentDescription = stringResource(R.string.annotation_tag_manage) + " " + tag.name,
                             onClick = { onTagAction(tag) },
                             size = 44.dp
                         )
@@ -119,7 +120,7 @@ private sealed interface TagTask {
 internal fun CommunityTagManagementScreen(
     type: String,
     onBack: () -> Unit,
-    repository: com.huangder.lumibooks.data.repository.TagManagementRepository? = rememberTagPickerRepository()
+    repository: TagManagementRepository? = rememberTagPickerRepository()
 ) {
     val groups by remember(repository, type) {
         repository?.observeGroups(type) ?: flowOf(emptyList<TagGroupEntity>())
@@ -150,6 +151,12 @@ internal fun CommunityTagManagementScreen(
     var draft by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+
+    // A hardware/system back action should close batch selection just like the toolbar back.
+    ConfigurableBackHandler(enabled = selecting && task == null && !busy) {
+        selecting = false
+        selected = emptySet()
+    }
 
     // Global rename/delete and sync can change the catalog while selection is open.
     LaunchedEffect(tags) { selected = selected.intersect(tags.map { it.key }.toSet()) }
@@ -196,9 +203,11 @@ internal fun CommunityTagManagementScreen(
         }
     }
 
+    // Index the catalog once. Rendering each group should not rescan every tag.
     val groupIds = remember(groups) { groups.mapTo(mutableSetOf()) { it.id } }
-    val ungrouped = remember(tags, groupIds) {
-        tags.filter { it.groupId == null || it.groupId !in groupIds }
+    val tagsByGroup = remember(tags) { tags.groupBy { it.groupId } }
+    val ungrouped = remember(tagsByGroup, groupIds) {
+        tagsByGroup.filterKeys { it == null || it !in groupIds }.values.flatten()
     }
 
     CollapsingSettingsScaffold(
@@ -236,7 +245,7 @@ internal fun CommunityTagManagementScreen(
                 Box {
                     LiquidGlassIconButton(
                         imageVector = AppIcons.DotsThreeVertical,
-                        contentDescription = stringResource(R.string.annotation_tag_manage),
+                        contentDescription = stringResource(R.string.more_options),
                         onClick = { if (!busy) pageActionsExpanded = true },
                         enabled = repository != null && !busy,
                         size = 40.dp,
@@ -302,7 +311,7 @@ internal fun CommunityTagManagementScreen(
                     }
                 }
                 items(groups, key = { "group:${it.id}" }) { group ->
-                    val members = tags.filter { it.groupId == group.id }
+                    val members = tagsByGroup[group.id].orEmpty()
                     Spacer(Modifier.height(AppSpace.md))
                     CommunityTagGroupCard(
                         group = group,

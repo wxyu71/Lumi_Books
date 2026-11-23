@@ -13,6 +13,7 @@ import com.huangder.lumibooks.data.repository.TagRepositoryImpl
 import com.huangder.lumibooks.data.sync.SyncIdentityStore
 import com.huangder.lumibooks.domain.model.TagTypes
 import com.huangder.lumibooks.ui.theme.EBookReaderTheme
+import com.huangder.lumibooks.ui.theme.MotionPreference
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -23,6 +24,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 
 /**
  * Exercises the real Compose page against the production Room repository.
@@ -31,6 +33,7 @@ import org.robolectric.annotation.Config
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], application = Application::class, qualifiers = "zh-rCN-w393dp-h852dp-xxhdpi")
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
 class CommunityTagManagementScreenTest {
     @get:Rule val compose = createComposeRule()
     private val context get() = ApplicationProvider.getApplicationContext<Application>()
@@ -58,7 +61,7 @@ class CommunityTagManagementScreenTest {
 
     private fun show() {
         compose.setContent {
-            EBookReaderTheme {
+            EBookReaderTheme(appTheme = "lumi", motionPreference = MotionPreference.REDUCED) {
                 CommunityTagManagementScreen(
                     type = TagTypes.BOOK,
                     onBack = {},
@@ -69,8 +72,7 @@ class CommunityTagManagementScreenTest {
     }
 
     private fun openPageActions() {
-        compose.onAllNodesWithContentDescription(label(R.string.annotation_tag_manage))
-            .onFirst().performClick()
+        compose.onNodeWithContentDescription(label(R.string.more_options)).performClick()
     }
 
     private fun createTag(name: String) {
