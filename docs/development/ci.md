@@ -51,3 +51,18 @@ API 26/33/36 的扩展 emulator、完整历史 Robolectric 和可选 Macrobenchm
 5. Kotlin 编译、Robolectric smoke、JUnit 断言、Lint 和 instrumentation 不使用自动重试；这些失败必须按真实根因修复。
 
 发布权限和签名边界见 [发布指南](release.md)。
+
+## 自动上游同步
+
+[上游同步工作流](../../.github/workflows/sync-upstream.yml) 每周一、周四自动运行，也支持维护者从 Actions 手工触发。目标是吸收 `huangder/Lumi_Books` 上游公开代码，而不是把 Community 分支重置为上游。
+
+1. 从两仓库最近共同祖先执行标准 Git 三方合并，**从不重置或强推 `main`**。上游已在历史中时，不创建多余提交。
+2. 即便没有文本冲突，只要上游和 Community 自分叉点以来改过同一个文件，或者上游修改了发行版本、OSS source set、构建、签名/CI、Community 规范、启动清单、应用字符串等受保护路径，就视为**需要产品语义审查**，不自动入 `main`。
+3. 对完全无冲突且无社区文件交叉修改的合并，先创建唯一 `sync/verify-*` 候选分支，使用 `workflow_dispatch` 运行完整 Android Community Beta CI（JVM/Robolectric、Lint、Debug/Diagnostic/Release、API 33/35 emulator）。候选分支**不读取发布签名密钥，也不发布 APK**。
+4. 候选 CI 通过后，重新确认 `main` 与上游都没有更新，使用普通 Git fast-forward 推送到 `main`。因为 `GITHUB_TOKEN` 发出的 push 不会触发其他工作流，必须再次显式 `workflow_dispatch` 主分支 CI；只有该次完整门禁通过、且版本未发布，才允许已有的固定签名 Beta 发布流程运行。
+5. 真正的 Git 冲突创建指向上游跟踪分支的 Draft PR；无文本冲突但存在社区改动交叉、候选 CI 失败、分支并发移动或主分支拒绝更新时，创建指向合并候选的 Draft PR。**不会悄悄选择上游版本、删改社区特性或把失败当成通过。**
+6. 所有 PR 必须由维护者解决冲突、复核 Community 行为并通过标准 CI 后再合并。Actions 创建的 PR 可能不会自动触发普通 `pull_request` 工作流；必要时请对已解决的分支手动运行 `Android Community Beta`。
+
+工作流仅在本 Fork 的默认分支持有临时写权限，并对外部来源的合并候选保持只读检查；不要求配置 Personal Access Token 或额外的签名 Secret。受保护分支规则如禁止机器人直接推送，则会退化为审查 PR，而非绕过规则。
+
+这套机制保护**已明确改动的社区文件与经过测试的行为**，但不能绝对识别未覆盖的跨文件语义变化；重要的上游架构变化仍需人工审查和回归测试。

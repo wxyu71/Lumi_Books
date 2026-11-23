@@ -1,4 +1,4 @@
-name: Propose upstream sync
+name: Sync upstream with Community safety gate
 
 on:
   schedule:
@@ -6,64 +6,32 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 concurrency:
   group: upstream-sync
   cancel-in-progress: false
 
 jobs:
-  propose:
-    # A write-permission workflow must never execute from a non-default branch.
+  sync:
+    # Never give a review branch or an upstream PR a write-capable automation token.
     if: github.ref == 'refs/heads/main' && github.repository == 'wxyu71/Lumi_Books'
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 150
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
     steps:
-      - name: Checkout community main
+      - name: Checkout community main with complete history
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: main
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Fetch upstream main (never merge automatically)
-        shell: bash
-        run: |
-          set -euo pipefail
-          git remote add upstream https://github.com/huangder/Lumi_Books.git
-          git fetch --no-tags upstream main
-          if git merge-base --is-ancestor upstream/main HEAD; then
-            echo "No new upstream changes" >> "$GITHUB_STEP_SUMMARY"
-            echo "UPSTREAM_CHANGED=false" >> "$GITHUB_ENV"
-          else
-            echo "UPSTREAM_CHANGED=true" >> "$GITHUB_ENV"
-          fi
-
-      - name: Update upstream review branch
-        if: env.UPSTREAM_CHANGED == 'true'
+      - name: Merge, protect Community edits, validate, and promote or propose a PR
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          gh auth setup-git
-          git switch -C sync/upstream-main upstream/main
-          git push --force-with-lease origin HEAD:refs/heads/sync/upstream-main
-
-      - name: Propose review PR
-        if: env.UPSTREAM_CHANGED == 'true'
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          existing="$(gh pr list --base main --head sync/upstream-main --state open --json number --jq '.[0].number // empty')"
-          if [[ -n "$existing" ]]; then
-            echo "Updated review branch for PR #$existing" >> "$GITHUB_STEP_SUMMARY"
-          else
-            gh pr create --draft --base main --head sync/upstream-main \
-              --title "chore: review upstream Lumi_Books changes" \
-              --body "Automated upstream review proposal; **not** an automatic merge. Reconcile conflicts and preserve community product decisions (no Premium, QQ, remote notice fetch, mandatory onboarding, widgets). CI and manual code review are required."
-          fi
-          echo "Do not merge this raw tracking branch without reconciling community changes." >> "$GITHUB_STEP_SUMMARY"
+        run: bash tools/ci_sync_upstream.sh
