@@ -138,8 +138,8 @@ internal fun LumiAboutHeader(
             Text(
                 text = currentVersion,
                 color = if (unlocked) Color(0xFF4B3540) else Color.White,
-                fontSize = 40.sp,
-                fontWeight = FontWeight.Bold
+                fontSize = AppType.Section,
+                fontWeight = FontWeight.SemiBold
             )
             Spacer(Modifier.height(AppSpace.sm))
             Box(
