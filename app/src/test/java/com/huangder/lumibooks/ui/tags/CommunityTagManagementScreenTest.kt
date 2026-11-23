@@ -1,14 +1,15 @@
 package com.huangder.lumibooks.ui.tags
 
 import android.app.Application
-import androidx.compose.ui.test.assertDoesNotExist
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.test.core.app.ApplicationProvider
 import com.huangder.lumibooks.R
 import com.huangder.lumibooks.domain.model.TagTypes
 import com.huangder.lumibooks.ui.theme.EBookReaderTheme
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -36,11 +37,17 @@ class CommunityTagManagementScreenTest {
         compose.onNodeWithText(context.getString(R.string.community_no_tags))
             .assertIsDisplayed()
 
-        compose.onNodeWithText(context.getString(R.string.community_tag_count, 0))
-            .assertDoesNotExist()
-        compose.onNodeWithText(context.getString(R.string.tag_picker_uncategorized))
-            .assertDoesNotExist()
-        compose.onNodeWithText(context.getString(R.string.community_select_tags))
-            .assertDoesNotExist()
+        assertTrue(
+            compose.onAllNodesWithText(context.getString(R.string.community_tag_count, 0))
+                .fetchSemanticsNodes().isEmpty()
+        )
+        assertTrue(
+            compose.onAllNodesWithText(context.getString(R.string.tag_picker_uncategorized))
+                .fetchSemanticsNodes().isEmpty()
+        )
+        assertTrue(
+            compose.onAllNodesWithText(context.getString(R.string.community_select_tags))
+                .fetchSemanticsNodes().isEmpty()
+        )
     }
 }
