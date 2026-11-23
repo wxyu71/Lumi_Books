@@ -7,6 +7,8 @@ import android.view.View
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -18,6 +20,7 @@ import com.huangder.lumibooks.ui.splash.SplashScreen
 import com.huangder.lumibooks.ui.theme.EBookReaderTheme
 import com.huangder.lumibooks.ui.theme.MotionPreference
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -68,10 +71,10 @@ class LumiDawnRenderTest {
         }
     }
 
-    private fun splash(dark: Boolean) {
-        show(dark) { SplashScreen(isDark = dark, iconStyle = "lumi2") }
-        compose.onNodeWithContentDescription("Lumi ${LumiCodename.CURRENT}").assertIsDisplayed()
-        save("01-splash-${if (dark) "dark" else "light"}")
+    private fun splash(dark: Boolean, iconStyle: String = "lumi2", suffix: String = "") {
+        show(dark) { SplashScreen(isDark = dark, iconStyle = iconStyle) }
+        compose.onNodeWithContentDescription("LUMI ${LumiCodename.CURRENT}").assertIsDisplayed()
+        save("01-splash-${if (dark) "dark" else "light"}$suffix")
     }
 
     private fun intro(newInstall: Boolean, dark: Boolean = false, theme: String = "lumi", suffix: String = "") {
@@ -92,6 +95,9 @@ class LumiDawnRenderTest {
         }
         val greeting = if (newInstall) R.string.welcome_title else R.string.welcome_update_title
         compose.onNodeWithText(context.getString(greeting)).assertIsDisplayed()
+        val wordmark = compose.onNodeWithContentDescription("LUMI Community").assertIsDisplayed()
+        val wordmarkBounds = wordmark.fetchSemanticsNode().boundsInRoot
+        assertTrue(wordmarkBounds.left >= 0f && wordmarkBounds.right <= view.width)
         val button = compose.onNodeWithText(context.getString(R.string.community_agree_continue)).assertIsDisplayed()
         assertTrue(button.fetchSemanticsNode().boundsInRoot.bottom <= view.height)
         save("02-intro-${if (newInstall) "new" else "update"}-${if (dark) "dark" else "light"}$suffix")
@@ -137,11 +143,33 @@ class LumiDawnRenderTest {
         save("03-story-${index + 1}-${WelcomeStory.entries[index].name.lowercase()}-$mode$suffix")
     }
 
+
+    @Test fun appearanceSelectionIsOptionalAndContinueWorksImmediately() {
+        var completed = 0
+        show {
+            com.huangder.lumibooks.ui.brand.LumiDawnStage {
+                WelcomeFeatureStoriesPage(
+                    hasReadingJournal = true,
+                    onContinue = { completed++ },
+                    initialStory = 3,
+                    themeOptions = listOf("liquid_glass", "lumi", "material3"),
+                    selectedTheme = null
+                )
+            }
+        }
+        compose.onNodeWithTag("welcome-story-next").assertIsEnabled().performClick()
+        compose.runOnIdle { assertEquals(1, completed) }
+    }
+
     @Test fun splashLight() = splash(dark = false)
     @Test fun splashDark() = splash(dark = true)
+    @Test fun classicIconSplashUsesCommunityWordmark() =
+        splash(dark = false, iconStyle = "classic", suffix = "-classic")
     @Test fun introUpdateLight() = intro(newInstall = false)
     @Test fun introNewDark() = intro(newInstall = true, dark = true)
     @Test fun introGlass() = intro(newInstall = true, theme = "liquid_glass", suffix = "-glass")
+    @Test @Config(qualifiers = "zh-rCN-w320dp-h568dp-xhdpi")
+    fun introCommunitySmallScreen() = intro(newInstall = true, suffix = "-small")
     @Test fun storyJournalLight() = story(0)
     @Test fun storyListeningLight() = story(1)
     @Test fun storyStatsLight() = story(2)

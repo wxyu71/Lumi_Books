@@ -138,10 +138,10 @@ internal fun LumiAboutHeader(
             Text(
                 text = currentVersion,
                 color = if (unlocked) Color(0xFF4B3540) else Color.White,
-                fontSize = 40.sp,
-                fontWeight = FontWeight.Bold
+                fontSize = AppType.BodySmall,
+                fontWeight = FontWeight.Medium
             )
-            Spacer(Modifier.height(AppSpace.sm))
+            Spacer(Modifier.height(AppSpace.xs))
             Box(
                 modifier = Modifier
                     .testTag("lumi_check_update")

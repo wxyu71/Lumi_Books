@@ -29,7 +29,8 @@ internal fun TagTextField(
     enabled: Boolean = true,
     containerColor: Color = AppColors.BgGray,
     leadingIcon: ImageVector? = null,
-    trailingContent: (@Composable () -> Unit)? = null
+    trailingContent: (@Composable () -> Unit)? = null,
+    isError: Boolean = false
 ) {
     var focused by remember { mutableStateOf(false) }
     val shape = AppRoundedCornerShape(AppRadius.lg)
@@ -40,7 +41,11 @@ internal fun TagTextField(
         modifier = modifier.fillMaxWidth().semantics { contentDescription = hint }
             .onFocusChanged { focused = it.isFocused }
             .clip(shape).lumiCardSurface(color = containerColor, shape = shape)
-            .border(1.dp, if (focused) AppColors.Accent.copy(alpha = 0.45f) else Color.Transparent, shape),
+            .border(1.dp, when {
+                isError -> AppColors.Destructive
+                focused -> AppColors.Accent.copy(alpha = 0.45f)
+                else -> Color.Transparent
+            }, shape),
         decorationBox = { inner ->
             Row(Modifier.heightIn(min = 54.dp).padding(start = 16.dp, end = if (trailingContent == null) 16.dp else 4.dp)
                 .padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically,

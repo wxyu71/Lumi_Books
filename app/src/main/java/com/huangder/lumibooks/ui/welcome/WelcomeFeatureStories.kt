@@ -147,8 +147,7 @@ internal fun WelcomeFeatureStoriesPage(
     val colors = lumiDawnColors()
     val motion = lumiDawnMotion()
     val lastPage = pager.currentPage == stories.lastIndex
-    // The appearance story must be answered before the flow can move on.
-    val canContinue = !(lastPage && stories[pager.currentPage] == WelcomeStory.APPEARANCE && selectedTheme == null)
+    // Keep the currently configured theme unless the user explicitly chooses another one.
 
     ConfigurableBackHandler(enabled = pager.currentPage > 0) {
         scope.launch { pager.animateScrollToPage(pager.currentPage - 1, animationSpec = StoryPageTurn) }
@@ -164,7 +163,7 @@ internal fun WelcomeFeatureStoriesPage(
                 .widthIn(max = WelcomeStoriesMaxWidth)
                 .align(Alignment.TopCenter)
         ) {
-            // Top: "Filmy" (the landing spot of the intro's wordmark) and skip.
+            // Top: "Community" (the landing spot of the intro's wordmark) and skip.
             Row(
                 Modifier.fillMaxWidth().height(52.dp).padding(horizontal = 28.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -223,7 +222,7 @@ internal fun WelcomeFeatureStoriesPage(
                 LumiDawnArrowButton(
                     label = stringResource(if (lastPage) R.string.welcome_continue else R.string.welcome_next),
                     expanded = true,
-                    enabled = canContinue,
+                    enabled = true,
                     onClick = {
                         if (lastPage) onContinue()
                         else scope.launch { pager.animateScrollToPage(pager.currentPage + 1, animationSpec = StoryPageTurn) }

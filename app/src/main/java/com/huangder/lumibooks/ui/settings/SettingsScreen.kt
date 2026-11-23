@@ -418,16 +418,6 @@ internal fun CategoryItem(
     }
 }
 
-@Composable
-private fun SettingsCategoryGroup(content: @Composable () -> Unit) {
-    GroupedCard { content() }
-}
-
-@Composable
-private fun SettingsGroupDivider() {
-    GroupedRowDivider(startInset = 54.dp)
-}
-
 /** Divider of tiled rows, aligned with the label after the tile. */
 @Composable
 private fun SettingsTileDivider() {

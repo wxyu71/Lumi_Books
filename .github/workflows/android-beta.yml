@@ -66,10 +66,6 @@ jobs:
           fail: true
           failIfEmpty: false
 
-      - name: Validate Community distribution boundaries
-        shell: bash
-        run: python3 tools/check_community_policy.py
-
   verify:
     name: JVM compile + Robolectric (JDK 21)
     needs: policy

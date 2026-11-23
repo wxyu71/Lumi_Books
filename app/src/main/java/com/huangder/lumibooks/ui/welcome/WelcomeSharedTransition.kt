@@ -10,7 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 
 /**
- * Scopes for the welcome flow's shared-element hand-off: the introduction's large "Filmy"
+ * Scopes for the welcome flow's shared-element hand-off: the introduction's large "Community"
  * flies to the top-left corner of the feature stories (and back). Null outside the flow or
  * when motion is off, in which case the modifier is a no-op.
  */

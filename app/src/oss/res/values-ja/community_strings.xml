@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="community_app_name">Lumi Community β</string>
+    <string name="community_app_name">LUMI</string>
     <string name="community_agree_continue">同意して読み始める</string>
     <string name="community_manage_book_tags">本のタグを管理</string>
     <string name="community_manage_annotation_tags">注釈タグを管理</string>

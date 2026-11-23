@@ -270,7 +270,7 @@ fun WelcomeScreen(
             } else if (!motionEnabled) {
                 fadeIn(tween(140)) togetherWith fadeOut(tween(120))
             } else if (setOf(initialState, targetState) == setOf(WelcomePage.INTRODUCTION, WelcomePage.FEATURES)) {
-                // Same backdrop on both sides: crossfade while "Filmy" flies between them.
+                // Same backdrop on both sides: crossfade while "Community" flies between them.
                 fadeIn(tween(460, delayMillis = 140, easing = AppEasing.Decelerate)) togetherWith
                     fadeOut(tween(260, easing = AppEasing.Accelerate))
             } else if (targetState.ordinal > initialState.ordinal) {
@@ -796,7 +796,7 @@ private fun SupportProjectPage(
                 primary = false,
                 isLiquidGlass = isLiquidGlass,
                 isDark = isDark,
-                enabled = entranceStage >= 5,
+                enabled = true,
                 modifier = Modifier
                     .weight(1f)
                     .height(52.dp)
@@ -807,7 +807,7 @@ private fun SupportProjectPage(
                 primary = true,
                 isLiquidGlass = isLiquidGlass,
                 isDark = isDark,
-                enabled = entranceStage >= 5,
+                enabled = true,
                 modifier = Modifier
                     .weight(1f)
                     .height(52.dp)

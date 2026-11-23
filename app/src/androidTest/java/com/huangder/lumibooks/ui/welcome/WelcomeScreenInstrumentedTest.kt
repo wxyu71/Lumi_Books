@@ -26,8 +26,8 @@ class WelcomeScreenInstrumentedTest {
         showWelcome(isNewInstallation = false, startOnIntroduction = true)
 
         composeRule.onNodeWithText(context.getString(R.string.welcome_update_title)).assertIsDisplayed()
-        composeRule.onNodeWithContentDescription("Lumi ${com.huangder.lumibooks.ui.brand.LumiCodename.CURRENT}").assertIsDisplayed()
-        composeRule.onNodeWithText(context.getString(R.string.welcome_start_using)).assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("LUMI ${com.huangder.lumibooks.ui.brand.LumiCodename.CURRENT}").assertIsDisplayed()
+        composeRule.onNodeWithText(context.getString(R.string.community_agree_continue)).assertIsDisplayed()
         composeRule.onNodeWithText(context.getString(R.string.welcome_title)).assertDoesNotExist()
         composeRule.onNodeWithText(context.getString(R.string.welcome_exit)).assertDoesNotExist()
         composeRule
@@ -41,11 +41,11 @@ class WelcomeScreenInstrumentedTest {
         var finished = false
         showWelcome(isNewInstallation = true, onFinished = { finished = true })
 
-        composeRule.onNodeWithText(context.getString(R.string.welcome_start_using)).assertIsDisplayed()
+        composeRule.onNodeWithText(context.getString(R.string.community_agree_continue)).assertIsDisplayed()
         composeRule.onNodeWithText(context.getString(R.string.welcome_story_journal_title)).assertDoesNotExist()
         composeRule.onNodeWithText(context.getString(R.string.welcome_support_title)).assertDoesNotExist()
         composeRule.onNodeWithText(context.getString(R.string.welcome_open_sponsor)).assertDoesNotExist()
-        composeRule.onNodeWithText(context.getString(R.string.welcome_start_using)).performClick()
+        composeRule.onNodeWithText(context.getString(R.string.community_agree_continue)).performClick()
         assertTrue("New installation should finish from the introduction", finished)
     }
 
@@ -57,7 +57,7 @@ class WelcomeScreenInstrumentedTest {
 
         composeRule.onNodeWithText(context.getString(R.string.welcome_story_listening_title)).assertDoesNotExist()
         composeRule.onNodeWithText(context.getString(R.string.welcome_support_title)).assertDoesNotExist()
-        composeRule.onNodeWithText(context.getString(R.string.welcome_start_using)).performClick()
+        composeRule.onNodeWithText(context.getString(R.string.community_agree_continue)).performClick()
         assertTrue("Update welcome should finish without promotional screens", finished)
     }
 
