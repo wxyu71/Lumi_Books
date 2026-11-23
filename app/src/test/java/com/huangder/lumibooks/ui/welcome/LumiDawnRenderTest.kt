@@ -70,7 +70,7 @@ class LumiDawnRenderTest {
 
     private fun splash(dark: Boolean) {
         show(dark) { SplashScreen(isDark = dark, iconStyle = "lumi2") }
-        compose.onNodeWithContentDescription("Lumi ${LumiCodename.CURRENT}").assertIsDisplayed()
+        compose.onNodeWithContentDescription("LUMI ${LumiCodename.CURRENT}").assertIsDisplayed()
         save("01-splash-${if (dark) "dark" else "light"}")
     }
 
@@ -92,6 +92,7 @@ class LumiDawnRenderTest {
         }
         val greeting = if (newInstall) R.string.welcome_title else R.string.welcome_update_title
         compose.onNodeWithText(context.getString(greeting)).assertIsDisplayed()
+        compose.onNodeWithContentDescription("LUMI Community").assertIsDisplayed()
         val button = compose.onNodeWithText(context.getString(R.string.community_agree_continue)).assertIsDisplayed()
         assertTrue(button.fetchSemanticsNode().boundsInRoot.bottom <= view.height)
         save("02-intro-${if (newInstall) "new" else "update"}-${if (dark) "dark" else "light"}$suffix")
