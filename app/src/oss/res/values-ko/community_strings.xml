@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="community_app_name">Lumi Community β</string>
+    <string name="community_app_name">LUMI</string>
     <string name="community_agree_continue">동의하고 독서 시작</string>
     <string name="community_manage_book_tags">도서 태그 관리</string>
     <string name="community_manage_annotation_tags">주석 태그 관리</string>
