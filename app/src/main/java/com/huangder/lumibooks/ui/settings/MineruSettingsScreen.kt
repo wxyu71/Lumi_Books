@@ -46,7 +46,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -61,7 +60,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.delay
 import com.huangder.lumibooks.R
 import com.huangder.lumibooks.mineru.MineruConfig
 import com.huangder.lumibooks.mineru.MineruMode
@@ -503,15 +501,8 @@ private fun MineruSecondaryButton(
 @Composable
 private fun MineruConsentSheet(onDismiss: () -> Unit, onAccept: () -> Unit) {
     val isLiquidGlass = LocalAppTheme.current == "liquid_glass"
-    var remainingSeconds by remember { mutableIntStateOf(CONSENT_COUNTDOWN_SECONDS) }
     var confirmed by rememberSaveable { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        while (remainingSeconds > 0) {
-            delay(1_000)
-            remainingSeconds--
-        }
-    }
 
     val sheetContent: @Composable () -> Unit = {
         Column(
@@ -530,12 +521,6 @@ private fun MineruConsentSheet(onDismiss: () -> Unit, onAccept: () -> Unit) {
                 fontSize = AppType.Section,
                 fontWeight = FontWeight.Bold,
                 color = AppColors.TextPrimary
-            )
-            Spacer(Modifier.height(8.dp))
-            Text(
-                stringResource(R.string.mineru_consent_subtitle),
-                fontSize = AppType.BodySmall,
-                color = AppColors.TextSecondary
             )
             Spacer(Modifier.height(16.dp))
 
@@ -582,12 +567,8 @@ private fun MineruConsentSheet(onDismiss: () -> Unit, onAccept: () -> Unit) {
             }
 
             MineruPrimaryButton(
-                label = if (remainingSeconds > 0) {
-                    stringResource(R.string.mineru_consent_countdown, remainingSeconds)
-                } else {
-                    stringResource(R.string.mineru_consent_accept)
-                },
-                enabled = remainingSeconds == 0 && confirmed,
+                label = stringResource(R.string.mineru_consent_accept),
+                enabled = confirmed,
                 forceWhiteContent = true,
                 onClick = onAccept
             )
@@ -630,4 +611,3 @@ private fun MineruRiskItem(text: String) {
     }
 }
 
-private const val CONSENT_COUNTDOWN_SECONDS = 30
