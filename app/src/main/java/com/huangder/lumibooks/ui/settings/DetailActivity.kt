@@ -145,6 +145,14 @@ class DetailActivity : ComponentActivity() {
                             stringResource(R.string.settings_listening_preferences),
                             onBack
                         ) { ListeningPreferencesDetail(viewModel) }
+                        "book_tags" -> com.huangder.lumibooks.edition.EditionTagManagementDetail(
+                            com.huangder.lumibooks.domain.model.TagTypes.BOOK,
+                            onBack
+                        )
+                        "annotation_tags" -> com.huangder.lumibooks.edition.EditionTagManagementDetail(
+                            com.huangder.lumibooks.domain.model.TagTypes.ANNOTATION,
+                            onBack
+                        )
                         "selection_menu" -> SelectionMenuSettingsScreen(
                             settings = uiState.selectionMenuItems,
                             onChange = viewModel::saveSelectionMenuItems,
