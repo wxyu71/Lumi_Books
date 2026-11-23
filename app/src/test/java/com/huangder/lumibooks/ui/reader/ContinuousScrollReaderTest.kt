@@ -705,7 +705,12 @@ class ContinuousScrollReaderTest {
         currentChapter = 0
         chapterCount = 1
         show()
-        compose.waitUntil(15_000) { restored }
+        // Viewport restoration can complete before the embedded AndroidView has
+        // attached and measured its selectable text. Test the handle only after
+        // the actual text surface exists; keep every drag/selection assertion.
+        compose.waitUntil(15_000) {
+            restored && visibleTextViewOrNull()?.layout != null
+        }
         var handle = Offset.Zero
         var target = Offset.Zero
         var listOffset = 0
