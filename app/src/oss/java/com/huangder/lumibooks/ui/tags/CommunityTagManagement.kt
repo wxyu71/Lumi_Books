@@ -1,5 +1,6 @@
 package com.huangder.lumibooks.ui.tags
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -31,6 +32,8 @@ import com.huangder.lumibooks.ui.theme.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 
 /**
  * Shared manager for Settings and reader/annotation toolbar.
@@ -266,238 +269,252 @@ internal fun CommunityTagManagementScreen(
         tagsByGroup.filterKeys { it == null || it !in groupIds }.values.flatten()
     }
 
-    LiquidGlassMenuHost(Modifier.fillMaxSize()) {
-        CollapsingSettingsScaffold(
-            title = title,
-            onBack = {
-                when {
-                    busy -> Unit
-                    selecting -> {
-                        selecting = false
-                        selected = emptySet()
-                    }
-                    else -> onBack()
-                }
-            },
-            actions = {
-                if (selecting) {
-                    LiquidGlassIconButton(
-                        imageVector = AppIcons.Folder,
-                        contentDescription = stringResource(R.string.community_move_selected),
-                        onClick = { start(TagTask.Move(selected.toList())) },
-                        enabled = selected.isNotEmpty() && !busy,
-                        size = 48.dp,
-                        iconSize = 18.dp
-                    )
-                    LiquidGlassIconButton(
-                        imageVector = AppIcons.Trash,
-                        contentDescription = stringResource(R.string.community_delete_selected),
-                        onClick = { start(TagTask.DeleteMany(selected.toList())) },
-                        enabled = selected.isNotEmpty() && !busy,
-                        size = 48.dp,
-                        iconSize = 18.dp,
-                        contentColor = AppColors.Destructive
-                    )
-                } else {
-                    val host = LocalLiquidGlassMenuHost.current
-                    LaunchedEffect(pendingPageAction, host?.displayedMenu) {
-                        val action = pendingPageAction ?: return@LaunchedEffect
-                        if (host?.displayedMenu != null) return@LaunchedEffect
-                        pendingPageAction = null
-                        when (action) {
-                            TagPageAction.CreateTag -> start(TagTask.CreateTag)
-                            TagPageAction.CreateGroup -> start(TagTask.CreateGroup)
-                            TagPageAction.SelectTags -> {
-                                selecting = true
+    val pageBackdrop = rememberLayerBackdrop()
+    val activeBackdrop = pageBackdrop.takeIf { LocalAppTheme.current == "liquid_glass" }
+    LiquidGlassMenuHost(
+        modifier = Modifier.fillMaxSize().background(AppColors.PageBg),
+        backdrop = activeBackdrop
+    ) {
+        LiquidGlassDialogHost(
+            modifier = Modifier.fillMaxSize(),
+            backdrop = activeBackdrop
+        ) {
+            Box(
+                Modifier.fillMaxSize()
+                    .then(activeBackdrop?.let { Modifier.layerBackdrop(it) } ?: Modifier)
+            ) {
+                CollapsingSettingsScaffold(
+                    title = title,
+                    onBack = {
+                        when {
+                            busy -> Unit
+                            selecting -> {
+                                selecting = false
                                 selected = emptySet()
                             }
+                            else -> onBack()
                         }
-                    }
-                    TagPageActionsMenu(
-                        enabled = repository != null && !busy,
-                        showBatchSelection = tags.isNotEmpty(),
-                        onAction = { pendingPageAction = it }
-                    )
-                }
-            },
-            lazyListState = listState,
-            lazyContent = {
-                if (tags.isEmpty() && groups.isEmpty()) {
-                    item(key = "empty") {
-                        EmptyState(
-                            message = noTags,
-                            icon = AppIcons.Tag,
-                            modifier = Modifier.fillMaxWidth().padding(vertical = AppSpace.xl)
-                        )
-                    }
-                } else {
-                    if (ungrouped.isNotEmpty()) {
-                        item(key = "group:ungrouped") {
-                            Spacer(Modifier.height(AppSpace.md))
-                            CommunityTagGroupCard(
-                                group = null,
-                                members = ungrouped,
-                                selecting = selecting,
-                                selected = selected,
-                                onToggle = { tag ->
-                                    selected = if (tag.key in selected) selected - tag.key else selected + tag.key
-                                },
-                                onTagAction = { actionTag = it },
-                                onGroupAction = {}
+                    },
+                    actions = {
+                        if (selecting) {
+                            LiquidGlassIconButton(
+                                imageVector = AppIcons.Folder,
+                                contentDescription = stringResource(R.string.community_move_selected),
+                                onClick = { start(TagTask.Move(selected.toList())) },
+                                enabled = selected.isNotEmpty() && !busy,
+                                size = 48.dp,
+                                iconSize = 18.dp
+                            )
+                            LiquidGlassIconButton(
+                                imageVector = AppIcons.Trash,
+                                contentDescription = stringResource(R.string.community_delete_selected),
+                                onClick = { start(TagTask.DeleteMany(selected.toList())) },
+                                enabled = selected.isNotEmpty() && !busy,
+                                size = 48.dp,
+                                iconSize = 18.dp,
+                                contentColor = AppColors.Destructive
+                            )
+                        } else {
+                            val host = LocalLiquidGlassMenuHost.current
+                            LaunchedEffect(pendingPageAction, host?.displayedMenu) {
+                                val action = pendingPageAction ?: return@LaunchedEffect
+                                if (host?.displayedMenu != null) return@LaunchedEffect
+                                pendingPageAction = null
+                                when (action) {
+                                    TagPageAction.CreateTag -> start(TagTask.CreateTag)
+                                    TagPageAction.CreateGroup -> start(TagTask.CreateGroup)
+                                    TagPageAction.SelectTags -> {
+                                        selecting = true
+                                        selected = emptySet()
+                                    }
+                                }
+                            }
+                            TagPageActionsMenu(
+                                enabled = repository != null && !busy,
+                                showBatchSelection = tags.isNotEmpty(),
+                                onAction = { pendingPageAction = it }
                             )
                         }
-                    }
-                    items(groups, key = { "group:${it.id}" }) { group ->
-                        val members = tagsByGroup[group.id].orEmpty()
-                        Spacer(Modifier.height(AppSpace.md))
-                        CommunityTagGroupCard(
-                            group = group,
-                            members = members,
-                            selecting = selecting,
-                            selected = selected,
-                            onToggle = { tag ->
-                                selected = if (tag.key in selected) selected - tag.key else selected + tag.key
-                            },
-                            onTagAction = { actionTag = it },
-                            onGroupAction = { actionGroup = it }
-                        )
-                    }
-                }
-            }
-        )
-    }
-
-    actionGroup?.let { group ->
-        val memberCount = tags.count { it.groupId == group.id }
-        LiquidGlassAlertDialog(
-            onDismissRequest = { if (!busy) actionGroup = null },
-            titleText = group.name,
-            text = if (memberCount > 0) {
-                {
-                    Text(
-                        stringResource(R.string.community_tag_count, memberCount),
-                        color = AppColors.TextSecondary
-                    )
-                }
-            } else {
-                null
-            },
-            actions = listOf(
-                AppDialogAction(
-                    stringResource(R.string.community_rename_group),
-                    onClick = { start(TagTask.RenameGroup(group)) }
-                ),
-                AppDialogAction(
-                    stringResource(R.string.community_delete_group),
-                    onClick = { start(TagTask.DeleteGroup(group)) },
-                    role = AppDialogActionRole.Destructive
-                ),
-                AppDialogAction(
-                    stringResource(R.string.cancel),
-                    onClick = { actionGroup = null },
-                    role = AppDialogActionRole.Cancel
-                )
-            )
-        )
-    }
-
-    actionTag?.let { tag ->
-        LiquidGlassAlertDialog(
-            onDismissRequest = { if (!busy) actionTag = null },
-            titleText = tag.name,
-            text = {
-                Text(stringResource(R.string.community_usage_count, tag.usageCount), color = AppColors.TextSecondary)
-            },
-            actions = listOf(
-                AppDialogAction(stringResource(R.string.annotation_tag_rename), onClick = { start(TagTask.RenameTag(tag)) }),
-                AppDialogAction(stringResource(R.string.community_move_tag), onClick = { start(TagTask.Move(listOf(tag.key))) }),
-                AppDialogAction(stringResource(R.string.delete), onClick = { start(TagTask.DeleteTag(tag)) },
-                    role = AppDialogActionRole.Destructive),
-                AppDialogAction(stringResource(R.string.cancel), onClick = { actionTag = null },
-                    role = AppDialogActionRole.Cancel)
-            )
-        )
-    }
-
-    task?.let { current ->
-        val isMove = current is TagTask.Move
-        val isDelete = current is TagTask.DeleteTag || current is TagTask.DeleteGroup || current is TagTask.DeleteMany
-        val name = when (current) {
-            TagTask.CreateTag -> stringResource(R.string.community_create_tag)
-            TagTask.CreateGroup -> stringResource(R.string.community_create_group)
-            is TagTask.RenameTag -> stringResource(R.string.annotation_tag_rename)
-            is TagTask.RenameGroup -> stringResource(R.string.community_rename_group)
-            is TagTask.DeleteTag, is TagTask.DeleteMany -> stringResource(R.string.delete)
-            is TagTask.DeleteGroup -> stringResource(R.string.community_delete_group)
-            is TagTask.Move -> stringResource(R.string.community_move_tag)
-        }
-        LiquidGlassAlertDialog(
-            onDismissRequest = { if (!busy) { task = null; error = null } },
-            titleText = name,
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(AppSpace.sm)) {
-                    when (current) {
-                        TagTask.CreateTag, TagTask.CreateGroup,
-                        is TagTask.RenameTag, is TagTask.RenameGroup -> {
-                            LumiTextField(
-                                value = draft,
-                                onValueChange = { draft = it; error = null },
-                                enabled = !busy,
-                                singleLine = true,
-                                placeholder = { Text(stringResource(R.string.community_name_hint)) },
-                                isError = error != null
-                            )
-                        }
-                        is TagTask.DeleteGroup -> Text(groupDeleteHint)
-                        is TagTask.DeleteMany -> {
-                            Text(stringResource(R.string.community_selected_count, current.keys.size),
-                                color = AppColors.TextSecondary, fontSize = AppType.BodySmall)
-                            Text(tagDeleteHint)
-                        }
-                        is TagTask.DeleteTag -> Text(tagDeleteHint)
-                        is TagTask.Move -> {
-                            Text(stringResource(R.string.community_move_hint))
-                            val keys = current.keys
-                            val choices = listOf<TagGroupEntity?>(null) + groups
-                            Column(Modifier.heightIn(max = 300.dp).verticalScroll(rememberScrollState())) {
-                                choices.forEach { group ->
-                                    LumiRow(
-                                        title = group?.name ?: stringResource(R.string.tag_picker_uncategorized),
-                                        onClick = { perform { repository!!.moveTags(type, keys, group?.id) } },
-                                        enabled = !busy,
-                                        icon = AppIcons.Folder
+                    },
+                    lazyListState = listState,
+                    lazyContent = {
+                        if (tags.isEmpty() && groups.isEmpty()) {
+                            item(key = "empty") {
+                                EmptyState(
+                                    message = noTags,
+                                    icon = AppIcons.Tag,
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = AppSpace.xl)
+                                )
+                            }
+                        } else {
+                            if (ungrouped.isNotEmpty()) {
+                                item(key = "group:ungrouped") {
+                                    Spacer(Modifier.height(AppSpace.md))
+                                    CommunityTagGroupCard(
+                                        group = null,
+                                        members = ungrouped,
+                                        selecting = selecting,
+                                        selected = selected,
+                                        onToggle = { tag ->
+                                            selected = if (tag.key in selected) selected - tag.key else selected + tag.key
+                                        },
+                                        onTagAction = { actionTag = it },
+                                        onGroupAction = {}
                                     )
                                 }
                             }
-                        }
-                    }
-                    error?.let { Text(it, color = AppColors.Destructive, fontSize = AppType.BodySmall) }
-                }
-            },
-            actions = if (isMove) {
-                listOf(AppDialogAction(stringResource(R.string.cancel), { task = null }, role = AppDialogActionRole.Cancel))
-            } else {
-                listOf(
-                    AppDialogAction(
-                        text = stringResource(if (isDelete) R.string.delete else R.string.confirm),
-                        enabled = !busy && (isDelete || draft.isNotBlank()),
-                        role = if (isDelete) AppDialogActionRole.Destructive else AppDialogActionRole.Primary,
-                        onClick = {
-                            when (current) {
-                                TagTask.CreateTag -> perform { repository!!.createTag(type, draft.trim()) }
-                                TagTask.CreateGroup -> perform { repository!!.createGroup(type, draft.trim()) }
-                                is TagTask.RenameTag -> perform { repository!!.renameTag(type, current.tag.key, draft.trim()) }
-                                is TagTask.RenameGroup -> perform { repository!!.renameGroup(type, current.group.id, draft.trim()) }
-                                is TagTask.DeleteTag -> perform { repository!!.deleteTag(type, current.tag.key) }
-                                is TagTask.DeleteGroup -> perform { repository!!.deleteGroup(type, current.group.id) }
-                                is TagTask.DeleteMany -> perform { repository!!.deleteTags(type, current.keys) }
-                                is TagTask.Move -> Unit
+                            items(groups, key = { "group:${it.id}" }) { group ->
+                                val members = tagsByGroup[group.id].orEmpty()
+                                Spacer(Modifier.height(AppSpace.md))
+                                CommunityTagGroupCard(
+                                    group = group,
+                                    members = members,
+                                    selecting = selecting,
+                                    selected = selected,
+                                    onToggle = { tag ->
+                                        selected = if (tag.key in selected) selected - tag.key else selected + tag.key
+                                    },
+                                    onTagAction = { actionTag = it },
+                                    onGroupAction = { actionGroup = it }
+                                )
                             }
                         }
-                    ),
-                    AppDialogAction(stringResource(R.string.cancel), onClick = { task = null }, role = AppDialogActionRole.Cancel)
+                    }
                 )
+                actionGroup?.let { group ->
+                    val memberCount = tags.count { it.groupId == group.id }
+                    LiquidGlassAlertDialog(
+                        onDismissRequest = { if (!busy) actionGroup = null },
+                        titleText = group.name,
+                        text = if (memberCount > 0) {
+                            {
+                                Text(
+                                    stringResource(R.string.community_tag_count, memberCount),
+                                    color = AppColors.TextSecondary
+                                )
+                            }
+                        } else {
+                            null
+                        },
+                        actions = listOf(
+                            AppDialogAction(
+                                stringResource(R.string.community_rename_group),
+                                onClick = { start(TagTask.RenameGroup(group)) }
+                            ),
+                            AppDialogAction(
+                                stringResource(R.string.community_delete_group),
+                                onClick = { start(TagTask.DeleteGroup(group)) },
+                                role = AppDialogActionRole.Destructive
+                            ),
+                            AppDialogAction(
+                                stringResource(R.string.cancel),
+                                onClick = { actionGroup = null },
+                                role = AppDialogActionRole.Cancel
+                            )
+                        )
+                    )
+                }
+
+                actionTag?.let { tag ->
+                    LiquidGlassAlertDialog(
+                        onDismissRequest = { if (!busy) actionTag = null },
+                        titleText = tag.name,
+                        text = {
+                            Text(stringResource(R.string.community_usage_count, tag.usageCount), color = AppColors.TextSecondary)
+                        },
+                        actions = listOf(
+                            AppDialogAction(stringResource(R.string.annotation_tag_rename), onClick = { start(TagTask.RenameTag(tag)) }),
+                            AppDialogAction(stringResource(R.string.community_move_tag), onClick = { start(TagTask.Move(listOf(tag.key))) }),
+                            AppDialogAction(stringResource(R.string.delete), onClick = { start(TagTask.DeleteTag(tag)) },
+                                role = AppDialogActionRole.Destructive),
+                            AppDialogAction(stringResource(R.string.cancel), onClick = { actionTag = null },
+                                role = AppDialogActionRole.Cancel)
+                        )
+                    )
+                }
+
+                task?.let { current ->
+                    val isMove = current is TagTask.Move
+                    val isDelete = current is TagTask.DeleteTag || current is TagTask.DeleteGroup || current is TagTask.DeleteMany
+                    val name = when (current) {
+                        TagTask.CreateTag -> stringResource(R.string.community_create_tag)
+                        TagTask.CreateGroup -> stringResource(R.string.community_create_group)
+                        is TagTask.RenameTag -> stringResource(R.string.annotation_tag_rename)
+                        is TagTask.RenameGroup -> stringResource(R.string.community_rename_group)
+                        is TagTask.DeleteTag, is TagTask.DeleteMany -> stringResource(R.string.delete)
+                        is TagTask.DeleteGroup -> stringResource(R.string.community_delete_group)
+                        is TagTask.Move -> stringResource(R.string.community_move_tag)
+                    }
+                    LiquidGlassAlertDialog(
+                        onDismissRequest = { if (!busy) { task = null; error = null } },
+                        titleText = name,
+                        text = {
+                            Column(verticalArrangement = Arrangement.spacedBy(AppSpace.sm)) {
+                                when (current) {
+                                    TagTask.CreateTag, TagTask.CreateGroup,
+                                    is TagTask.RenameTag, is TagTask.RenameGroup -> {
+                                        LumiTextField(
+                                            value = draft,
+                                            onValueChange = { draft = it; error = null },
+                                            enabled = !busy,
+                                            singleLine = true,
+                                            placeholder = { Text(stringResource(R.string.community_name_hint)) },
+                                            isError = error != null
+                                        )
+                                    }
+                                    is TagTask.DeleteGroup -> Text(groupDeleteHint)
+                                    is TagTask.DeleteMany -> {
+                                        Text(stringResource(R.string.community_selected_count, current.keys.size),
+                                            color = AppColors.TextSecondary, fontSize = AppType.BodySmall)
+                                        Text(tagDeleteHint)
+                                    }
+                                    is TagTask.DeleteTag -> Text(tagDeleteHint)
+                                    is TagTask.Move -> {
+                                        Text(stringResource(R.string.community_move_hint))
+                                        val keys = current.keys
+                                        val choices = listOf<TagGroupEntity?>(null) + groups
+                                        Column(Modifier.heightIn(max = 300.dp).verticalScroll(rememberScrollState())) {
+                                            choices.forEach { group ->
+                                                LumiRow(
+                                                    title = group?.name ?: stringResource(R.string.tag_picker_uncategorized),
+                                                    onClick = { perform { repository!!.moveTags(type, keys, group?.id) } },
+                                                    enabled = !busy,
+                                                    icon = AppIcons.Folder
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                                error?.let { Text(it, color = AppColors.Destructive, fontSize = AppType.BodySmall) }
+                            }
+                        },
+                        actions = if (isMove) {
+                            listOf(AppDialogAction(stringResource(R.string.cancel), { task = null }, role = AppDialogActionRole.Cancel))
+                        } else {
+                            listOf(
+                                AppDialogAction(
+                                    text = stringResource(if (isDelete) R.string.delete else R.string.confirm),
+                                    enabled = !busy && (isDelete || draft.isNotBlank()),
+                                    role = if (isDelete) AppDialogActionRole.Destructive else AppDialogActionRole.Primary,
+                                    onClick = {
+                                        when (current) {
+                                            TagTask.CreateTag -> perform { repository!!.createTag(type, draft.trim()) }
+                                            TagTask.CreateGroup -> perform { repository!!.createGroup(type, draft.trim()) }
+                                            is TagTask.RenameTag -> perform { repository!!.renameTag(type, current.tag.key, draft.trim()) }
+                                            is TagTask.RenameGroup -> perform { repository!!.renameGroup(type, current.group.id, draft.trim()) }
+                                            is TagTask.DeleteTag -> perform { repository!!.deleteTag(type, current.tag.key) }
+                                            is TagTask.DeleteGroup -> perform { repository!!.deleteGroup(type, current.group.id) }
+                                            is TagTask.DeleteMany -> perform { repository!!.deleteTags(type, current.keys) }
+                                            is TagTask.Move -> Unit
+                                        }
+                                    }
+                                ),
+                                AppDialogAction(stringResource(R.string.cancel), onClick = { task = null }, role = AppDialogActionRole.Cancel)
+                            )
+                        }
+                    )
+                }
             }
-        )
+        }
     }
 }
