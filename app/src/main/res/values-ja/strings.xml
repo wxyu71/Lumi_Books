@@ -1364,7 +1364,7 @@
     <string name="font_import_name_count">%1$d/12</string>
     <string name="font_import_default_name">カスタムフォント</string>
     <string name="page_transition_label">ページめくり効果</string>
-    <string name="welcome_brand_name">Lumi Books</string>
+    <string name="welcome_brand_name">LUMI Community</string>
     <string name="welcome_major_version">2</string>
     <string name="pdf_text_selection_unavailable">この PDF では現在テキストを選択できません</string>
     <string name="pdf_notes_hint">PDF のテキストを長押しすると、コピー、ハイライト、下線を追加できます</string>
