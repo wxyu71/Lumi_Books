@@ -55,10 +55,19 @@ class LiquidGlassStyleSettingTest {
         compose.onNodeWithText(originalLabel).performClick()
         compose.waitUntil { !edgeEnabled }
         assertEquals(LiquidGlassStyle.ORIGINAL, manager.liquidGlassStyle.first())
+        // DataStore publishes the new preference before saveLiquidGlassStyle resumes to update
+        // the launch-time SharedPreferences snapshot. The live theme is already ORIGINAL here;
+        // wait for that second, durable-save follow-up instead of racing the saving coroutine.
+        compose.waitUntil {
+            LaunchThemeController.themeSnapshot(context).liquidGlassStyle == LiquidGlassStyle.ORIGINAL
+        }
         assertEquals(LiquidGlassStyle.ORIGINAL, LaunchThemeController.themeSnapshot(context).liquidGlassStyle)
         compose.onNodeWithText(originalLabel).assertIsDisplayed().performClick()
         compose.onNodeWithText(defaultLabel).performClick()
         compose.waitUntil { edgeEnabled }
         assertEquals(LiquidGlassStyle.DEFAULT, manager.liquidGlassStyle.first())
+        compose.waitUntil {
+            LaunchThemeController.themeSnapshot(context).liquidGlassStyle == LiquidGlassStyle.DEFAULT
+        }
     }
 }
