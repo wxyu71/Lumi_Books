@@ -68,10 +68,10 @@ class LumiDawnRenderTest {
         }
     }
 
-    private fun splash(dark: Boolean) {
-        show(dark) { SplashScreen(isDark = dark, iconStyle = "lumi2") }
+    private fun splash(dark: Boolean, iconStyle: String = "lumi2", suffix: String = "") {
+        show(dark) { SplashScreen(isDark = dark, iconStyle = iconStyle) }
         compose.onNodeWithContentDescription("LUMI ${LumiCodename.CURRENT}").assertIsDisplayed()
-        save("01-splash-${if (dark) "dark" else "light"}")
+        save("01-splash-${if (dark) "dark" else "light"}$suffix")
     }
 
     private fun intro(newInstall: Boolean, dark: Boolean = false, theme: String = "lumi", suffix: String = "") {
@@ -142,6 +142,8 @@ class LumiDawnRenderTest {
 
     @Test fun splashLight() = splash(dark = false)
     @Test fun splashDark() = splash(dark = true)
+    @Test fun classicIconSplashUsesCommunityWordmark() =
+        splash(dark = false, iconStyle = "classic", suffix = "-classic")
     @Test fun introUpdateLight() = intro(newInstall = false)
     @Test fun introNewDark() = intro(newInstall = true, dark = true)
     @Test fun introGlass() = intro(newInstall = true, theme = "liquid_glass", suffix = "-glass")
