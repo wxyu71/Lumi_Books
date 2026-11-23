@@ -453,12 +453,13 @@ internal fun CommunityTagManagementScreen(
                                 when (current) {
                                     TagTask.CreateTag, TagTask.CreateGroup,
                                     is TagTask.RenameTag, is TagTask.RenameGroup -> {
-                                        LumiTextField(
+                                        // Match the existing annotation tag editor's name field.
+                                        // Its focus and text editing are already exercised by Compose UI tests.
+                                        TagTextField(
                                             value = draft,
                                             onValueChange = { draft = it; error = null },
+                                            hint = stringResource(R.string.community_name_hint),
                                             enabled = !busy,
-                                            singleLine = true,
-                                            placeholder = { Text(stringResource(R.string.community_name_hint)) },
                                             isError = error != null
                                         )
                                     }
