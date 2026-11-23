@@ -7,6 +7,8 @@ import android.view.View
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -18,6 +20,7 @@ import com.huangder.lumibooks.ui.splash.SplashScreen
 import com.huangder.lumibooks.ui.theme.EBookReaderTheme
 import com.huangder.lumibooks.ui.theme.MotionPreference
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -138,6 +141,24 @@ class LumiDawnRenderTest {
         assertTrue(next.fetchSemanticsNode().boundsInRoot.bottom <= view.height)
         val mode = when { ink -> "ink"; dark -> "dark"; else -> "light" }
         save("03-story-${index + 1}-${WelcomeStory.entries[index].name.lowercase()}-$mode$suffix")
+    }
+
+
+    @Test fun appearanceSelectionIsOptionalAndContinueWorksImmediately() {
+        var completed = 0
+        show {
+            com.huangder.lumibooks.ui.brand.LumiDawnStage {
+                WelcomeFeatureStoriesPage(
+                    hasReadingJournal = true,
+                    onContinue = { completed++ },
+                    initialStory = 3,
+                    themeOptions = listOf("liquid_glass", "lumi", "material3"),
+                    selectedTheme = null
+                )
+            }
+        }
+        compose.onNodeWithTag("welcome-story-next").assertIsEnabled().performClick()
+        compose.runOnIdle { assertEquals(1, completed) }
     }
 
     @Test fun splashLight() = splash(dark = false)

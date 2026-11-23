@@ -837,7 +837,6 @@ class SettingsViewModel @Inject constructor(
         const val PREDICTIVE_BACK_DISABLE_SETTLE_MILLIS = 34L
         const val BYTES_PER_MEBIBYTE = 1_048_576L
         // Material's indeterminate indicator needs roughly one cycle to read as intentional.
-        const val MIN_STORAGE_REFRESH_VISIBILITY_MS = 1_200L
     }
 
     fun saveSplashEnabled(enabled: Boolean) {
@@ -1160,7 +1159,6 @@ class SettingsViewModel @Inject constructor(
     }
 
     private suspend fun refreshStorageBreakdown() = storageRefreshMutex.withLock {
-        val refreshStartedAt = System.currentTimeMillis()
         _uiState.update { state ->
             state.copy(storageInfo = state.storageInfo.copy(isCalculating = true))
         }
@@ -1191,9 +1189,6 @@ class SettingsViewModel @Inject constructor(
             }.sortedByDescending { it.sizeBytes }
             val otherSize = hiddenBooks.sumOf { BookFileAccess.size(context, it.filePath) }
 
-            val remaining = MIN_STORAGE_REFRESH_VISIBILITY_MS -
-                (System.currentTimeMillis() - refreshStartedAt)
-            if (remaining > 0L) delay(remaining)
 
             _uiState.update { state ->
                 state.copy(
@@ -1212,9 +1207,7 @@ class SettingsViewModel @Inject constructor(
                 )
             }
         } catch (_: Exception) {
-            val remaining = MIN_STORAGE_REFRESH_VISIBILITY_MS -
-                (System.currentTimeMillis() - refreshStartedAt)
-            if (remaining > 0L) delay(remaining)
+
             _uiState.update { state ->
                 state.copy(storageInfo = state.storageInfo.copy(isCalculating = false))
             }
