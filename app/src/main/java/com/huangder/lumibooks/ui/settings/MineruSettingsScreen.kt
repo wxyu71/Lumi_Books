@@ -499,10 +499,9 @@ private fun MineruSecondaryButton(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun MineruConsentSheet(onDismiss: () -> Unit, onAccept: () -> Unit) {
+internal fun MineruConsentSheet(onDismiss: () -> Unit, onAccept: () -> Unit) {
     val isLiquidGlass = LocalAppTheme.current == "liquid_glass"
     var confirmed by rememberSaveable { mutableStateOf(false) }
-
 
     val sheetContent: @Composable () -> Unit = {
         Column(
