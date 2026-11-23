@@ -62,7 +62,7 @@ private fun CommunityTagGroupCard(
                             imageVector = AppIcons.DotsThreeVertical,
                             contentDescription = stringResource(R.string.annotation_tag_manage) + " " + group.name,
                             onClick = { onGroupAction(group) },
-                            size = 44.dp
+                            size = 48.dp
                         )
                     }
                 }
@@ -80,7 +80,9 @@ private fun CommunityTagGroupCard(
             if (index > 0) GroupedRowDivider()
             LumiRow(
                 title = tag.name,
-                subtitle = stringResource(R.string.community_usage_count, tag.usageCount),
+                subtitle = if (tag.usageCount > 0) {
+                    stringResource(R.string.community_usage_count, tag.usageCount)
+                } else null,
                 modifier = if (selecting) Modifier.semantics {
                     toggleableState = if (tag.key in selected) ToggleableState.On else ToggleableState.Off
                 } else Modifier,
@@ -96,7 +98,7 @@ private fun CommunityTagGroupCard(
                             imageVector = AppIcons.DotsThreeVertical,
                             contentDescription = stringResource(R.string.annotation_tag_manage) + " " + tag.name,
                             onClick = { onTagAction(tag) },
-                            size = 44.dp
+                            size = 48.dp
                         )
                     }
                 }
@@ -229,7 +231,7 @@ internal fun CommunityTagManagementScreen(
                     contentDescription = stringResource(R.string.community_move_selected),
                     onClick = { start(TagTask.Move(selected.toList())) },
                     enabled = selected.isNotEmpty() && !busy,
-                    size = 40.dp,
+                    size = 48.dp,
                     iconSize = 18.dp
                 )
                 LiquidGlassIconButton(
@@ -237,7 +239,7 @@ internal fun CommunityTagManagementScreen(
                     contentDescription = stringResource(R.string.community_delete_selected),
                     onClick = { start(TagTask.DeleteMany(selected.toList())) },
                     enabled = selected.isNotEmpty() && !busy,
-                    size = 40.dp,
+                    size = 48.dp,
                     iconSize = 18.dp,
                     contentColor = AppColors.Destructive
                 )
@@ -248,7 +250,7 @@ internal fun CommunityTagManagementScreen(
                         contentDescription = stringResource(R.string.more_options),
                         onClick = { if (!busy) pageActionsExpanded = true },
                         enabled = repository != null && !busy,
-                        size = 40.dp,
+                        size = 48.dp,
                         iconSize = 18.dp
                     )
                     AppDropdownMenu(
