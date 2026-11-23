@@ -148,7 +148,7 @@ class CommunityTagManagementScreenTest {
         compose.onNodeWithText(label(R.string.community_select_tags)).performClick()
         compose.onNodeWithText("Remove").performClick()
         compose.onNodeWithContentDescription(label(R.string.community_delete_selected)).performClick()
-        compose.onNodeWithText(label(R.string.delete)).performClick()
+        compose.onAllNodesWithText(label(R.string.delete)).onLast().performClick()
 
         compose.waitUntil(timeoutMillis = 10_000) {
             runBlocking { db.tagDao().getAllTagsSnapshot().map { it.name } == listOf("Keep") }
