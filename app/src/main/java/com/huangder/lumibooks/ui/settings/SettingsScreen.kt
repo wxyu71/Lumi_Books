@@ -205,8 +205,6 @@ fun SettingsScreen(
                 }
                 Spacer(Modifier.height(AppSpace.lg))
 
-                com.huangder.lumibooks.edition.EditionTagManagementSettingsEntry()
-
         },
         preferences = {
                 // 分类列表：按设置域分组，组内使用细分隔线保持扫描节奏。
