@@ -874,14 +874,13 @@ private fun ExternalTtsSecondaryButton(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ExternalTtsConsentSheet(
+internal fun ExternalTtsConsentSheet(
     allowHttp: Boolean,
     onDismiss: () -> Unit,
     onAccept: () -> Unit
 ) {
     val isLiquidGlass = LocalAppTheme.current == "liquid_glass"
     var confirmed by rememberSaveable { mutableStateOf(false) }
-
 
     val sheetContent: @Composable () -> Unit = {
         Column(
