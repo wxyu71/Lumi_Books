@@ -5,11 +5,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -107,6 +109,61 @@ private fun CommunityTagGroupCard(
     }
 }
 
+/** Actions remain pending until the upstream menu finishes returning to its trigger. */
+private enum class TagPageAction { CreateTag, CreateGroup, SelectTags }
+
+@Composable
+private fun TagPageActionsMenu(
+    enabled: Boolean,
+    showBatchSelection: Boolean,
+    onAction: (TagPageAction) -> Unit
+) {
+    val host = LocalLiquidGlassMenuHost.current
+    val sourceId = remember { Any() }
+    var bounds by remember { mutableStateOf(Rect.Zero) }
+    val createTag = stringResource(R.string.community_create_tag)
+    val createGroup = stringResource(R.string.community_create_group)
+    val selectTags = stringResource(R.string.community_select_tags)
+    val labels = if (showBatchSelection) listOf(createTag, createGroup, selectTags)
+    else listOf(createTag, createGroup)
+    val width = annotationMenuWidth(labels, extraWidth = 66.dp)
+
+    LiquidGlassIconButton(
+        imageVector = AppIcons.DotsThreeVertical,
+        contentDescription = stringResource(R.string.more_options),
+        enabled = enabled && host != null,
+        size = 48.dp,
+        iconSize = 18.dp,
+        modifier = Modifier.liquidGlassMenuAnchor(sourceId)
+            .onGloballyPositioned { bounds = it.boundsInRoot() },
+        onClick = {
+            if (bounds != Rect.Zero) {
+                host?.toggle(
+                    LiquidGlassMenuSpec(
+                        anchorBounds = bounds,
+                        width = width,
+                        sourceId = sourceId,
+                        keepTriggerInteractive = false,
+                        items = buildList {
+                            add(LiquidGlassMenuItem(createTag, icon = AppIcons.Tag) {
+                                onAction(TagPageAction.CreateTag)
+                            })
+                            add(LiquidGlassMenuItem(createGroup, icon = AppIcons.Folder) {
+                                onAction(TagPageAction.CreateGroup)
+                            })
+                            if (showBatchSelection) add(
+                                LiquidGlassMenuItem(selectTags, icon = AppIcons.Check) {
+                                    onAction(TagPageAction.SelectTags)
+                                }
+                            )
+                        }
+                    )
+                )
+            }
+        }
+    )
+}
+
 private sealed interface TagTask {
     data object CreateTag : TagTask
     data object CreateGroup : TagTask
@@ -146,7 +203,7 @@ internal fun CommunityTagManagementScreen(
 
     var selecting by rememberSaveable(type) { mutableStateOf(false) }
     var selected by rememberSaveable(type) { mutableStateOf(emptySet<String>()) }
-    var pageActionsExpanded by remember { mutableStateOf(false) }
+    var pendingPageAction by remember { mutableStateOf<TagPageAction?>(null) }
     var task by remember { mutableStateOf<TagTask?>(null) }
     var actionTag by remember { mutableStateOf<ManagedTag?>(null) }
     var actionGroup by remember { mutableStateOf<TagGroupEntity?>(null) }
@@ -212,6 +269,7 @@ internal fun CommunityTagManagementScreen(
         tagsByGroup.filterKeys { it == null || it !in groupIds }.values.flatten()
     }
 
+    LiquidGlassMenuHost(Modifier.fillMaxSize()) {
     CollapsingSettingsScaffold(
         title = title,
         onBack = {
@@ -244,45 +302,25 @@ internal fun CommunityTagManagementScreen(
                     contentColor = AppColors.Destructive
                 )
             } else {
-                Box {
-                    LiquidGlassIconButton(
-                        imageVector = AppIcons.DotsThreeVertical,
-                        contentDescription = stringResource(R.string.more_options),
-                        onClick = { if (!busy) pageActionsExpanded = true },
-                        enabled = repository != null && !busy,
-                        size = 48.dp,
-                        iconSize = 18.dp
-                    )
-                    AppDropdownMenu(
-                        expanded = pageActionsExpanded,
-                        onDismissRequest = { pageActionsExpanded = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.community_create_tag)) },
-                            onClick = {
-                                pageActionsExpanded = false
-                                start(TagTask.CreateTag)
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.community_create_group)) },
-                            onClick = {
-                                pageActionsExpanded = false
-                                start(TagTask.CreateGroup)
-                            }
-                        )
-                        if (tags.isNotEmpty()) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.community_select_tags)) },
-                                onClick = {
-                                    pageActionsExpanded = false
-                                    selecting = true
-                                    selected = emptySet()
-                                }
-                            )
+                val host = LocalLiquidGlassMenuHost.current
+                LaunchedEffect(pendingPageAction, host?.displayedMenu) {
+                    val action = pendingPageAction ?: return@LaunchedEffect
+                    if (host?.displayedMenu != null) return@LaunchedEffect
+                    pendingPageAction = null
+                    when (action) {
+                        TagPageAction.CreateTag -> start(TagTask.CreateTag)
+                        TagPageAction.CreateGroup -> start(TagTask.CreateGroup)
+                        TagPageAction.SelectTags -> {
+                            selecting = true
+                            selected = emptySet()
                         }
                     }
                 }
+                TagPageActionsMenu(
+                    enabled = repository != null && !busy,
+                    showBatchSelection = tags.isNotEmpty(),
+                    onAction = { pendingPageAction = it }
+                )
             }
         },
         lazyListState = listState,
@@ -330,6 +368,7 @@ internal fun CommunityTagManagementScreen(
             }
         }
     )
+    }
 
     actionGroup?.let { group ->
         val memberCount = tags.count { it.groupId == group.id }
