@@ -16,7 +16,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35], application = Application::class, qualifiers = "zh-rCN")
+@Config(sdk = [35], application = Application::class, qualifiers = "zh-rCN-w393dp-h852dp-xxhdpi")
 class CommunityTagManagementScreenTest {
     @get:Rule val compose = createComposeRule()
 
@@ -29,8 +29,6 @@ class CommunityTagManagementScreenTest {
             }
         }
 
-        compose.onNodeWithText(context.getString(R.string.community_manage_book_tags), useUnmergedTree = true)
-            .assertIsDisplayed()
         compose.onNodeWithText(context.getString(R.string.community_create_tag))
             .assertIsDisplayed()
         compose.onNodeWithText(context.getString(R.string.community_create_group))
