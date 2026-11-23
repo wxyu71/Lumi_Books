@@ -49,9 +49,8 @@
         <item name="android:windowBackground">@drawable/splash_background_dawn</item>
     </style>
 
-    <style name="Theme.EBookReader.Launch.Classic" parent="Theme.EBookReader">
-        <item name="android:windowBackground">@drawable/splash_background</item>
-    </style>
+    <!-- Classic launcher icon uses the same safe neutral preview as every other icon style. -->
+    <style name="Theme.EBookReader.Launch.Classic" parent="Theme.EBookReader.Launch" />
 
     <style name="Theme.EBookReader.NoPreview" parent="Theme.EBookReader">
         <item name="android:windowDisablePreview">true</item>

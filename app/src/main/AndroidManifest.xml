@@ -204,8 +204,8 @@
             </intent-filter>
         </activity-alias>
 
-        <!-- Classic launcher entries keep the legacy icon and launch artwork available as a
-             user-selectable pair. Only one of the ten launcher components is enabled at a time. -->
+        <!-- Classic retains its launcher icon, but shares Community's neutral cold-start window.
+             Only one of the ten launcher components is enabled at a time. -->
         <activity-alias
             android:name=".ui.splash.ClassicSplashLauncherActivity"
             android:enabled="false"
