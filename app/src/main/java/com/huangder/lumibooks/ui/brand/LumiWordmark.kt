@@ -58,7 +58,12 @@ fun LumiWordmark(
         nameIn.animateTo(1f, tween(760, easing = AppEasing.Smooth))
     }
     val lumiSize = if (compact) 12.sp else 20.sp
-    val nameSize = if (compact) 30.sp else 60.sp
+    // Longer release names must stay inside compact phones without shrinking the LUMI line.
+    val nameSize = when {
+        compact -> 30.sp
+        codename.length >= 9 -> 48.sp
+        else -> 60.sp
+    }
     Column(
         modifier.clearAndSetSemantics { contentDescription = "LUMI $codename" },
         horizontalAlignment = Alignment.CenterHorizontally
