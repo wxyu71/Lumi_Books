@@ -1019,13 +1019,11 @@
     <string name="mineru_privacy_policy">OpenDataLab 个人信息保护政策</string>
     <string name="mineru_api_limits">MinerU API 限制说明</string>
     <string name="mineru_consent_title">启用 MinerU 云端解析</string>
-    <string name="mineru_consent_subtitle">请完整阅读以下风险与第三方协议。确认按钮将在 30 秒后开放。</string>
     <string name="mineru_risk_upload">所选 PDF 的正文、图片、文件名及文档信息将离开设备，上传至 MinerU 和其 OSS/CDN 存储服务。</string>
     <string name="mineru_risk_third_party">MinerU 是独立第三方服务，其数据保存、删除、限流、收费和服务变更由运营方决定。</string>
     <string name="mineru_risk_accuracy">云端解析结果可能遗漏、错识或改变原排版，LumiBooks 不保证结果准确或服务持续可用。</string>
     <string name="mineru_risk_rights">请勿上传无权处理、受 DRM 保护、包含敏感个人信息、商业秘密或需要严格保密的文件。</string>
     <string name="mineru_consent_checkbox">我已阅读第三方协议，知悉文件将上传，并确认有权处理所选文件。</string>
-    <string name="mineru_consent_countdown">请继续阅读（%1$d 秒）</string>
     <string name="mineru_consent_accept">同意并启用</string>
     <!-- 第三方 TTS 服务 -->
     <string name="category_external_tts">第三方 TTS 服务</string>
@@ -1084,13 +1082,11 @@
     <string name="external_tts_third_party_title">第三方 TTS 服务说明</string>
     <string name="external_tts_third_party_notice">第三方 TTS 服务由你自行选择的服务商运营。启用后，当前朗读文本段和可选风格提示将发送至该服务商。LumiBooks 不传输文本至自身服务器，也不控制第三方服务质量、可用性、计费及政策变化。上述说明不影响你依法享有的权利。</string>
     <string name="external_tts_consent_title">启用第三方 TTS 服务</string>
-    <string name="external_tts_consent_subtitle">请完整阅读以下风险说明。确认按钮将在 30 秒后开放。</string>
     <string name="external_tts_risk_send">当前朗读的文本段落及风格提示将离开设备，发送至你指定的第三方 TTS 服务。</string>
     <string name="external_tts_risk_key">你的 API Key 仅通过 Android KeyStore 加密保存在本机，不会发送给 LumiBooks。</string>
     <string name="external_tts_risk_third_party">所选 TTS 服务由第三方独立运营，其可用性、费用规则、数据留存和政策变更由该方自行决定。</string>
     <string name="external_tts_risk_costs">使用第三方 TTS 服务可能产生 API 调用费用，请提前了解服务商的计费规则。</string>
     <string name="external_tts_consent_checkbox">我已阅读上述说明，知悉文本将发送至第三方服务，并自行承担相关费用与风险。</string>
-    <string name="external_tts_consent_countdown">请继续阅读（%1$d 秒）</string>
     <string name="external_tts_consent_accept">同意并启用</string>
     <string name="external_tts_key_local">API Key 通过 Android KeyStore 加密仅保存在本机。</string>
     <string name="external_tts_http_warning_title">安全警告：HTTP 明文传输</string>
