@@ -1363,7 +1363,7 @@
     <string name="font_import_name_count">%1$d/12</string>
     <string name="font_import_default_name">自訂字型</string>
     <string name="page_transition_label">翻頁效果</string>
-    <string name="welcome_brand_name">LUMI Community</string>
+    <string name="welcome_brand_name">Lumi Books</string>
     <string name="welcome_major_version">2</string>
     <string name="pdf_text_selection_unavailable">目前此 PDF 暫不支援文字選取</string>
     <string name="pdf_notes_hint">長按 PDF 文字即可複製、新增醒目提示或底線</string>
