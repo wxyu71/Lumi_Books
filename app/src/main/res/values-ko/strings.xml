@@ -1364,7 +1364,7 @@
     <string name="font_import_name_count">%1$d/12</string>
     <string name="font_import_default_name">사용자 지정 글꼴</string>
     <string name="page_transition_label">페이지 넘김 효과</string>
-    <string name="welcome_brand_name">LUMI Community</string>
+    <string name="welcome_brand_name">Lumi Books</string>
     <string name="welcome_major_version">2</string>
     <string name="pdf_text_selection_unavailable">현재 이 PDF에서는 텍스트를 선택할 수 없습니다</string>
     <string name="pdf_notes_hint">PDF 텍스트를 길게 눌러 복사, 강조 표시 또는 밑줄 추가</string>
