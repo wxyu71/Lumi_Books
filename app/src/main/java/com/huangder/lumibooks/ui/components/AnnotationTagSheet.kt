@@ -138,7 +138,7 @@ fun AnnotationTagSheet(
     val dismiss = {
         if (pendingSave == null && !isCreating) {
             if (secondary) { renaming = null; deleting = null }
-            else if (groupOpen) { groupOpen = false; newName = "" }
+            else if (groupOpen) { groupOpen = false; groupId = null; newName = "" }
             else { isClosing = true }
         }
     }
@@ -166,7 +166,7 @@ fun AnnotationTagSheet(
         }
     }
 
-    val page = TagSheetPage(inCategories, groupId, renaming, deleting)
+    val page = TagSheetPage(inCategories, groupId.takeIf { groupOpen }, renaming, deleting)
     val sheetBackdrop = backdrop ?: LocalLiquidGlassBackdrop.current
     // Keep the sheet above page chrome, while retaining its page backdrop.
     FullscreenOverlay {
@@ -294,7 +294,7 @@ fun AnnotationTagSheet(
                                                 isCreating = true
                                                 scope.launch {
                                                     try {
-                                                        val result = repository?.createTag(catalogType, name, groupId)
+                                                        val result = repository?.createTag(catalogType, name, groupId.takeIf { groupOpen })
                                                         if (result != null && !result.success) { error = operationError(result.message); return@launch }
                                                         if (repository == null) onCreate?.invoke(name)
                                                         val key = if (catalogType == TagTypes.BOOK && repository != null) {
@@ -376,7 +376,7 @@ fun AnnotationTagSheet(
                                         try {
                                             if (newName.isNotBlank()) {
                                                 val name = newName.trim()
-                                                val result = repository?.createTag(catalogType, name, groupId)
+                                                val result = repository?.createTag(catalogType, name, groupId.takeIf { groupOpen })
                                                 if (result != null && !result.success) { error = operationError(result.message); return@launch }
                                                 if (repository == null) onCreate?.invoke(name)
                                                 val key = if (catalogType == TagTypes.BOOK && repository != null) {

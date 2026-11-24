@@ -20,7 +20,11 @@ import com.huangder.lumibooks.domain.model.TagTypes
 import com.huangder.lumibooks.ui.theme.EBookReaderTheme
 import com.huangder.lumibooks.ui.theme.LocalAppTheme
 import com.huangder.lumibooks.ui.theme.LocalMotionEnabled
+import java.util.concurrent.Executors
+import kotlinx.coroutines.ExecutorCoroutineDispatcher
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -35,12 +39,16 @@ class CommunityTagManagementInstrumentedTest {
     private val compose = createComposeRule()
     private val context get() = ApplicationProvider.getApplicationContext<Application>()
     private lateinit var db: AppDatabase
+    private lateinit var queryDispatcher: ExecutorCoroutineDispatcher
     private lateinit var repository: TagManagementRepository
 
     @get:Rule
     val rules: RuleChain = RuleChain.outerRule(object : ExternalResource() {
         override fun before() {
-            db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).build()
+            queryDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
+            db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
+                .setQueryCoroutineContext(queryDispatcher)
+                .build()
             val identity = SyncIdentityStore(db.syncStateDao())
             repository = TagManagementRepository(
                 db,
@@ -51,7 +59,13 @@ class CommunityTagManagementInstrumentedTest {
                 TagRepositoryImpl(db.tagDao(), db.syncStateDao(), identity)
             )
         }
-        override fun after() = db.close()
+        override fun after() {
+            try {
+                runBlocking { withContext(queryDispatcher) { db.close() } }
+            } finally {
+                queryDispatcher.close()
+            }
+        }
     }).around(compose)
 
     @Test fun populatedPageOpensInDefaultAndLiquidGlassThemes() {
