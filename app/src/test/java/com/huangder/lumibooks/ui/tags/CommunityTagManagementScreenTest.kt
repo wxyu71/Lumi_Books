@@ -14,13 +14,17 @@ import com.huangder.lumibooks.data.sync.SyncIdentityStore
 import com.huangder.lumibooks.domain.model.TagTypes
 import com.huangder.lumibooks.ui.theme.EBookReaderTheme
 import com.huangder.lumibooks.ui.theme.MotionPreference
+import java.util.concurrent.Executors
+import kotlinx.coroutines.ExecutorCoroutineDispatcher
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.runBlocking
-import org.junit.After
+import kotlinx.coroutines.withContext
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.ExternalResource
+import org.junit.rules.RuleChain
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -35,13 +39,25 @@ import org.robolectric.annotation.GraphicsMode
 @Config(sdk = [35], application = Application::class, qualifiers = "zh-rCN-w393dp-h852dp-xxhdpi")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class CommunityTagManagementScreenTest {
-    @get:Rule val compose = createComposeRule()
+    private val compose = createComposeRule()
     private val context get() = ApplicationProvider.getApplicationContext<Application>()
     private lateinit var db: AppDatabase
     private lateinit var repository: TagManagementRepository
+    private lateinit var queryDispatcher: ExecutorCoroutineDispatcher
 
-    @Before fun setUp() {
-        db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).build()
+    // The outer resource survives until the inner Compose rule has disposed
+    // its composition and cancelled the catalog/group Flow collectors.
+    @get:Rule
+    val rules: RuleChain = RuleChain.outerRule(object : ExternalResource() {
+        override fun before() = setUp()
+        override fun after() = tearDown()
+    }).around(compose)
+
+    private fun setUp() {
+        queryDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
+        db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
+            .setQueryCoroutineContext(queryDispatcher)
+            .build()
         val identity = SyncIdentityStore(db.syncStateDao())
         repository = TagManagementRepository(
             db,
@@ -53,8 +69,15 @@ class CommunityTagManagementScreenTest {
         )
     }
 
-    @After fun tearDown() {
-        db.close()
+    private fun tearDown() {
+        try {
+            // Cancellation can leave an already-running SQLite read finishing
+            // on the query thread. Queue close on that same dispatcher, after
+            // Compose disposal, rather than closing under an active cursor.
+            runBlocking { withContext(queryDispatcher) { db.close() } }
+        } finally {
+            queryDispatcher.close()
+        }
     }
 
     private fun label(id: Int) = context.getString(id)
