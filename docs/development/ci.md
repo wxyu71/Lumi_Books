@@ -66,3 +66,7 @@ API 26/33/36 的扩展 emulator、完整历史 Robolectric 和可选 Macrobenchm
 工作流仅在本 Fork 的默认分支持有临时写权限，并对外部来源的合并候选保持只读检查；不要求配置 Personal Access Token 或额外的签名 Secret。受保护分支规则如禁止机器人直接推送，则会退化为审查 PR，而非绕过规则。
 
 这套机制保护**已明确改动的社区文件与经过测试的行为**，但不能绝对识别未覆盖的跨文件语义变化；重要的上游架构变化仍需人工审查和回归测试。
+
+## 已合并分支清理
+
+[分支清理工作流](../../.github/workflows/prune-merged-branches.yml) 在正常 main push 后运行，也可手动触发。仅检查 Community 开发分支（`community/*`）和上游审查分支（`sync/upstream-*`）；只有同仓库 PR 已合并至 main、合并提交仍在 main 历史中、分支 SHA 完全匹配已合并 PR 的 head，且没有开放 PR 时，才使用 Git lease 安全删除分支。并发新增提交、未合并分支、main 和其他分支一律保留。清理不使用发布密钥，也不影响 APK 发布门禁。

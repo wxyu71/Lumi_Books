@@ -1,0 +1,70 @@
+name: Prune merged Community branches
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prune-merged-community-branches
+  cancel-in-progress: false
+
+jobs:
+  prune:
+    if: github.repository == 'wxyu71/Lumi_Books' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: read
+    steps:
+      - name: Checkout verified main history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Delete only unchanged branches of merged pull requests
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh auth setup-git
+          owner="${GITHUB_REPOSITORY%%/*}"
+          branches="$(git ls-remote --heads origin 'refs/heads/community/*' 'refs/heads/sync/upstream-*')"
+          failed=false
+          while IFS=$'\t' read -r sha ref; do
+            [[ -n "$sha" && -n "$ref" ]] || continue
+            branch="${ref#refs/heads/}"
+            # Query both open and closed PRs: a branch with any open PR is still in use.
+            prs="$(gh api --paginate -X GET "repos/$GITHUB_REPOSITORY/pulls" \
+              -f state=all -f head="$owner:$branch" -f per_page=100 --jq '.[]' | jq -s '.')"
+            if jq -e 'any(.[]; .state == "open")' <<< "$prs" >/dev/null; then
+              printf 'Kept %s: an open PR still references it.\n' "$branch" >> "$GITHUB_STEP_SUMMARY"
+              continue
+            fi
+            # Exact head identity also supports squash merges, for which the
+            # original branch commit is not an ancestor of main.
+            merged="$(jq -r --arg sha "$sha" --arg repo "$GITHUB_REPOSITORY" \
+              '[.[] | select(.merged_at != null and .base.ref == "main" and
+                .head.repo.full_name == $repo and .head.sha == $sha)]
+                | .[0].merge_commit_sha // empty' <<< "$prs")"
+            if [[ -z "$merged" ]] || ! git merge-base --is-ancestor "$merged" HEAD; then
+              printf 'Kept %s: no matching merged PR in main history.\n' "$branch" >> "$GITHUB_STEP_SUMMARY"
+              continue
+            fi
+            # A concurrent branch update must reject the deletion, not erase new work.
+            if git push --force-with-lease="$ref:$sha" origin ":$ref"; then
+              printf 'Deleted merged branch: %s (%s).\n' "$branch" "$sha" >> "$GITHUB_STEP_SUMMARY"
+            else
+              printf 'Could not delete %s; inspect the remote ref.\n' "$branch" >> "$GITHUB_STEP_SUMMARY"
+              failed=true
+            fi
+          done <<< "$branches"
+          [[ "$failed" == false ]]
