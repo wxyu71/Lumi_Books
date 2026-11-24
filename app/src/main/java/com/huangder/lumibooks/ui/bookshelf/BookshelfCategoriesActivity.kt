@@ -567,7 +567,10 @@ private fun CategoryListPage(
                     }
                 }
                 item {
-                    CategoryGroup(stringResource(R.string.bookshelf_user_tags)) {
+                    CategoryGroup(
+                    stringResource(R.string.bookshelf_user_tags),
+                    header = { BookshelfTagSectionHeading(compact = true) }
+                ) {
                         if (tags.isEmpty()) {
                             Text(stringResource(R.string.no_tags), color = AppColors.TextSecondary,
                                 fontSize = AppType.BodySmall, modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp))
@@ -638,10 +641,7 @@ private fun CategoryListPage(
                 }
             }
             item {
-                CategorySectionTitle(
-                    text = stringResource(R.string.bookshelf_user_tags),
-                    modifier = Modifier.padding(top = 18.dp)
-                )
+                BookshelfTagSectionHeading(compact = false)
             }
             if (tags.isEmpty()) {
                 item {
@@ -678,8 +678,7 @@ private fun CategoryListPage(
             drawContentBehindHeader = true,
             title = stringResource(R.string.bookshelf_categories_title),
             onBack = onBack,
-            modifier = Modifier.background(AppColors.PageBg),
-            actions = { com.huangder.lumibooks.edition.EditionTagManagementButton(com.huangder.lumibooks.domain.model.TagTypes.BOOK, toolbar = true) }
+            modifier = Modifier.background(AppColors.PageBg)
         ) { listContent() }
     }
 }
@@ -718,7 +717,6 @@ private fun CategoriesPageHeader(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f)
         )
-        com.huangder.lumibooks.edition.EditionTagManagementButton(com.huangder.lumibooks.domain.model.TagTypes.BOOK, modifier = Modifier.pagePushToolbarItem())
     }
 }
 
@@ -733,8 +731,34 @@ private fun CategorySectionTitle(text: String, modifier: Modifier = Modifier) {
     )
 }
 
+/**
+ * The tag catalog exposes its own contextual action, rather than competing with
+ * unrelated bookshelf actions in the category page toolbar.
+ */
 @Composable
-private fun CategoryGroup(title: String, content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
+internal fun BookshelfTagSectionHeading(compact: Boolean) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(
+            start = if (compact) 14.dp else 0.dp,
+            end = if (compact) 8.dp else 0.dp,
+            top = if (compact) 4.dp else 10.dp
+        ),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        CategorySectionTitle(
+            stringResource(R.string.bookshelf_user_tags),
+            Modifier.weight(1f)
+        )
+        com.huangder.lumibooks.edition.EditionBookTagManagementAction()
+    }
+}
+
+@Composable
+private fun CategoryGroup(
+    title: String,
+    header: (@Composable () -> Unit)? = null,
+    content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit
+) {
     // Same card language as GroupedCard (radius, soft shadow, outline), sized for the side panel.
     val shape = AppRoundedCornerShape(AppRadius.lg)
     Column(
@@ -744,7 +768,8 @@ private fun CategoryGroup(title: String, content: @Composable androidx.compose.f
             .clip(shape)
             .lumiCardSurface(shape = shape)
     ) {
-        CategorySectionTitle(title, Modifier.padding(start = 14.dp, end = 14.dp, top = 10.dp))
+        if (header != null) header()
+        else CategorySectionTitle(title, Modifier.padding(start = 14.dp, end = 14.dp, top = 10.dp))
         content()
     }
 }

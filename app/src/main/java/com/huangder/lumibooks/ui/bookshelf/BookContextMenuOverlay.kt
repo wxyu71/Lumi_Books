@@ -480,6 +480,12 @@ private fun MenuActionsPanel(
     data class MenuItem(val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector, val action: ContextMenuAction)
     val menuItems = buildList {
         add(MenuItem(stringResource(R.string.book_details), AppIcons.Info, ContextMenuAction.BookDetails))
+        // Place organizing actions next to book details: they should not be hidden
+        // below read status, favorite and pin in a long-press action sheet.
+        if (!hiddenLibrary) {
+            add(MenuItem(stringResource(R.string.add_tag), AppIcons.Tag, ContextMenuAction.Tags))
+            add(MenuItem(stringResource(R.string.move_to_folder), AppIcons.FolderSimple, ContextMenuAction.MoveToFolder))
+        }
         add(MenuItem(readStatusLabel, AppIcons.BookOpen, ContextMenuAction.ToggleReadStatus))
         if (canToggleWantToRead) {
             add(
@@ -493,8 +499,6 @@ private fun MenuActionsPanel(
         if (!hiddenLibrary) {
             add(MenuItem(favoriteLabel, favoriteIcon, ContextMenuAction.Favorite))
             add(MenuItem(pinLabel, AppIcons.PushPin, ContextMenuAction.Pin))
-            add(MenuItem(stringResource(R.string.add_tag), AppIcons.Tag, ContextMenuAction.Tags))
-            add(MenuItem(stringResource(R.string.move_to_folder), AppIcons.FolderSimple, ContextMenuAction.MoveToFolder))
         }
         add(MenuItem(stringResource(R.string.bookmarks_notes), AppIcons.Bookmark.regular, ContextMenuAction.BookmarksNotes))
         add(MenuItem(stringResource(R.string.custom_cover), AppIcons.Image, ContextMenuAction.CustomCover))
