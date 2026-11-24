@@ -139,6 +139,22 @@ class CommunityTagManagementScreenTest {
         assertEquals(null, saved.single().groupId)
     }
 
+    @Test fun openingPopulatedCatalogShowsLooseTagsWithoutSyntheticFolder() {
+        runBlocking {
+            assertTrue(repository.createTag(TagTypes.BOOK, "Existing").success)
+        }
+        show()
+        compose.waitUntil(timeoutMillis = 10_000) {
+            compose.onAllNodesWithText("Existing").fetchSemanticsNodes().isNotEmpty()
+        }
+        compose.onNodeWithText("Existing").assertIsDisplayed()
+        compose.onNodeWithText(label(R.string.tag_picker_uncategorized)).assertDoesNotExist()
+        openPageActions()
+        compose.onNodeWithText(label(R.string.community_create_tag)).assertIsDisplayed()
+        compose.onNodeWithText(label(R.string.community_create_group)).assertIsDisplayed()
+        compose.onNodeWithText(label(R.string.community_select_tags)).assertIsDisplayed()
+    }
+
     @Test fun movingTagThroughRowActionUpdatesItsRoomGroup() {
         val group = runBlocking {
             assertTrue(repository.createGroup(TagTypes.BOOK, "Shelf").success)

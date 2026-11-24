@@ -115,7 +115,10 @@ fun AnnotationTagSheet(
         }
     }
     LaunchedEffect(groups) {
-        if (groupId != null && groups.none { it.id == groupId }) groupId = null
+        if (groupId != null && groups.none { it.id == groupId }) {
+            groupId = null
+            groupOpen = false
+        }
     }
     val catalogByKey = remember(catalog) { catalog.associateBy { it.key } }
     val names = remember(available, chosen, created, catalogByKey) {
@@ -236,8 +239,9 @@ fun AnnotationTagSheet(
                                 }
                             }
                         }
-                        currentPage.categories -> {
-                            items(listOf<String?>(null) + groups.map { it.id }, key = { "group:${it ?: "unclassified"}" }) { id ->
+                        else -> {
+                            // The root is the actual folder list plus loose tags, not a synthetic folder.
+                            if (currentPage.categories) items(groups.map { it.id }, key = { "group:$it" }) { id ->
                                 val members = names.filter { effectiveGroup(it) == id }
                                 Row(Modifier.fillMaxWidth().heightIn(min = 64.dp)
                                     .animateItem(fadeInSpec = if (motionEnabled) VisualMotion.tween(180) else snap(),
@@ -249,14 +253,17 @@ fun AnnotationTagSheet(
                                 }.padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                                     Icon(AppIcons.Folder, null, tint = AppColors.TextSecondary, modifier = Modifier.size(22.dp))
                                     Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
-                                        Text(groupNames[id] ?: stringResource(R.string.tag_picker_uncategorized), color = AppColors.TextPrimary, fontSize = AppType.Body)
-                                        Text(stringResource(R.string.tag_picker_group_count, members.size, members.count { it in chosen }), color = AppColors.TextSecondary, fontSize = AppType.Caption)
+                                        Text(groupNames[id].orEmpty(), color = AppColors.TextPrimary, fontSize = AppType.Body)
+                                        val selectedCount = members.count { it in chosen }
+                                        if (selectedCount > 0) {
+                                            Text(stringResource(R.string.tag_picker_group_count, members.size, selectedCount), color = AppColors.TextSecondary, fontSize = AppType.Caption)
+                                        } else {
+                                            Text(stringResource(R.string.community_tag_count, members.size), color = AppColors.TextSecondary, fontSize = AppType.Caption)
+                                        }
                                     }
                                     DisclosureChevron()
                                 }
                             }
-                        }
-                        else -> {
                             items(visibleNames, key = { "tag:$it" }, contentType = { "tag" }) { name ->
                                 AnnotationTagChoice(catalogByKey[name]?.name ?: name, name in chosen, managementOnly,
                                     onChecked = { checked -> chosen = if (checked) chosen + name else chosen - name },

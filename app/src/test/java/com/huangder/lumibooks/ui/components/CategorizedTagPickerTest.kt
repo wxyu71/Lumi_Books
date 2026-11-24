@@ -41,15 +41,14 @@ class CategorizedTagPickerTest {
                 }
             }
         }
-        compose.onNodeWithText("Alpha").assertDoesNotExist()
-        compose.onNodeWithText(label(R.string.tag_picker_uncategorized)).performClick()
+        compose.onNodeWithText(label(R.string.tag_picker_uncategorized)).assertDoesNotExist()
         compose.onNodeWithText("Alpha").performClick()
         compose.runOnIdle { assertNull(saved) }
-        compose.onNodeWithContentDescription(label(R.string.back)).performClick()
         compose.onNodeWithText("Topics").performClick()
         compose.onNodeWithText("Beta").performClick()
         compose.onNodeWithContentDescription(label(R.string.back)).performClick()
-        compose.onAllNodesWithText("1 tags · 1 selected").assertCountEquals(2)
+        compose.onAllNodesWithText("1 tags · 1 selected").assertCountEquals(1)
+        compose.onNodeWithText("Alpha").assertIsOn()
         compose.onNodeWithText(label(R.string.confirm)).performClick()
         compose.waitUntil { dismissed }
         compose.runOnIdle { assertEquals(listOf("Alpha", "Beta"), saved) }
@@ -71,7 +70,7 @@ class CategorizedTagPickerTest {
         compose.runOnIdle { assertTrue("Cancel must finish the entire selection task", dismissed); assertEquals(0, saves) }
     }
 
-    @Test fun removedCategoryMakesItsLabelsAvailableUnderUncategorized() {
+    @Test fun removedCategoryReturnsItsLabelsToRoot() {
         val data = mutableStateOf(catalog)
         compose.setContent {
             EBookReaderTheme(appTheme = "lumi", darkTheme = false) {
@@ -85,6 +84,39 @@ class CategorizedTagPickerTest {
         compose.runOnIdle { data.value = catalog.copy(groups = emptyList()) }
         compose.onNodeWithText("Beta").assertIsOn()
         compose.onNodeWithText("Alpha").assertIsDisplayed()
+    }
+
+    @Test fun noFoldersShowsLooseBookTagsDirectlyAndPreservesSelection() {
+        val loose = TagPickerCatalog(emptyList(), listOf(
+            ManagedTag("book-id", "History", null, 0)
+        ))
+        var saved: List<String>? = null
+        compose.setContent {
+            EBookReaderTheme(appTheme = "lumi", darkTheme = false) {
+                CompositionLocalProvider(LocalMotionEnabled provides false) {
+                    AnnotationTagSheet(listOf("book-id"), emptyList(), { saved = it }, {},
+                        catalogType = TagTypes.BOOK, categoryCatalog = loose)
+                }
+            }
+        }
+        compose.onNodeWithText(label(R.string.tag_picker_uncategorized)).assertDoesNotExist()
+        compose.onNodeWithText("History").assertIsOn()
+        compose.onNodeWithText(label(R.string.confirm)).performClick()
+        compose.runOnIdle { assertEquals(listOf("book-id"), saved) }
+    }
+
+    @Test fun emptyCatalogCanCreateWithoutEnteringAnArtificialFolder() {
+        compose.setContent {
+            EBookReaderTheme(appTheme = "lumi", darkTheme = false) {
+                CompositionLocalProvider(LocalMotionEnabled provides false) {
+                    AnnotationTagSheet(emptyList(), emptyList(), {}, {},
+                        categoryCatalog = TagPickerCatalog(emptyList(), emptyList()))
+                }
+            }
+        }
+        compose.onNodeWithText(label(R.string.tag_picker_uncategorized)).assertDoesNotExist()
+        compose.onNodeWithText(label(R.string.annotation_tag_new)).assertIsDisplayed()
+        compose.onNodeWithText(label(R.string.confirm)).assertIsDisplayed()
     }
 
     @Test fun saveFailureLeavesDraftOpenForRetry() {

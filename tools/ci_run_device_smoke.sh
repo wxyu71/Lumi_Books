@@ -10,6 +10,7 @@ classes=(
   com.huangder.lumibooks.data.local.dao.FolderDaoTest
   com.huangder.lumibooks.data.local.database.DatabaseMigrationsTest
   com.huangder.lumibooks.ui.components.LiquidGlassButtonInteractionInstrumentedTest
+  com.huangder.lumibooks.ui.tags.CommunityTagManagementInstrumentedTest
   com.huangder.lumibooks.ui.settings.AppIconStyleScreenInstrumentedTest
   com.huangder.lumibooks.ui.settings.AppIconScreenshotInstrumentedTest
   com.huangder.lumibooks.ui.reader.engine.ReaderVariableFontsInstrumentedTest
