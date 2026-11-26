@@ -7,9 +7,9 @@ Lumi Community 是基于上游 Lumi_Books 的非官方 OSS Fork。提交代码�
 1. 从最新的 `main` 创建分支，保持改动聚焦于一个可说明的目标。
 2. 优先修改已有 feature/layer；不要为了社区版再复制一套数据库、Repository、导航或 UI 根目录。
 3. 为行为变化添加真实的 Kotlin/JUnit/Robolectric/Android instrumentation 测试。不要用读取源码/YAML 后 `assertIn` 某段文本的方式替代行为测试。
-4. 本地至少执行与改动相关的 Gradle 任务。完整参考见 [构建与测试](docs/development/build.md)。
+4. 执行与改动相关的 Gradle 任务；无本地 SDK 时使用 GitHub Actions 远程执行。完整参考见 [构建与测试](docs/development/build.md)。
 5. 文档按职责更新：用户说明在 README，架构在 `docs/architecture/`，操作手册在 `docs/development/`，长期实现参考在 `docs/reference/`。
-6. 提交 PR 后，以 GitHub Actions 的真实编译、Lint、JUnit 和 emulator 结果为准。
+6. 提交 PR 后，以精确 head SHA 的 GitHub Actions 编译、Lint、JUnit 和 emulator 结果为准。UI/闪退修复优先用真实 Activity 操作路径、截图、logcat 和 Room 结果验证；尽可能证明同一个测试修复前失败、修复后通过。
 
 ## 常用验证
 
