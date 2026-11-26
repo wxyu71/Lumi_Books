@@ -5,6 +5,8 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import com.huangder.lumibooks.R
 import com.huangder.lumibooks.data.local.entity.TagGroupEntity
 import com.huangder.lumibooks.domain.model.ManagedTag
@@ -117,6 +119,51 @@ class CategorizedTagPickerTest {
         compose.onNodeWithText(label(R.string.tag_picker_uncategorized)).assertDoesNotExist()
         compose.onNodeWithText(label(R.string.annotation_tag_new)).assertIsDisplayed()
         compose.onNodeWithText(label(R.string.confirm)).assertIsDisplayed()
+    }
+
+    @Test
+    @Config(qualifiers = "zh-rCN-w360dp-h800dp-mdpi")
+    fun mixedCatalogAtLargeFontKeepsFolderAndConfirmationReachable() {
+        var saved: List<String>? = null
+        val data = TagPickerCatalog(
+            listOf(TagGroupEntity("folder", TagTypes.BOOK, "阅读计划", "阅读计划", 1)),
+            listOf(ManagedTag("loose", "未整理的书籍标签", null, 0),
+                ManagedTag("inside", "正在阅读的长名称标签", "folder", 0))
+        )
+        compose.setContent {
+            EBookReaderTheme(appTheme = "lumi", darkTheme = true) {
+                CompositionLocalProvider(LocalMotionEnabled provides false,
+                    LocalDensity provides Density(1f, 1.5f)) {
+                    AnnotationTagSheet(emptyList(), emptyList(), { saved = it }, {},
+                        catalogType = TagTypes.BOOK, categoryCatalog = data)
+                }
+            }
+        }
+        compose.onNodeWithText(label(R.string.tag_picker_uncategorized)).assertDoesNotExist()
+        compose.onNodeWithText("未整理的书籍标签").assertIsDisplayed().performClick()
+        compose.onNodeWithText("阅读计划").assertIsDisplayed().performClick()
+        compose.onNodeWithText("正在阅读的长名称标签").assertIsDisplayed().performClick()
+        compose.onNodeWithText(label(R.string.confirm)).assertIsDisplayed().performClick()
+        compose.runOnIdle { assertEquals(setOf("loose", "inside"), saved?.toSet()) }
+    }
+
+    @Test
+    @Config(qualifiers = "en-w640dp-h360dp-land-mdpi")
+    fun landscapeShowsEmptyRealFolderWithoutInventingUncategorized() {
+        val data = TagPickerCatalog(catalog.groups, emptyList())
+        compose.setContent {
+            EBookReaderTheme(appTheme = "lumi", darkTheme = false) {
+                CompositionLocalProvider(LocalMotionEnabled provides false) {
+                    AnnotationTagSheet(emptyList(), emptyList(), {}, {}, categoryCatalog = data)
+                }
+            }
+        }
+        compose.onNodeWithText(label(R.string.tag_picker_uncategorized)).assertDoesNotExist()
+        compose.onNodeWithText("Topics").performClick()
+        compose.onNodeWithText(label(R.string.annotation_tag_new)).assertIsDisplayed()
+        compose.onNodeWithText(label(R.string.confirm)).assertIsDisplayed()
+        compose.onNodeWithContentDescription(label(R.string.back)).performClick()
+        compose.onNodeWithText("Topics").assertIsDisplayed()
     }
 
     @Test fun saveFailureLeavesDraftOpenForRetry() {

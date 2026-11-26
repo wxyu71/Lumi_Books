@@ -69,8 +69,8 @@ set -e
 # Preserve emulator evidence even when instrumentation fails.
 adb logcat -d -b crash -v threadtime > test-logs/device/crash.txt 2>&1 || true
 adb logcat -d -t 3000 > test-logs/device/logcat.txt 2>&1 || true
-adb exec-out screencap -p > test-logs/device/final-screen.png || true
-adb shell uiautomator dump /sdcard/lumi-ci-final.xml > test-logs/device/hierarchy.log 2>&1 &&
+timeout 15s adb exec-out screencap -p > test-logs/device/final-screen.png || true
+timeout 20s adb shell uiautomator dump /sdcard/lumi-ci-final.xml > test-logs/device/hierarchy.log 2>&1 &&
   adb pull /sdcard/lumi-ci-final.xml test-logs/device/final-hierarchy.xml >> test-logs/device/hierarchy.log 2>&1 || true
 stop_logcat
 trap - EXIT

@@ -7,7 +7,7 @@ CI 的事实来源是 [Android Community Beta](../../.github/workflows/android-b
 | 阶段 | 真实执行内容 |
 | --- | --- |
 | Repository static analysis | actionlint + ShellCheck、zizmor、markdownlint-cli2、Lychee、本 Fork 极少量发行边界检查 |
-| JVM compile + Robolectric | Kotlin/测试源码真实编译、Robolectric JAR 由 Gradle 预取、API 33 smoke、标准 `:app:testDebugUnitTest` |
+| JVM compile + Robolectric | Kotlin/JVM/instrumentation 测试源码真实编译、Robolectric JAR 由 Gradle 预取、API 33 smoke、标准 `:app:testDebugUnitTest` |
 | Android Lint | 标准 `:app:lintDebug`，Error/Fatal 直接失败 |
 | P3 packages | Debug APK、Diagnostic、unsigned Release 分别独立构建和报告 |
 | Emulator | API 33/35 的真实 `connectedDebugAndroidTest`、UI/Room/截图测试 |
@@ -44,15 +44,24 @@ PR 阻塞矩阵使用 API 33/35。GitHub Actions Runner 是本地没有 Android 
 
 | 范围 | PR 必须通过 | 扩展 / 手动 |
 | --- | --- | --- |
-| Android API | 33、35 | 26、33、36 |
+| Android API | 33、35 手机 | 26、33、36 手机与 API 36 平板 |
 | 标签页面主题 | Lumi、Material 3、液态玻璃组件 | 真实页面简体中文/深色/大字号场景 |
-| 用户入口 | 分类管理、长按书籍、确认并重新进入 | 同路径扩展环境 |
+| 用户入口 | 分类管理、长按书籍、跨目录选择、确认/取消并重新进入 | 同路径扩展环境 |
 | 全量 instrumentation | 明确 smoke 类 | 手动 `run_full_instrumentation` |
 | Macrobenchmark | 不运行 | 手动 `run_macrobenchmarks`，数据仅供参考 |
 
 UI Automator 和 Compose Test 已足以覆盖当前流程。Maestro/Appium 仅在需要独立于 instrumentation 的发布 APK 黑盒验收时选用，不默认安装第二套 UI 测试框架。物理 GPU、厂商 ROM 等仍需要设备农场或实机补充。
 
-API 26/33/36 的扩展 emulator、完整历史 Robolectric 和可选 Macrobenchmark 位于定期/手动 workflow。
+API 26/33/36 手机与 API 36 平板的扩展 emulator、完整历史 Robolectric 和可选 Macrobenchmark 位于定期/手动 workflow。仪器测试源码在 JVM 阶段提前编译，设备任务在启动 AVD 前准备 APK；每个设备独立上传 JUnit、截图与日志，并展示标准 JUnit 摘要。完整测试模式仍使用 AndroidJUnitRunner 发现，不通过脚本解析结果替代 Gradle。
+
+### 参考实现
+
+- [AnkiDroid emulator matrix](https://github.com/ankidroid/Anki-Android/blob/e87e18a57a03add43520a0eca3229c7013da3293/.github/workflows/tests_emulator.yml)：PR 与扩展设备分层，平板进入定期/手动矩阵，Gradle 缓存只由主分支写入。
+- [AnkiDroid TagsDialogScreenshotTest](https://github.com/ankidroid/Anki-Android/blob/e87e18a57a03add43520a0eca3229c7013da3293/AnkiDroid/src/test/java/com/ichi2/anki/dialogs/tags/TagsDialogScreenshotTest.kt)：使用明确标签夹具，分别覆盖空目录、选中状态和方向。
+- [AntennaPod checks](https://github.com/AntennaPod/AntennaPod/blob/4dd48842391846fcb4b64071b11734cb70bf7943/.github/workflows/checks.yml)：先构建测试 APK，再启动 KVM emulator；测试夹具独立建立、清理，失败时保存原生报告。
+- [Now in Android adaptive screenshots](https://github.com/android/nowinandroid/blob/2982e63cb691ad49cd009aab43dc206fee6699c2/app/src/testDemo/kotlin/com/google/samples/apps/nowinandroid/ui/NiaAppScreenSizesScreenshotTests.kt)：明确窗口尺寸与布局场景；其标签测试也覆盖大字体。Lumi 先用 Robolectric qualifiers 和语义断言覆盖同类风险，真实截图作为运行证据；尚无受审查的 Roborazzi golden 基线。
+
+只迁移适合 Lumi 的测试设计与工作流思路，不复制 GPL 源码，不增加无实际断言的测试，不将重复测试用于掩盖不稳定失败。
 
 ## 回归证据（Red → Green）
 

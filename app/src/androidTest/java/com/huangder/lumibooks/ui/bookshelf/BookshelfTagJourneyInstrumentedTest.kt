@@ -26,7 +26,6 @@ import java.io.File
 import java.util.UUID
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -100,11 +99,14 @@ class BookshelfTagJourneyInstrumentedTest {
         }
         val extended = InstrumentationRegistry.getArguments().getString("lumiExtended") == "true"
         val language = if (extended) "zh-CN" else "en"
-        val tag = "CI Loose"
-        val folder = "CI Folder"
-        val member = "CI Grouped"
-        val title = "CI Tag Journey Book"
         val id = UUID.randomUUID().toString()
+        val suffix = id.take(8)
+        // Unique names prevent a failed previous test from being mistaken for
+        // this run's data (or being deleted by this run's cleanup).
+        val tag = "Loose $suffix"
+        val folder = "Folder $suffix"
+        val member = "Grouped $suffix"
+        val title = "CI Book $suffix"
         val file = File(context.filesDir, "$id.txt").apply { writeText("An isolated CI test book.") }
         try {
             runBlocking {
@@ -159,20 +161,38 @@ class BookshelfTagJourneyInstrumentedTest {
                     compose.onNodeWithText(tag).assertIsOff()
                     compose.onNodeWithText(folder).assertIsDisplayed()
                     compose.onNodeWithText(tag).performClick()
+                    compose.onNodeWithText(folder).performClick()
+                    awaitText(member)
+                    compose.onNodeWithText(member).assertIsOff().performClick()
+                    compose.onNodeWithContentDescription(label(R.string.back)).performClick()
+                    compose.onNodeWithText(tag).assertIsOn()
                     capture("tag-journey-picker.png")
                     compose.onNodeWithText(label(R.string.confirm)).performClick()
                     compose.waitUntil(timeoutMillis = 20_000) {
-                        runBlocking { repository.observeCatalog(TagTypes.BOOK).first().single { it.name == tag }.usageCount == 1 }
+                        runBlocking {
+                            val selected = repository.observeCatalog(TagTypes.BOOK).first()
+                                .filter { it.name == tag || it.name == member }
+                            selected.size == 2 && selected.all { it.usageCount == 1 }
+                        }
                     }
                     compose.waitUntil(timeoutMillis = 20_000) {
                         compose.onAllNodesWithText(label(R.string.tag_sheet_title)).fetchSemanticsNodes().isEmpty()
                     }
                     openPicker()
                     compose.onNodeWithText(tag).assertIsOn()
+                    compose.onNodeWithText(folder).performClick()
+                    awaitText(member)
+                    compose.onNodeWithText(member).assertIsOn().performClick()
+                    // Cancel a changed draft: both saved associations must remain.
                     compose.onNodeWithText(label(R.string.cancel)).performClick()
                     compose.waitUntil(timeoutMillis = 20_000) {
                         compose.onAllNodesWithText(label(R.string.tag_sheet_title)).fetchSemanticsNodes().isEmpty()
                     }
+                    val persisted = runBlocking {
+                        repository.observeCatalog(TagTypes.BOOK).first()
+                            .filter { it.name == tag || it.name == member }
+                    }
+                    assertTrue(persisted.size == 2 && persisted.all { it.usageCount == 1 })
                     device.pressBack()
                     awaitText(label(R.string.filter_all))
                 } catch (failure: Throwable) {
