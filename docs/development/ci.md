@@ -38,9 +38,27 @@ PR lane 设置 `robolectric.enabledSdks=33,35,36` 并预取相应 Android JAR，
 
 ## Emulator
 
-PR 阻塞矩阵使用 API 33/35。脚本只负责选择明确的 instrumentation smoke class、保存 logcat 和把截图从 emulator 拉回 artifact；测试成败直接采用 `:app:connectedDebugAndroidTest` / AndroidJUnitRunner 退出码，不再由 Python 二次解释 XML。
+PR 阻塞矩阵使用 API 33/35。GitHub Actions Runner 是本地没有 Android SDK 或物理设备时的正式远程执行环境。脚本选择明确的 instrumentation smoke class，保存运行期全量 logcat、crash buffer、环境、最终窗口层级及实际交互截图；测试成败直接采用 `:app:connectedDebugAndroidTest` / AndroidJUnitRunner 退出码，不再由 Python 二次解释 XML。
+
+标签回归覆盖真实分类 Activity → 标签管理 Activity、分类书籍页长按 → 标签选择器、保存和重新打开，以及真实 Room 持久化。测试数据只在隔离的测试安装中建立并清理。UI Automator 负责跨 Activity 的可访问性操作，Compose Test 负责语义、布局及选中状态断言；截图由实际 emulator 渲染，不是设计示意图。截图证据不等同于 golden 像素基线；现有图标像素差测试继续保留。
+
+| 范围 | PR 必须通过 | 扩展 / 手动 |
+| --- | --- | --- |
+| Android API | 33、35 | 26、33、36 |
+| 标签页面主题 | Lumi、Material 3、液态玻璃组件 | 真实页面简体中文/深色/大字号场景 |
+| 用户入口 | 分类管理、长按书籍、确认并重新进入 | 同路径扩展环境 |
+| 全量 instrumentation | 明确 smoke 类 | 手动 `run_full_instrumentation` |
+| Macrobenchmark | 不运行 | 手动 `run_macrobenchmarks`，数据仅供参考 |
+
+UI Automator 和 Compose Test 已足以覆盖当前流程。Maestro/Appium 仅在需要独立于 instrumentation 的发布 APK 黑盒验收时选用，不默认安装第二套 UI 测试框架。物理 GPU、厂商 ROM 等仍需要设备农场或实机补充。
 
 API 26/33/36 的扩展 emulator、完整历史 Robolectric 和可选 Macrobenchmark 位于定期/手动 workflow。
+
+## 回归证据（Red → Green）
+
+先在修复前的独立验证分支上移植不依赖修复实现的回归测试（包含所需测试依赖），通过现有 workflow_dispatch 运行并保存失败 job、测试名、堆栈、截图及 SHA。再将同一测试运行在修复分支上；两次使用相同 API、主题、语言和数据。基线失败必须来自目标行为，而不是编译失败、网络或测试环境错误。若无法复现，PR 应注明未复现的条件，不得将绿色 CI 当成已证明的根因。
+
+运行证据位于每个 API 的 Actions artifact；`final-screen.png` 和 `final-hierarchy.xml` 是测试结束时的尽力收集（可能已卸载应用），关键页面应在测试内部截图。失败日志不上传用户真实书库、密钥或私人数据。
 
 ## 失败排查
 

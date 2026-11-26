@@ -6,6 +6,11 @@ on:
     - cron: '47 5 * * 0'
   workflow_dispatch:
     inputs:
+      run_full_instrumentation:
+        description: 'Run every instrumentation test instead of the targeted smoke list (expensive)'
+        required: false
+        type: boolean
+        default: false
       run_macrobenchmarks:
         description: 'Also run full reader Macrobenchmark suite (expensive; emulator numbers informational)'
         required: false
@@ -61,6 +66,9 @@ jobs:
           script: |
             set -euo pipefail
             export LUMI_DEVICE_EXTENDED=1
+            if [[ "${{ inputs.run_full_instrumentation }}" == "true" ]]; then
+              export LUMI_DEVICE_FULL=1
+            fi
             bash tools/ci_run_device_smoke.sh
             # Benchmarks are only run manually on the newest API to avoid
             # distorting CI results with cross-API emulator performance.
