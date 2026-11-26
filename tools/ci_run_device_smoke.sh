@@ -76,6 +76,8 @@ stop_logcat
 trap - EXIT
 adb pull /sdcard/Pictures/LumiCI test-logs/device/screenshots \
   > test-logs/device/screenshot-pull.log 2>&1 || true
+adb pull /sdcard/Download/LumiCI test-logs/device/failure-hierarchy \
+  > test-logs/device/hierarchy-pull.log 2>&1 || true
 
 if (( rc != 0 )); then
   echo "::error::Android instrumentation exited $rc; see native Gradle/JUnit reports and logcat" >&2

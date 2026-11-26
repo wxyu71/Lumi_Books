@@ -73,6 +73,26 @@ class BookshelfTagJourneyInstrumentedTest {
         }
     }
 
+    private fun captureHierarchy() {
+        if (Build.VERSION.SDK_INT < 29) return
+        val file = File(context.cacheDir, "tag-journey-failure.xml")
+        try {
+            device.dumpWindowHierarchy(file)
+            val values = ContentValues().apply {
+                put(MediaStore.Downloads.DISPLAY_NAME, file.name)
+                put(MediaStore.Downloads.MIME_TYPE, "application/xml")
+                put(MediaStore.Downloads.RELATIVE_PATH, "${Environment.DIRECTORY_DOWNLOADS}/LumiCI")
+            }
+            val resolver = context.contentResolver
+            val uri = checkNotNull(resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values))
+            checkNotNull(resolver.openOutputStream(uri)).use { output ->
+                file.inputStream().use { it.copyTo(output) }
+            }
+        } finally {
+            file.delete()
+        }
+    }
+
     @Test fun realLibraryTagJourneyPersistsSelection() {
         val old = runBlocking {
             Preferences(settings.appLanguage.first(), settings.appTheme.first(),
@@ -103,51 +123,65 @@ class BookshelfTagJourneyInstrumentedTest {
             ActivityScenario.launch<BookshelfCategoriesActivity>(
                 Intent(context, BookshelfCategoriesActivity::class.java)
             ).use {
-                // Scroll in the actual categories Activity, then use accessibility
-                // (UI Automator) to drive the production cross-Activity navigation.
-                val manage = label(R.string.community_manage_book_tags)
-                awaitText(label(R.string.filter_all))
-                compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasContentDescription(manage))
-                val action = checkNotNull(device.wait(Until.findObject(By.desc(manage)), 15_000))
-                action.click()
-                awaitText(member)
-                compose.onNodeWithText(tag).assertIsDisplayed()
-                compose.onNodeWithText(label(R.string.tag_picker_uncategorized)).assertDoesNotExist()
-                capture("tag-journey-manager.png")
-                compose.onNodeWithContentDescription(label(R.string.more_options)).performClick()
-                awaitText(label(R.string.community_create_group))
-                compose.onNodeWithText(label(R.string.community_create_tag)).assertIsDisplayed()
-                capture("tag-journey-menu.png")
-                device.pressBack()
-                device.pressBack()
-                awaitText(label(R.string.bookshelf_user_tags))
-                compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText(label(R.string.filter_all)))
-                compose.onNodeWithText(label(R.string.filter_all)).performClick()
-                awaitText(title)
-                fun openPicker() {
-                    compose.onNode(hasText(title) and hasClickAction()).performTouchInput { longClick() }
-                    awaitText(label(R.string.add_tag))
-                    compose.onNodeWithText(label(R.string.add_tag)).performClick()
-                    awaitText(tag)
+                try {
+                    // Scroll in the actual categories Activity, then use accessibility
+                    // (UI Automator) to drive the production cross-Activity navigation.
+                    val manage = label(R.string.community_manage_book_tags)
+                    awaitText(label(R.string.filter_all))
+                    compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasContentDescription(manage))
+                    val action = checkNotNull(device.wait(Until.findObject(By.desc(manage)), 15_000))
+                    action.click()
+                    awaitText(member)
+                    compose.onNodeWithText(tag).assertIsDisplayed()
                     compose.onNodeWithText(label(R.string.tag_picker_uncategorized)).assertDoesNotExist()
+                    capture("tag-journey-manager.png")
+                    compose.onNodeWithContentDescription(label(R.string.more_options)).performClick()
+                    awaitText(label(R.string.community_create_group))
+                    compose.onNodeWithText(label(R.string.community_create_tag)).assertIsDisplayed()
+                    capture("tag-journey-menu.png")
+                    device.pressBack()
+                    compose.waitUntil(timeoutMillis = 20_000) {
+                        compose.onAllNodesWithText(label(R.string.community_create_group)).fetchSemanticsNodes().isEmpty()
+                    }
+                    device.pressBack()
+                    awaitText(label(R.string.bookshelf_user_tags))
+                    compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText(label(R.string.filter_all)))
+                    compose.onNodeWithText(label(R.string.filter_all)).performClick()
+                    awaitText(title)
+                    fun openPicker() {
+                        compose.onNode(hasText(title) and hasClickAction()).performTouchInput { longClick() }
+                        awaitText(label(R.string.add_tag))
+                        compose.onNodeWithText(label(R.string.add_tag)).performClick()
+                        awaitText(tag)
+                        compose.onNodeWithText(label(R.string.tag_picker_uncategorized)).assertDoesNotExist()
+                    }
+                    openPicker()
+                    compose.onNodeWithText(tag).assertIsOff()
+                    compose.onNodeWithText(folder).assertIsDisplayed()
+                    compose.onNodeWithText(tag).performClick()
+                    capture("tag-journey-picker.png")
+                    compose.onNodeWithText(label(R.string.confirm)).performClick()
+                    compose.waitUntil(timeoutMillis = 20_000) {
+                        runBlocking { repository.observeCatalog(TagTypes.BOOK).first().single { it.name == tag }.usageCount == 1 }
+                    }
+                    compose.waitUntil(timeoutMillis = 20_000) {
+                        compose.onAllNodesWithText(label(R.string.tag_sheet_title)).fetchSemanticsNodes().isEmpty()
+                    }
+                    openPicker()
+                    compose.onNodeWithText(tag).assertIsOn()
+                    compose.onNodeWithText(label(R.string.cancel)).performClick()
+                    compose.waitUntil(timeoutMillis = 20_000) {
+                        compose.onAllNodesWithText(label(R.string.tag_sheet_title)).fetchSemanticsNodes().isEmpty()
+                    }
+                    device.pressBack()
+                    awaitText(label(R.string.filter_all))
+                } catch (failure: Throwable) {
+                    // Collect the failing window before ActivityScenario teardown.
+                    // Preserve the original assertion/exception if evidence capture fails.
+                    runCatching { capture("tag-journey-failure.png") }
+                    runCatching { captureHierarchy() }
+                    throw failure
                 }
-                openPicker()
-                compose.onNodeWithText(tag).assertIsOff()
-                compose.onNodeWithText(folder).assertIsDisplayed()
-                compose.onNodeWithText(tag).performClick()
-                capture("tag-journey-picker.png")
-                compose.onNodeWithText(label(R.string.confirm)).performClick()
-                compose.waitUntil(timeoutMillis = 20_000) {
-                    runBlocking { repository.observeCatalog(TagTypes.BOOK).first().single { it.name == tag }.usageCount == 1 }
-                }
-                compose.waitUntil(timeoutMillis = 20_000) {
-                    compose.onAllNodesWithText(label(R.string.tag_sheet_title)).fetchSemanticsNodes().isEmpty()
-                }
-                openPicker()
-                compose.onNodeWithText(tag).assertIsOn()
-                compose.onNodeWithText(label(R.string.cancel)).performClick()
-                device.pressBack()
-                awaitText(label(R.string.filter_all))
             }
         } finally {
             // Only delete fixtures owned by this test. Do not clear the application DB.
