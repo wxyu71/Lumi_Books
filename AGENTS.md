@@ -10,7 +10,7 @@
 - 优先复用现有 Room、Repository、domain model、导航和 UI 组件，不为 Community 功能建立平行存储或第二套框架。
 - 行为变化使用真实 Kotlin/JUnit/Robolectric/instrumentation 测试。禁止用读取 Kotlin/YAML/Markdown 后 `assertIn` 某段文本的“contract test”替代行为验证。
 - 通用仓库检查交给现有轮子：actionlint/ShellCheck/zizmor、Android Lint、markdownlint-cli2/Lychee、Gradle/JUnit/AndroidJUnitRunner。项目自有脚本只保留这些工具无法表达的发行边界或证据收集。
-- 不通过测试重试、排除或放宽断言把真实失败变绿。先定位根因，再修产品或测试同步。
+- 不通过测试重试、排除或放宽断言把真实失败变绿。先定位根因，再修产品或测试同步。独立 CI Runner 统一使用共享 toolchain 的 Gradle 插件准备步骤；仅依赖准备允许有界重试，编译、Lint、APK 构建及测试失败不得自动重试。
 
 ## GitHub 与 CI
 
