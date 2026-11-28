@@ -40,7 +40,7 @@ PR lane 设置 `robolectric.enabledSdks=33,35,36` 并预取相应 Android JAR，
 
 PR 阻塞矩阵使用 API 33/35。GitHub Actions Runner 是本地没有 Android SDK 或物理设备时的正式远程执行环境。脚本选择明确的 instrumentation smoke class，保存运行期全量 logcat、crash buffer、环境、最终窗口层级及实际交互截图；测试成败直接采用 `:app:connectedDebugAndroidTest` / AndroidJUnitRunner 退出码，不再由 Python 二次解释 XML。
 
-标签回归覆盖真实分类 Activity → 标签管理 Activity、分类书籍页长按 → 标签选择器、保存和重新打开，以及真实 Room 持久化。测试数据只在隔离的测试安装中建立并清理。UI Automator 负责跨 Activity 的可访问性操作，Compose Test 负责语义、布局及选中状态断言；截图由实际 emulator 渲染，不是设计示意图。截图证据不等同于 golden 像素基线；现有图标像素差测试继续保留。
+标签回归覆盖真实分类 Activity → 标签管理 Activity、分类书籍页长按 → 标签选择器、保存和重新打开，以及真实 Room 持久化。测试数据只在隔离的测试安装中建立并清理。Compose Test 通过生产界面语义触发导航、等待目标 Activity 内容，并验证布局及选中状态；UI Automator 用于系统返回和截图/层级证据；截图由实际 emulator 渲染，不是设计示意图。截图证据不等同于 golden 像素基线；现有图标像素差测试继续保留。
 
 | 范围 | PR 必须通过 | 扩展 / 手动 |
 | --- | --- | --- |
@@ -54,12 +54,21 @@ UI Automator 和 Compose Test 已足以覆盖当前流程。Maestro/Appium 仅�
 
 API 26/33/36 手机与 API 36 平板的扩展 emulator、完整历史 Robolectric 和可选 Macrobenchmark 位于定期/手动 workflow。仪器测试源码在 JVM 阶段提前编译，设备任务在启动 AVD 前准备 APK；每个设备独立上传 JUnit、截图与日志，并展示标准 JUnit 摘要。完整测试模式仍使用 AndroidJUnitRunner 发现，不通过脚本解析结果替代 Gradle。
 
+### 阅读器日夜模式回归
+
+同一主题套装与阅读布局的排版共享，配色分别保存。JVM 测试检查真实模型和 DataStore 的反复编辑、重载、旧配置迁移及布局隔离；API 33/35 smoke 使用真实设置面板的 Compose 语义动作切换日夜模式、修改字号，并检查滑块状态、生产阅读器状态解析与独立文字颜色。该组件集成测试不等于完整 Reader Activity、进程重启或系统跟随模式验收，后者应继续使用真实设备流程及系统配置覆盖。
+
 ### 参考实现
 
 - [AnkiDroid emulator matrix](https://github.com/ankidroid/Anki-Android/blob/e87e18a57a03add43520a0eca3229c7013da3293/.github/workflows/tests_emulator.yml)：PR 与扩展设备分层，平板进入定期/手动矩阵，Gradle 缓存只由主分支写入。
 - [AnkiDroid TagsDialogScreenshotTest](https://github.com/ankidroid/Anki-Android/blob/e87e18a57a03add43520a0eca3229c7013da3293/AnkiDroid/src/test/java/com/ichi2/anki/dialogs/tags/TagsDialogScreenshotTest.kt)：使用明确标签夹具，分别覆盖空目录、选中状态和方向。
 - [AntennaPod checks](https://github.com/AntennaPod/AntennaPod/blob/4dd48842391846fcb4b64071b11734cb70bf7943/.github/workflows/checks.yml)：先构建测试 APK，再启动 KVM emulator；测试夹具独立建立、清理，失败时保存原生报告。
 - [Now in Android adaptive screenshots](https://github.com/android/nowinandroid/blob/2982e63cb691ad49cd009aab43dc206fee6699c2/app/src/testDemo/kotlin/com/google/samples/apps/nowinandroid/ui/NiaAppScreenSizesScreenshotTests.kt)：明确窗口尺寸与布局场景；其标签测试也覆盖大字体。Lumi 先用 Robolectric qualifiers 和语义断言覆盖同类风险，真实截图作为运行证据；尚无受审查的 Roborazzi golden 基线。
+
+- [AndroidX AppCompat NightModeTestCase](https://android.googlesource.com/platform/frameworks/support/+/f2e05c341382db64d127118a13451dcaa554b702/appcompat/appcompat/src/androidTest/java/androidx/appcompat/app/NightModeTestCase.kt)：反复切换日夜、验证颜色、跟随系统与 Activity 重建；不通过固定延时掩盖问题。
+- [Now in Android ThemeTest](https://github.com/android/nowinandroid/blob/2982e63cb691ad49cd009aab43dc206fee6699c2/core/designsystem/src/test/kotlin/com/google/samples/apps/nowinandroid/core/designsystem/ThemeTest.kt)：组合配置下的实际颜色方案及 CompositionLocal 断言。
+- [Now in Android SettingsDialogTest](https://github.com/android/nowinandroid/blob/2982e63cb691ad49cd009aab43dc206fee6699c2/feature/settings/impl/src/androidTest/kotlin/com/google/samples/apps/nowinandroid/feature/settings/impl/SettingsDialogTest.kt)：使用 Compose Test 验证实际设置项的可见性和选中状态。
+- [Compose 配置覆盖与状态恢复](https://developer.android.com/develop/ui/compose/testing/common-patterns)：使用 DeviceConfigurationOverride.DarkMode、FontScale 和 StateRestorationTester；后者只验证 Composable 保存状态，不代替 DataStore 或真实进程重启。
 
 只迁移适合 Lumi 的测试设计与工作流思路，不复制 GPL 源码，不增加无实际断言的测试，不将重复测试用于掩盖不稳定失败。
 

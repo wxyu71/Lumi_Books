@@ -178,6 +178,7 @@ fun AnnotationTagSheet(
             modifier = adaptiveSheetFrame(maxHeight = screenHeight.dp * if (compactHeight) 0.94f else 0.82f)
                 .materialBottomSheetMotion(sheetOffset.value, predictiveBackProgress),
             contentModifier = Modifier.fillMaxWidth().navigationBarsPadding()
+                .testTag("annotation-tag-sheet")
                 .padding(horizontal = 20.dp, vertical = if (compactHeight) 10.dp else 20.dp),
             fallbackColor = AppColors.CardBg,
             shape = AppRoundedCornerShape(topStart = AppPresentation.SheetCorner, topEnd = AppPresentation.SheetCorner),

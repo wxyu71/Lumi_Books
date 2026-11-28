@@ -10,9 +10,7 @@ import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
-import androidx.test.uiautomator.Until
 import com.huangder.lumibooks.R
 import com.huangder.lumibooks.data.local.DataStoreManager
 import com.huangder.lumibooks.data.local.entity.BookEntity
@@ -126,13 +124,14 @@ class BookshelfTagJourneyInstrumentedTest {
                 Intent(context, BookshelfCategoriesActivity::class.java)
             ).use {
                 try {
-                    // Scroll in the actual categories Activity, then use accessibility
-                    // (UI Automator) to drive the production cross-Activity navigation.
+                    // Drive the real navigation using the same synchronized Compose
+                    // semantics tree that located the scroll target. UI Automator is
+                    // retained for system back and screenshot/hierarchy evidence.
                     val manage = label(R.string.community_manage_book_tags)
                     awaitText(label(R.string.filter_all))
                     compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasContentDescription(manage))
-                    val action = checkNotNull(device.wait(Until.findObject(By.desc(manage)), 15_000))
-                    action.click()
+                    compose.onNode(hasContentDescription(manage) and hasClickAction())
+                        .assertIsDisplayed().performClick()
                     awaitText(member)
                     compose.onNodeWithText(tag).assertIsDisplayed()
                     compose.onNodeWithText(label(R.string.tag_picker_uncategorized)).assertDoesNotExist()
@@ -164,7 +163,12 @@ class BookshelfTagJourneyInstrumentedTest {
                     compose.onNodeWithText(folder).performClick()
                     awaitText(member)
                     compose.onNodeWithText(member).assertIsOff().performClick()
-                    compose.onNodeWithContentDescription(label(R.string.back)).performClick()
+                    // The underlying book Activity also has a Back action.
+                    // Scope this action to the picker rather than selecting by index.
+                    compose.onNode(hasContentDescription(label(R.string.back)) and
+                        hasAnyAncestor(hasTestTag("annotation-tag-sheet")))
+                        .assertIsDisplayed().performClick()
+                    awaitText(tag)
                     compose.onNodeWithText(tag).assertIsOn()
                     capture("tag-journey-picker.png")
                     compose.onNodeWithText(label(R.string.confirm)).performClick()
