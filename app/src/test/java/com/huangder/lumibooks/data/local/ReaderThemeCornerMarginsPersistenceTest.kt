@@ -26,7 +26,7 @@ class ReaderThemeCornerMarginsPersistenceTest {
     private val context get() = ApplicationProvider.getApplicationContext<Context>()
     private val layout = ReaderLayoutTarget.READER_LAYOUT
 
-    @Test fun marginsPersistIndependentlyAcrossSuitesModesAndLayouts() = runBlocking {
+    @Test fun marginsAreSharedAcrossModesButIndependentAcrossSuitesAndLayouts() = runBlocking {
         context.dataStore.edit { it.clear() }
         val manager = DataStoreManager(context)
         manager.migrateReaderThemeSuites()
@@ -41,7 +41,7 @@ class ReaderThemeCornerMarginsPersistenceTest {
 
         val saved = DataStoreManager(context).readerThemeSuiteState.first().suites
         val day = saved.first { it.id == "day" }
-        assertEquals(light, day.settingsFor(layout, false).cornerMargins)
+        assertEquals(dark, day.settingsFor(layout, false).cornerMargins)
         assertEquals(dark, day.settingsFor(layout, true).cornerMargins)
         assertEquals(book, day.bookLayoutSettings.cornerMargins)
         assertEquals(ReaderCornerMargins(), saved.first { it.id == "sepia" }.settings.cornerMargins)
@@ -49,7 +49,7 @@ class ReaderThemeCornerMarginsPersistenceTest {
         manager.resetAdvancedReaderSettings("day", layout, false)
         val reset = manager.readerThemeSuiteState.first().suites.first { it.id == "day" }
         assertEquals(ReaderCornerMargins(), reset.settingsFor(layout, false).cornerMargins)
-        assertEquals(dark, reset.settingsFor(layout, true).cornerMargins)
+        assertEquals(ReaderCornerMargins(), reset.settingsFor(layout, true).cornerMargins)
         assertEquals(book, reset.bookLayoutSettings.cornerMargins)
     }
 

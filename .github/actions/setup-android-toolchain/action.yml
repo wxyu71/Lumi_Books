@@ -36,3 +36,15 @@ runs:
           "build-tools;37.0.0" \
           "ndk;28.0.13004108" \
           "cmake;3.22.1"
+    # Every hosted job gets its own Gradle user home. A successful upstream job
+    # cannot guarantee this runner resolved the pinned build plugins.
+    # Only bootstrap is retried; actual compile, lint, package and test tasks
+    # remain separate and fail immediately on error.
+    - name: Resolve Gradle build plugins with bounded retry
+      uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+      with:
+        timeout_minutes: 5
+        retry_wait_seconds: 60
+        max_attempts: 3
+        command: >-
+          ./gradlew --no-daemon --console=plain --stacktrace --info --max-workers=2 help

@@ -62,7 +62,7 @@ class ReaderThemeBackgroundPersistenceTest {
         }
     }
 
-    @Test fun publisherLayoutModesPersistAcrossEditorCloseAndResetIndependently() = fixture { manager, model, await ->
+    @Test fun publisherLayoutTypographyIsSharedAcrossModesAndResetTogether() = fixture { manager, model, await ->
         val book = ReaderLayoutTarget.BOOK_LAYOUT
         model.beginEditing("photo")
         model.selectEditingLayout(book)
@@ -75,13 +75,15 @@ class ReaderThemeBackgroundPersistenceTest {
         model.closeEditor()
         await {
             val saved = manager.readerThemeSuiteState.first().suites.first { it.id == "photo" }
-            saved.settingsFor(book, false) == light && saved.settingsFor(book, true) == dark
+            saved.settingsFor(book, false) == light.copy(fontSize = 25f, marginLeft = 12f) &&
+                saved.settingsFor(book, true) == dark
         }
         val saved = DataStoreManager(context).readerThemeSuiteState.first().suites.first { it.id == "photo" }
         assertEquals("custom:shared", saved.settingsFor(layout, false).backgroundSelection)
         manager.resetAdvancedReaderSettings("photo", book, true)
         val reset = manager.readerThemeSuiteState.first().suites.first { it.id == "photo" }
-        assertEquals(light, reset.settingsFor(book, false))
+        assertEquals(38f, reset.settingsFor(book, false).marginLeft)
+        assertEquals(25f, reset.settingsFor(book, false).fontSize)
         assertEquals(38f, reset.settingsFor(book, true).marginLeft)
         assertEquals(25f, reset.settingsFor(book, true).fontSize)
         assertEquals(saved.settingsFor(layout, true), reset.settingsFor(layout, true))

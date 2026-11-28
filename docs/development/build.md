@@ -25,6 +25,8 @@ CI 使用 Ubuntu 24.04、JDK 21、Android SDK API 37、Build Tools 37.0.0、NDK 
 python3 tools/check_community_policy.py
 ```
 
+没有本地 Android SDK 时，从 PR 的 Checks 打开 Android Community Beta，按精确 commit 查看各 job 的日志与 artifact；如需完整 instrumentation 或兼容性矩阵，从 Actions 手动运行 Extended Android emulator matrix。流程、证据及 Red/Green 回归要求见 [Android CI](ci.md)。
+
 Android APK 位于 `app/build/oss/outputs/apk/`。本地 `testDebugUnitTest` 不注入 CI 的 modern SDK 限制；CI 的 PR lane 使用 API 33/35/36，历史显式 SDK 用例由每周兼容性 lane 运行。
 
 不要通过新增 Python 源码/YAML 字符串断言来“测试 CI”。工作流、Shell、Markdown 和链接分别由 actionlint、ShellCheck、zizmor、markdownlint-cli2 和 Lychee 验证；产品行为由 Gradle/JUnit/Robolectric/instrumentation 验证。

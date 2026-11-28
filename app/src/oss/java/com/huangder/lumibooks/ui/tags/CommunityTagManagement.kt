@@ -20,6 +20,7 @@ import androidx.compose.ui.semantics.toggleableState
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.unit.sp
 import com.huangder.lumibooks.R
 import com.huangder.lumibooks.data.local.entity.TagGroupEntity
 import com.huangder.lumibooks.data.repository.TagManagementRepository
@@ -33,8 +34,6 @@ import com.huangder.lumibooks.ui.theme.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
-import com.kyant.backdrop.backdrops.layerBackdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 
 /**
  * Shared manager for Settings and reader/annotation toolbar.
@@ -59,24 +58,10 @@ private fun CommunityTagGroupCard(
             LumiRow(
                 title = group.name,
                 icon = AppIcons.Folder,
-                trailing = if (selecting) null else {
-                    {
-                        LiquidGlassIconButton(
-                            imageVector = AppIcons.DotsThreeVertical,
-                            contentDescription = stringResource(R.string.annotation_tag_manage) + " " + group.name,
-                            onClick = { onGroupAction(group) },
-                            size = 48.dp
-                        )
-                    }
-                }
+                showChevron = !selecting,
+                onClick = if (selecting) null else ({ onGroupAction(group) })
             )
             if (members.isNotEmpty()) GroupedRowDivider()
-        } else {
-            LumiRow(
-                title = stringResource(R.string.tag_picker_uncategorized),
-                icon = AppIcons.Folder
-            )
-            GroupedRowDivider()
         }
 
         members.forEachIndexed { index, tag ->
@@ -93,18 +78,10 @@ private fun CommunityTagGroupCard(
                 onClick = {
                     if (selecting) onToggle(tag) else onTagAction(tag)
                 },
-                trailing = {
-                    if (selecting) {
-                        LumiCheckbox(checked = tag.key in selected, onCheckedChange = null)
-                    } else {
-                        LiquidGlassIconButton(
-                            imageVector = AppIcons.DotsThreeVertical,
-                            contentDescription = stringResource(R.string.annotation_tag_manage) + " " + tag.name,
-                            onClick = { onTagAction(tag) },
-                            size = 48.dp
-                        )
-                    }
-                }
+                showChevron = !selecting,
+                trailing = if (selecting) {
+                    { LumiCheckbox(checked = tag.key in selected, onCheckedChange = null) }
+                } else null
             )
         }
     }
@@ -127,7 +104,9 @@ private fun TagPageActionsMenu(
     val selectTags = stringResource(R.string.community_select_tags)
     val labels = if (showBatchSelection) listOf(createTag, createGroup, selectTags)
     else listOf(createTag, createGroup)
-    val width = annotationMenuWidth(labels, extraWidth = 66.dp)
+    val labelSize = if (LocalAppTheme.current == "material3") 13.sp else AppType.BodySmall
+    // Include the menu panel padding, row padding, icon and a little rounding slack.
+    val width = annotationMenuWidth(labels, extraWidth = 82.dp, fontSize = labelSize)
 
     LiquidGlassIconButton(
         imageVector = AppIcons.DotsThreeVertical,
@@ -270,20 +249,17 @@ internal fun CommunityTagManagementScreen(
         tagsByGroup.filterKeys { it == null || it !in groupIds }.values.flatten()
     }
 
-    val pageBackdrop = rememberLayerBackdrop()
-    val activeBackdrop = pageBackdrop.takeIf { LocalAppTheme.current == "liquid_glass" }
+    // The scaffold captures scrolling content for its toolbar. Do not expose a
+    // layer that also records its own glass controls: that forms a RenderNode cycle.
+    // Menus capture their page privately; dialogs use the upstream window snapshot.
     LiquidGlassMenuHost(
-        modifier = Modifier.fillMaxSize().background(AppColors.PageBg),
-        backdrop = activeBackdrop
+        modifier = Modifier.fillMaxSize().background(AppColors.PageBg)
     ) {
         LiquidGlassDialogHost(
             modifier = Modifier.fillMaxSize(),
-            backdrop = activeBackdrop
+            snapshotContent = true
         ) {
-            Box(
-                Modifier.fillMaxSize()
-                    .then(activeBackdrop?.let { Modifier.layerBackdrop(it) } ?: Modifier)
-            ) {
+            Box(Modifier.fillMaxSize()) {
                 CollapsingSettingsScaffold(
                     title = title,
                     onBack = {
