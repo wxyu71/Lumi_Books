@@ -11,17 +11,21 @@ import org.junit.Test
 
 class ReaderStateSlicesTest {
     @Test
-    fun displayUsesTheActiveSuitesCornerMarginsForTheActualMode() {
+    fun displaySharesCornerMarginsAndTypographyAcrossModes() {
         val light = ReaderCornerMargins(leftDp = 0f, topDp = 40f)
         val dark = ReaderCornerMargins(rightDp = 15f, bottomDp = 60f)
         val suite = ReaderThemeSuite(
-            id = "day", settings = ReaderThemeSettings(),
-            lightSettings = ReaderThemeSettings(cornerMargins = light),
-            darkSettings = ReaderThemeSettings(cornerMargins = dark)
+            id = "day", settings = ReaderThemeSettings(cornerMargins = light, fontSize = 26f),
+            lightSettings = ReaderThemeSettings(textColor = 0xFF111111.toInt()),
+            darkSettings = ReaderThemeSettings(textColor = 0xFFFFFFFF.toInt(), cornerMargins = dark)
         )
         val state = ReaderUiState(readerThemeSuites = listOf(suite), readerCornerMargins = dark)
         assertEquals(light, state.withActiveThemeSettingsForMode(false).readerCornerMargins)
-        assertEquals(dark, state.withActiveThemeSettingsForMode(true).readerCornerMargins)
+        assertEquals(light, state.withActiveThemeSettingsForMode(true).readerCornerMargins)
+        assertEquals(26f, state.withActiveThemeSettingsForMode(false).fontSize)
+        assertEquals(26f, state.withActiveThemeSettingsForMode(true).fontSize)
+        assertEquals(0xFF111111.toInt(), state.withActiveThemeSettingsForMode(false).readerTextColor)
+        assertEquals(0xFFFFFFFF.toInt(), state.withActiveThemeSettingsForMode(true).readerTextColor)
         val fallback = state.copy(readerThemeSuites = emptyList())
         assertEquals(dark, fallback.withActiveThemeSettingsForMode(false).readerCornerMargins)
     }

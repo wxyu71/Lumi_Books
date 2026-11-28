@@ -40,7 +40,7 @@ class ReaderSettingsResetPersistenceTest {
         val reloaded = DataStoreManager(context).readerThemeSuiteState.first()
             .suites.first { it.id == suiteId }
         assertEquals(64f, reloaded.settingsFor(ReaderLayoutTarget.READER_LAYOUT, false).marginBottom)
-        assertEquals(170f, reloaded.settingsFor(ReaderLayoutTarget.READER_LAYOUT, true).marginBottom)
+        assertEquals(64f, reloaded.settingsFor(ReaderLayoutTarget.READER_LAYOUT, true).marginBottom)
     }
 
     @Test

@@ -99,29 +99,102 @@ data class ReaderThemeSuite(
         ReaderLayoutTarget.BOOK_LAYOUT -> bookLayoutSettings
     }
 
+    /**
+     * The layout owns typography. Mode overrides own appearance only.
+     * Keep the old full-settings wire shape for portable bundles and older clients.
+     */
     fun withSettings(layout: ReaderLayoutTarget, updated: ReaderThemeSettings): ReaderThemeSuite =
         when (layout) {
-            ReaderLayoutTarget.READER_LAYOUT -> copy(settings = updated)
-            ReaderLayoutTarget.BOOK_LAYOUT -> copy(bookLayoutSettings = updated)
+            ReaderLayoutTarget.READER_LAYOUT -> copy(
+                settings = updated,
+                lightSettings = lightSettings?.let { updated.withAppearanceFrom(it) },
+                darkSettings = darkSettings?.let { updated.withAppearanceFrom(it) }
+            )
+            ReaderLayoutTarget.BOOK_LAYOUT -> copy(
+                bookLayoutSettings = updated,
+                bookLayoutLightSettings = bookLayoutLightSettings?.let { updated.withAppearanceFrom(it) },
+                bookLayoutDarkSettings = bookLayoutDarkSettings?.let { updated.withAppearanceFrom(it) }
+            )
         }
 
-    fun settingsFor(layout: ReaderLayoutTarget, dark: Boolean): ReaderThemeSettings =
-        if (layout == ReaderLayoutTarget.READER_LAYOUT) {
-            (if (dark) darkSettings else lightSettings) ?: settings
-        } else (if (dark) bookLayoutDarkSettings else bookLayoutLightSettings) ?: bookLayoutSettings
+    fun settingsFor(layout: ReaderLayoutTarget, dark: Boolean): ReaderThemeSettings {
+        val shared = settingsFor(layout)
+        val appearance = if (layout == ReaderLayoutTarget.READER_LAYOUT) {
+            if (dark) darkSettings else lightSettings
+        } else if (dark) bookLayoutDarkSettings else bookLayoutLightSettings
+        return appearance?.let { shared.withAppearanceFrom(it) } ?: shared
+    }
 
     fun withModeSettings(dark: Boolean, updated: ReaderThemeSettings): ReaderThemeSuite =
-        if (dark) copy(darkSettings = updated) else copy(lightSettings = updated)
+        withModeSettings(ReaderLayoutTarget.READER_LAYOUT, dark, updated)
 
     fun withModeSettings(
         layout: ReaderLayoutTarget,
         dark: Boolean,
         updated: ReaderThemeSettings
-    ): ReaderThemeSuite = when (layout) {
-        ReaderLayoutTarget.READER_LAYOUT -> withModeSettings(dark, updated)
-        ReaderLayoutTarget.BOOK_LAYOUT -> if (dark) copy(bookLayoutDarkSettings = updated)
-            else copy(bookLayoutLightSettings = updated)
+    ): ReaderThemeSuite {
+        // All existing preview, save, and reset callers pass a complete effective
+        // settings value. Apply its typography to the layout, not the selected mode.
+        val shared = withSettings(layout, updated.withAppearanceFrom(settingsFor(layout)))
+        return when (layout) {
+            ReaderLayoutTarget.READER_LAYOUT -> if (dark) shared.copy(darkSettings = updated)
+                else shared.copy(lightSettings = updated)
+            ReaderLayoutTarget.BOOK_LAYOUT -> if (dark) shared.copy(bookLayoutDarkSettings = updated)
+                else shared.copy(bookLayoutLightSettings = updated)
+        }
     }
+
+    internal fun migrateLegacyTypography(): ReaderThemeSuite =
+        withSettings(
+            ReaderLayoutTarget.READER_LAYOUT,
+            settings.mergeLegacyTypography(lightSettings, darkSettings)
+        ).withSettings(
+            ReaderLayoutTarget.BOOK_LAYOUT,
+            bookLayoutSettings.mergeLegacyTypography(bookLayoutLightSettings, bookLayoutDarkSettings)
+        )
+
+}
+
+
+// Only these five fields belong to light/dark appearance.
+private fun ReaderThemeSettings.withAppearanceFrom(appearance: ReaderThemeSettings) = copy(
+    backgroundSelection = appearance.backgroundSelection,
+    backgroundColorSelection = appearance.backgroundColorSelection,
+    backgroundImageOpacity = appearance.backgroundImageOpacity,
+    backgroundImageBlurDp = appearance.backgroundImageBlurDp,
+    textColor = appearance.textColor
+)
+
+/** Legacy payloads have no edit timestamps. Prefer a changed light value, then
+ * a changed dark value, per field; preserve the base if neither differs.
+ * This keeps dark-only customizations and gives a deterministic conflict rule.
+ */
+private fun ReaderThemeSettings.mergeLegacyTypography(
+    light: ReaderThemeSettings?,
+    dark: ReaderThemeSettings?
+): ReaderThemeSettings {
+    fun <T> choose(base: T, lightValue: T?, darkValue: T?): T =
+        lightValue?.takeIf { it != base } ?: darkValue?.takeIf { it != base } ?: base
+    return copy(
+        fontSize = choose(fontSize, light?.fontSize, dark?.fontSize),
+        fontType = choose(fontType, light?.fontType, dark?.fontType),
+        bodyFontWeight = choose(bodyFontWeight, light?.bodyFontWeight, dark?.bodyFontWeight),
+        lineHeight = choose(lineHeight, light?.lineHeight, dark?.lineHeight),
+        letterSpacing = choose(letterSpacing, light?.letterSpacing, dark?.letterSpacing),
+        textAlignment = choose(textAlignment, light?.textAlignment, dark?.textAlignment),
+        paragraphSpacing = choose(paragraphSpacing, light?.paragraphSpacing, dark?.paragraphSpacing),
+        firstLineIndent = choose(firstLineIndent, light?.firstLineIndent, dark?.firstLineIndent),
+        marginLeft = choose(marginLeft, light?.marginLeft, dark?.marginLeft),
+        marginRight = choose(marginRight, light?.marginRight, dark?.marginRight),
+        marginTop = choose(marginTop, light?.marginTop, dark?.marginTop),
+        marginBottom = choose(marginBottom, light?.marginBottom, dark?.marginBottom),
+        cornerMargins = choose(cornerMargins, light?.cornerMargins, dark?.cornerMargins),
+        highlightWidthDp = choose(highlightWidthDp, light?.highlightWidthDp, dark?.highlightWidthDp),
+        highlightHeightDp = choose(highlightHeightDp, light?.highlightHeightDp, dark?.highlightHeightDp),
+        highlightOffsetYDp = choose(highlightOffsetYDp, light?.highlightOffsetYDp, dark?.highlightOffsetYDp),
+        underlineThicknessDp = choose(underlineThicknessDp, light?.underlineThicknessDp, dark?.underlineThicknessDp),
+        underlineOffsetYDp = choose(underlineOffsetYDp, light?.underlineOffsetYDp, dark?.underlineOffsetYDp)
+    )
 }
 
 data class ReaderThemeSuiteState(
@@ -360,7 +433,10 @@ object ReaderThemeSuiteCodec {
                                 bookLayoutLightSettings = item.optJSONObject("bookLayoutLight")?.toThemeSettings(),
                                 bookLayoutDarkSettings = item.optJSONObject("bookLayoutDark")?.toThemeSettings(),
                                 darkMaskOpacity = item.optDouble("darkMaskOpacity", 0.0).toFloat()
-                            )
+                            ).let { suite ->
+                                if (item.optBoolean("sharedTypography", false)) suite
+                                else suite.migrateLegacyTypography()
+                            }
                         )
                     }
                 }
@@ -401,6 +477,7 @@ object ReaderThemeSuiteCodec {
 
     private fun ReaderThemeSuite.toJsonObject() = JSONObject().apply {
         put("id", id)
+        put("sharedTypography", true)
         customName?.let { put("name", it) }
         put("settings", settings.toJson())
         put("bookLayoutSettings", bookLayoutSettings.toJson())

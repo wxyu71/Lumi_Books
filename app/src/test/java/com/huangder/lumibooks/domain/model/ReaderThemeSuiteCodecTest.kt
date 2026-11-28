@@ -345,7 +345,8 @@ class ReaderThemeSuiteCodecTest {
         val decoded = LumiThemeBundleCodec.decode(LumiThemeBundleCodec.encode(listOf(suite))).single()
         assertEquals(0xFF111111.toInt(), decoded.settingsFor(ReaderLayoutTarget.READER_LAYOUT, false).textColor)
         assertEquals(0xFFEEEEEE.toInt(), decoded.settingsFor(ReaderLayoutTarget.READER_LAYOUT, true).textColor)
-        assertEquals(12f, decoded.settingsFor(ReaderLayoutTarget.READER_LAYOUT, true).marginLeft)
+        assertEquals(38f, decoded.settingsFor(ReaderLayoutTarget.READER_LAYOUT, true).marginLeft)
+        assertEquals(38f, decoded.settingsFor(ReaderLayoutTarget.READER_LAYOUT, false).marginLeft)
     }
 
     @Test(expected = IllegalArgumentException::class)
@@ -363,11 +364,11 @@ class ReaderThemeSuiteCodecTest {
             ReaderThemeSuiteCodec.decode(ReaderThemeSuiteCodec.encode(listOf(edited))).first { it.id == suite.id },
             LumiThemeBundleCodec.decode(LumiThemeBundleCodec.encode(listOf(edited))).single()
         )) {
-            assertEquals(light, decoded.settingsFor(ReaderLayoutTarget.BOOK_LAYOUT, false))
+            assertEquals(light.copy(fontSize = 24f, marginLeft = 12f), decoded.settingsFor(ReaderLayoutTarget.BOOK_LAYOUT, false))
             assertEquals(dark, decoded.settingsFor(ReaderLayoutTarget.BOOK_LAYOUT, true))
             assertEquals(suite.settings, decoded.settingsFor(ReaderLayoutTarget.READER_LAYOUT, false))
             assertEquals(suite.settings, decoded.settingsFor(ReaderLayoutTarget.READER_LAYOUT, true))
-            assertEquals(suite.bookLayoutSettings, decoded.bookLayoutSettings)
+            assertEquals(suite.bookLayoutSettings.copy(fontSize = 24f, marginLeft = 12f), decoded.bookLayoutSettings)
         }
     }
 
@@ -379,7 +380,7 @@ class ReaderThemeSuiteCodecTest {
         assertEquals(suite.bookLayoutSettings, suite.settingsFor(ReaderLayoutTarget.BOOK_LAYOUT, true))
         val edited = suite.withModeSettings(ReaderLayoutTarget.BOOK_LAYOUT, true,
             suite.bookLayoutSettings.copy(fontSize = 25f))
-        assertEquals(21f, edited.settingsFor(ReaderLayoutTarget.BOOK_LAYOUT, false).fontSize)
+        assertEquals(25f, edited.settingsFor(ReaderLayoutTarget.BOOK_LAYOUT, false).fontSize)
         assertEquals(25f, edited.settingsFor(ReaderLayoutTarget.BOOK_LAYOUT, true).fontSize)
         assertEquals(24f, edited.settingsFor(ReaderLayoutTarget.READER_LAYOUT, true).fontSize)
     }
