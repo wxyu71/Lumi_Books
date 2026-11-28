@@ -40,10 +40,15 @@ class ReaderSharedTypographyPersistenceTest {
             assertEquals(day.lineHeight, night.lineHeight)
             manager.updateReaderThemeSuite("day", layout,
                 night.copy(fontSize = 30f, textColor = 0xFFFFFFFF.toInt()), true)
-            val reloaded = suite()
-            repeat(3) {
-                assertEquals(30f, reloaded.settingsFor(layout, false).fontSize)
-                assertEquals(30f, reloaded.settingsFor(layout, true).fontSize)
+            var reloaded = suite()
+            assertEquals(30f, reloaded.settingsFor(layout, false).fontSize)
+            assertEquals(30f, reloaded.settingsFor(layout, true).fontSize)
+            for ((dark, size) in listOf(false to 24f, true to 28f, false to 26f)) {
+                manager.updateReaderThemeSuite("day", layout,
+                    reloaded.settingsFor(layout, dark).copy(fontSize = size), dark)
+                reloaded = suite()
+                assertEquals(size, reloaded.settingsFor(layout, false).fontSize)
+                assertEquals(size, reloaded.settingsFor(layout, true).fontSize)
                 assertEquals(0xFF111111.toInt(), reloaded.settingsFor(layout, false).textColor)
                 assertEquals(0xFFFFFFFF.toInt(), reloaded.settingsFor(layout, true).textColor)
             }

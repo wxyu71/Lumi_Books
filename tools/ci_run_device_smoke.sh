@@ -13,6 +13,7 @@ classes=(
   com.huangder.lumibooks.ui.settings.AppIconStyleScreenInstrumentedTest
   com.huangder.lumibooks.ui.settings.AppIconScreenshotInstrumentedTest
   com.huangder.lumibooks.ui.reader.engine.ReaderVariableFontsInstrumentedTest
+  com.huangder.lumibooks.ui.reader.ReaderThemeModeInstrumentedTest
 )
 if [[ "${LUMI_DEVICE_EXTENDED:-0}" == "1" ]]; then
   classes+=(
