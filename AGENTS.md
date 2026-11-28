@@ -10,14 +10,15 @@
 - 优先复用现有 Room、Repository、domain model、导航和 UI 组件，不为 Community 功能建立平行存储或第二套框架。
 - 行为变化使用真实 Kotlin/JUnit/Robolectric/instrumentation 测试。禁止用读取 Kotlin/YAML/Markdown 后 `assertIn` 某段文本的“contract test”替代行为验证。
 - 通用仓库检查交给现有轮子：actionlint/ShellCheck/zizmor、Android Lint、markdownlint-cli2/Lychee、Gradle/JUnit/AndroidJUnitRunner。项目自有脚本只保留这些工具无法表达的发行边界或证据收集。
-- 不通过测试重试、排除或放宽断言把真实失败变绿。先定位根因，再修产品或测试同步。
+- 不通过测试重试、排除或放宽断言把真实失败变绿。先定位根因，再修产品或测试同步。独立 CI Runner 统一使用共享 toolchain 的 Gradle 插件准备步骤；仅依赖准备允许有界重试，编译、Lint、APK 构建及测试失败不得自动重试。
 
 ## GitHub 与 CI
 
 - 先收集一轮失败日志再修改；每次结论绑定精确 head SHA。
 - 仅有 GitHub 插件时，优先用 Git tree/commit 一次提交同一逻辑变更，并用 `update_ref(expected_sha=...)` 防止覆盖并发更新；不要强推。
 - CI 顺序为静态分析 → 编译/Robolectric/JVM → Android Lint → APK/Diagnostic/Release → emulator → workflow summary。分支保护不是本仓库 CI 重构的验收目标。
-- GitHub 插件环境没有 Android 构建能力时必须如实说明，不能把静态审查当作 CI 成功。
+- GitHub Actions 是无本地 SDK 时的正式远程 Android 执行环境：提交后读取精确 SHA 的编译、JUnit、emulator 结果和运行证据；未结束的运行不得称为通过。
+- UI、导航、闪退修复优先加入真实 Activity 用户入口的 instrumentation 回归；尽可能在修复前复现失败、修复后运行同一测试。无法复现时明确记录覆盖范围与缺口，不用静态推断替代根因证据。
 
 ## 发布
 

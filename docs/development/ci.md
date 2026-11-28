@@ -7,7 +7,7 @@ CI 的事实来源是 [Android Community Beta](../../.github/workflows/android-b
 | 阶段 | 真实执行内容 |
 | --- | --- |
 | Repository static analysis | actionlint + ShellCheck、zizmor、markdownlint-cli2、Lychee、本 Fork 极少量发行边界检查 |
-| JVM compile + Robolectric | Kotlin/测试源码真实编译、Robolectric JAR 由 Gradle 预取、API 33 smoke、标准 `:app:testDebugUnitTest` |
+| JVM compile + Robolectric | Kotlin/JVM/instrumentation 测试源码真实编译、Robolectric JAR 由 Gradle 预取、API 33 smoke、标准 `:app:testDebugUnitTest` |
 | Android Lint | 标准 `:app:lintDebug`，Error/Fatal 直接失败 |
 | P3 packages | Debug APK、Diagnostic、unsigned Release 分别独立构建和报告 |
 | Emulator | API 33/35 的真实 `connectedDebugAndroidTest`、UI/Room/截图测试 |
@@ -26,7 +26,7 @@ APK、Diagnostic、Release 都必须等 JVM 与 Lint 成功后才启动；emulat
 - **Gradle / AGP / Android Lint**：依赖解析、编译、资源与 Android 静态分析。
 - **JUnit / Robolectric / AndroidJUnitRunner**：真实测试发现、执行和失败状态。
 - **action-junit-report**：读取 Gradle 已生成的标准 JUnit 报告并在 Actions 中展示，不重新定义“哪些测试算通过”。
-- **nick-fields/retry**：只包住 Gradle/Robolectric 依赖准备阶段的瞬时网络失败；真实 Kotlin 编译、Robolectric smoke、JUnit 断言和 Android instrumentation 从不重试。
+- **nick-fields/retry**：每个独立 Gradle Runner 通过共享 toolchain action 先执行 `gradlew help --info`，仅对插件解析/配置准备做有界重试；Robolectric SDK 预取仍单独处理。真正的 Kotlin 编译、Lint、APK 构建、JUnit 断言和 Android instrumentation 从不重试。
 
 仓库不维护工作流 YAML 文本捕捉测试、测试源文件库存脚本、自定义 JUnit XML 判定器或 Maven HTTP 探针。
 
@@ -38,16 +38,43 @@ PR lane 设置 `robolectric.enabledSdks=33,35,36` 并预取相应 Android JAR，
 
 ## Emulator
 
-PR 阻塞矩阵使用 API 33/35。脚本只负责选择明确的 instrumentation smoke class、保存 logcat 和把截图从 emulator 拉回 artifact；测试成败直接采用 `:app:connectedDebugAndroidTest` / AndroidJUnitRunner 退出码，不再由 Python 二次解释 XML。
+PR 阻塞矩阵使用 API 33/35。GitHub Actions Runner 是本地没有 Android SDK 或物理设备时的正式远程执行环境。脚本选择明确的 instrumentation smoke class，保存运行期全量 logcat、crash buffer、环境、最终窗口层级及实际交互截图；测试成败直接采用 `:app:connectedDebugAndroidTest` / AndroidJUnitRunner 退出码，不再由 Python 二次解释 XML。
 
-API 26/33/36 的扩展 emulator、完整历史 Robolectric 和可选 Macrobenchmark 位于定期/手动 workflow。
+标签回归覆盖真实分类 Activity → 标签管理 Activity、分类书籍页长按 → 标签选择器、保存和重新打开，以及真实 Room 持久化。测试数据只在隔离的测试安装中建立并清理。UI Automator 负责跨 Activity 的可访问性操作，Compose Test 负责语义、布局及选中状态断言；截图由实际 emulator 渲染，不是设计示意图。截图证据不等同于 golden 像素基线；现有图标像素差测试继续保留。
+
+| 范围 | PR 必须通过 | 扩展 / 手动 |
+| --- | --- | --- |
+| Android API | 33、35 手机 | 26、33、36 手机与 API 36 平板 |
+| 标签页面主题 | Lumi、Material 3、液态玻璃组件 | 真实页面简体中文/深色/大字号场景 |
+| 用户入口 | 分类管理、长按书籍、跨目录选择、确认/取消并重新进入 | 同路径扩展环境 |
+| 全量 instrumentation | 明确 smoke 类 | 手动 `run_full_instrumentation` |
+| Macrobenchmark | 不运行 | 手动 `run_macrobenchmarks`，数据仅供参考 |
+
+UI Automator 和 Compose Test 已足以覆盖当前流程。Maestro/Appium 仅在需要独立于 instrumentation 的发布 APK 黑盒验收时选用，不默认安装第二套 UI 测试框架。物理 GPU、厂商 ROM 等仍需要设备农场或实机补充。
+
+API 26/33/36 手机与 API 36 平板的扩展 emulator、完整历史 Robolectric 和可选 Macrobenchmark 位于定期/手动 workflow。仪器测试源码在 JVM 阶段提前编译，设备任务在启动 AVD 前准备 APK；每个设备独立上传 JUnit、截图与日志，并展示标准 JUnit 摘要。完整测试模式仍使用 AndroidJUnitRunner 发现，不通过脚本解析结果替代 Gradle。
+
+### 参考实现
+
+- [AnkiDroid emulator matrix](https://github.com/ankidroid/Anki-Android/blob/e87e18a57a03add43520a0eca3229c7013da3293/.github/workflows/tests_emulator.yml)：PR 与扩展设备分层，平板进入定期/手动矩阵，Gradle 缓存只由主分支写入。
+- [AnkiDroid TagsDialogScreenshotTest](https://github.com/ankidroid/Anki-Android/blob/e87e18a57a03add43520a0eca3229c7013da3293/AnkiDroid/src/test/java/com/ichi2/anki/dialogs/tags/TagsDialogScreenshotTest.kt)：使用明确标签夹具，分别覆盖空目录、选中状态和方向。
+- [AntennaPod checks](https://github.com/AntennaPod/AntennaPod/blob/4dd48842391846fcb4b64071b11734cb70bf7943/.github/workflows/checks.yml)：先构建测试 APK，再启动 KVM emulator；测试夹具独立建立、清理，失败时保存原生报告。
+- [Now in Android adaptive screenshots](https://github.com/android/nowinandroid/blob/2982e63cb691ad49cd009aab43dc206fee6699c2/app/src/testDemo/kotlin/com/google/samples/apps/nowinandroid/ui/NiaAppScreenSizesScreenshotTests.kt)：明确窗口尺寸与布局场景；其标签测试也覆盖大字体。Lumi 先用 Robolectric qualifiers 和语义断言覆盖同类风险，真实截图作为运行证据；尚无受审查的 Roborazzi golden 基线。
+
+只迁移适合 Lumi 的测试设计与工作流思路，不复制 GPL 源码，不增加无实际断言的测试，不将重复测试用于掩盖不稳定失败。
+
+## 回归证据（Red → Green）
+
+先在修复前的独立验证分支上移植不依赖修复实现的回归测试（包含所需测试依赖），通过现有 workflow_dispatch 运行并保存失败 job、测试名、堆栈、截图及 SHA。再将同一测试运行在修复分支上；两次使用相同 API、主题、语言和数据。基线失败必须来自目标行为，而不是编译失败、网络或测试环境错误。若无法复现，PR 应注明未复现的条件，不得将绿色 CI 当成已证明的根因。
+
+运行证据位于每个 API 的 Actions artifact；`final-screen.png` 和 `final-hierarchy.xml` 是测试结束时的尽力收集（可能已卸载应用），关键页面应在测试内部截图。失败日志不上传用户真实书库、密钥或私人数据。
 
 ## 失败排查
 
 1. 绑定当前 head SHA，先看最早失败 job。
 2. 静态分析失败就修 workflow/docs，不启动 Android 重任务。
 3. 编译失败先修编译；Robolectric/JUnit 失败读取真实测试名、stack trace 和原生 XML/HTML 报告。
-4. 网络/CDN 失败与业务断言分开处理。Gradle Wrapper 使用 60 秒网络超时；dependency/bootstrap 阶段最多由 `nick-fields/retry` 重试 3 次、间隔 60 秒。
+4. 网络/CDN 失败与业务断言分开处理。Gradle Wrapper 使用 60 秒网络超时；每个 Runner 的插件准备及 Robolectric SDK 预取分别最多尝试 3 次、间隔 60 秒。插件准备使用 `--info` 记录依赖仓库解析信息，不以先前 Runner 的成功代替本 Runner 的解析结果。固定依赖版本、仓库范围与缓存写权限保持不变。
 5. Kotlin 编译、Robolectric smoke、JUnit 断言、Lint 和 instrumentation 不使用自动重试；这些失败必须按真实根因修复。
 
 发布权限和签名边界见 [发布指南](release.md)。
