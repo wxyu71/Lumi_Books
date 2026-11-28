@@ -7,12 +7,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.huangder.lumibooks.R
@@ -81,28 +83,38 @@ class ReaderThemeModeInstrumentedTest {
             }
         }
 
+        fun visibleSlider() = compose.onNodeWithTag("reader-font-size-slider")
+            .performScrollTo().assertIsDisplayed()
+
         fun sliderSize(expected: Float) {
-            val actual = compose.onNodeWithTag("reader-font-size-slider")
+            val actual = visibleSlider()
                 .fetchSemanticsNode().config[SemanticsProperties.ProgressBarRangeInfo].current
             assertEquals(expected, actual, 0.01f)
             compose.runOnIdle { assertEquals(expected, renderState().fontSize, 0.01f) }
         }
         fun setSlider(size: Float) {
-            compose.onNodeWithTag("reader-font-size-slider")
-                .performSemanticsAction(SemanticsActions.SetProgress) { it(size) }
+            visibleSlider().performSemanticsAction(SemanticsActions.SetProgress) { action ->
+                org.junit.Assert.assertTrue("Slider rejected size $size", action(size))
+            }
             sliderSize(size)
         }
-        fun switch(label: Int, color: Int) {
-            compose.onNodeWithContentDescription(context.getString(label)).performClick()
-            compose.onNodeWithContentDescription(context.getString(label)).assertIsSelected()
-            compose.runOnIdle { assertEquals(color, renderState().readerTextColor) }
+        fun switch(label: Int, expectedMode: String, color: Int) {
+            // The display selector is below the fold in the scrollable sheet.
+            // A click on a clipped semantics node can miss its actual hit target.
+            val option = compose.onNodeWithContentDescription(context.getString(label))
+            option.performScrollTo().assertIsDisplayed().performClick()
+            compose.runOnIdle {
+                assertEquals("Display selection callback", expectedMode, mode.value)
+                assertEquals(color, renderState().readerTextColor)
+            }
+            option.assertIsSelected()
         }
         setSlider(26f)
         repeat(3) { iteration ->
-            switch(R.string.display_mode_night, 0xFFFFFFFF.toInt())
+            switch(R.string.display_mode_night, "night", 0xFFFFFFFF.toInt())
             sliderSize(26f + iteration)
             setSlider(27f + iteration)
-            switch(R.string.display_mode_day, 0xFF111111.toInt())
+            switch(R.string.display_mode_day, "day", 0xFF111111.toInt())
             sliderSize(27f + iteration)
         }
     }
